@@ -147,6 +147,7 @@ int main(void) {
 				if (motor_driver_set_motor_state(MOTOR, MOTOR_DOWN) != HAL_OK) {
 					error_handler();
 				} else {
+					debug_prints("Motor down, encoder set positive\r\n");
 					encoder_set_direction_positive();
 				}
 			}
@@ -161,6 +162,7 @@ int main(void) {
 				if (motor_driver_set_motor_state(MOTOR, MOTOR_UP) != HAL_OK) {
 					error_handler();
 				} else {
+					debug_prints("Motor up, encoder set negative\r\n");
 					encoder_set_direction_negative();
 				}
 			}

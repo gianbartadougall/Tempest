@@ -46,7 +46,7 @@
 uint32_t distanceTravelled = 0;
 uint32_t teethPassed       = 0;
 uint8_t encoderStatus      = 0;
-uint8_t encoderDirection   = ENCODER_POSITIVE;
+int encoderDirection   = ENCODER_POSITIVE;
 uint16_t isrCount = 0;
 
 /* Function prototypes */
@@ -84,21 +84,22 @@ void encoder_isr(void) {
 
     // Check for out of bounds error
     if ((distanceTravelled == ENCODER_MAXIMUM_DISTANCE) && (encoderDirection == ENCODER_POSITIVE)) {
+        sprintf(a, "ret 1: ed: %i\r\n", encoderDirection);
+        debug_prints(a);
         encoderStatus = ENCODER_AT_MAX_DISTANCE;
         return;
     }
 
     if ((distanceTravelled == ENCODER_MINIMUM_DISTANCE) && (encoderDirection == ENCODER_NEGATIVE)) {
         encoderStatus = ENCODER_AT_MIN_DISTANCE;
+        sprintf(a, "ret 2: ed: %i\r\n", encoderDirection);
+        debug_prints(a);
         return;
     }
 
-    if (encoderDirection == ENCODER_POSITIVE) {
-        teethPassed++;
-    } else if (encoderDirection == ENCODER_NEGATIVE) {
-        teethPassed--;
-    }
-
+    sprintf(a, "Encoder dir: %i\r\n", encoderDirection);
+    debug_prints(a);
+    teethPassed += encoderDirection; 
     isrCount++;
 }
 
