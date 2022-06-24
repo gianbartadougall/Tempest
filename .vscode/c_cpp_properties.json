@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "name": "STM32L4",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "STM32L432xx",
+                "USE_HAL_DRIVER",
+                "__CC_ARM"
+            ],
+            "intelliSenseMode": "${default}",
+            "compilerPath": "${env:ARMGCC_DIR}/arm-none-eabi-gcc.exe",
+            "compilerArgs": [
+                "-mcpu-cortex-m4"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "configurationProvider": "ms-vscode.makefile-tools"
+        }
+    ],
+    "version": 4
+}
