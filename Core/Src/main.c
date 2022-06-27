@@ -13,11 +13,8 @@
 
 /* Private includes */
 #include "main.h"
-#include "board.h"
 #include "debug_log.h"
-#include "motor_driver.h"
-#include "encoder.h"
-#include "pushbutton.h"
+#include "tempest.h"
 
 /* STM32 Includes */
 
@@ -25,22 +22,8 @@
 UART_HandleTypeDef huart2;
 
 /* Private #defines */
-#define MIN_HOLD_TIME 1000
-#define MODE_AUTOMATIC 0 
-#define MODE_MANUAL 1
-
-#define UP_PUSH_BUTTON PUSH_BUTTON_0
-#define DOWN_PUSH_BUTTON PUSH_BUTTON_1
-
-// Motor defines
-#define MOTOR MD_MOTOR_0
-#define MOTOR_STOP MOTOR_DRIVER_STOP
-#define MOTOR_UP MOTOR_DRIVER_DIRECTION_1
-#define MOTOR_DOWN MOTOR_DRIVER_DIRECTION_2
 
 /* Variable Declarations */
-volatile uint8_t pbUpState = GPIO_PIN_RESET;
-volatile uint8_t pbDownState = GPIO_PIN_RESET;
 
 /* Function prototypes */
 void hardware_init(void);
@@ -63,131 +46,22 @@ int main(void) {
     hardware_init();
 
 	// Declare local variables
-	uint32_t timer = 0;
-	uint8_t mode = MODE_AUTOMATIC;
-	uint32_t lastLEDUpdateTime = 0;
 	char m[40];
+
 	// Main program loop
-    while (1) {
+	while (1) {
 
-		// Check state of buttons
-		uint8_t pbUpState = pb_get_state(UP_PUSH_BUTTON);
-		uint8_t pbDownState = pb_get_state(DOWN_PUSH_BUTTON);
+		// Update the system state
+		tempest_update_system_state();
 
-		// sprintf(m, "%lu \r\n", encoder_distance_travelled() / 1000);
-		// debug_prints(m);
-		// HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-		// HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_1);
-		// HAL_Delay(1000);
-		// continue;
+		// Update the motor state
+		tempest_update_motor_state();
 
-		// If the state of the buttons is high, record the time
-		if ((pbUpState == 1) && (pbDownState == 1)) {
+		// Update the mode indicator
+		tempest_update_mode_indicator();
 
-			// Turn off motor
-			if (motor_driver_set_motor_state(MOTOR, MOTOR_STOP)) {
-				error_handler();
-			}
-			
-			if (timer == 0) {
-				
-				if ((HAL_MAX_DELAY - MIN_HOLD_TIME) < HAL_GetTick()) {
-					// Wait for timer to reset if minimum hold time cannot be acheived
-					while ((HAL_MAX_DELAY - MIN_HOLD_TIME) < HAL_GetTick()) {}
-
-					// Skip reset of the code
-					continue;
-				} else {
-
-					// Set the start time
-					timer = HAL_GetTick();
-				}
-			}
-
-			// Start the timer if the current time is 0
-			if ((HAL_GetTick() - timer) > MIN_HOLD_TIME) {
-				if (mode == MODE_AUTOMATIC) {
-					mode = MODE_MANUAL;
-					
-					// Reset timer so another toggle won't occur until another minimum hold time
-					timer = 0;
-				} else {
-					mode = MODE_AUTOMATIC;
-
-					// Reset timer so another toggle won't occur until another minimum hold time
-					timer = 0;
-				}
-			}
-		} else {
-			// Reset the timer
-			timer = 0;
-		}
-
-		// Check if motor needs to be stopped
-		if ((pbUpState == 0) && (pbDownState == 0)) {
-			
-			uint8_t stopMotor = 
-				(encoder_at_maximum_distance() && (motor_driver_get_motor_state(MOTOR) == MOTOR_DOWN)) |
-				(encoder_at_minimum_distance() && (motor_driver_get_motor_state(MOTOR) == MOTOR_UP)) |
-				(mode == MODE_MANUAL);
-
-			if (stopMotor) {
-				if (motor_driver_set_motor_state(MOTOR, MOTOR_STOP)) {
-					error_handler();
-				}
-			}
-		}
-
-		if ((pbUpState == 0) && (pbDownState == 1)) {
-
-			// Check that the motor can move down
-			if (!encoder_at_maximum_distance()) {
-				
-				// Move motor down
-				if (motor_driver_set_motor_state(MOTOR, MOTOR_DOWN) != HAL_OK) {
-					error_handler();
-				} else {
-					debug_prints("Motor down, encoder set positive\r\n");
-					encoder_set_direction_positive();
-				}
-			}
-		}
-
-		if ((pbUpState == 1) && (pbDownState == 0)) {
-			
-			// Check that the motor can move up
-			if (!encoder_at_minimum_distance()) {
-				
-				// Move motor up
-				if (motor_driver_set_motor_state(MOTOR, MOTOR_UP) != HAL_OK) {
-					error_handler();
-				} else {
-					debug_prints("Motor up, encoder set negative\r\n");
-					encoder_set_direction_negative();
-				}
-			}
-		}
-
-		/* Stop the motors if the minimum/maximum distance has been reached */	
-		uint8_t stopMotor = 
-			(encoder_at_maximum_distance() && (motor_driver_get_motor_state(MOTOR) == MOTOR_DOWN)) |
-			(encoder_at_minimum_distance() && (motor_driver_get_motor_state(MOTOR) == MOTOR_UP));
-
-		if (stopMotor) {
-			if (motor_driver_set_motor_state(MOTOR, MOTOR_STOP) != HAL_OK) {
-				error_handler();
-			}
-		}
-
-		// Blink LED if on AUTOMATIC else keep LED on for MANUAL
-		if (mode == MODE_AUTOMATIC) {
-			brd_led_off();
-		} else if (mode == MODE_MANUAL) {
-			brd_led_on();
-		}
-
-		// Delay 50ms
-		HAL_Delay(10);
+		// Delay for 50ms
+		HAL_Delay(50);
 	}
 
     return 0;
@@ -195,21 +69,11 @@ int main(void) {
 
 void hardware_init(void) {
 
-	// Initialise LED
-	board_init();
-
 	// Initialise debug log
 	debug_log_init(&huart2);
 
-	// Initialise motor driver
-	motor_driver_init();
-
-	// Initialise rotary encoder
-	encoder_init();
-
-	// Initialise pushbuttons
-	pb_init(); 
-
+	// Initialise tempest hardware
+	tempest_hardware_init();
 }
 
 /**

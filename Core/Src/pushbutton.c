@@ -21,7 +21,6 @@
 /* Private #defines */
 #define PUSH_BUTTONS 2
 
-
 /* Variable Declarations */
 uint32_t pbPins[PUSH_BUTTONS] = {0, 1};
 GPIO_TypeDef* pbPorts[PUSH_BUTTONS] = {GPIOA, GPIOA};

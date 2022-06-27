@@ -34,7 +34,7 @@ typedef struct Motor_TypeDef {
 Motor_TypeDef Motors[NUM_MOTORS];
 
 uint32_t mdPins[NUM_MOTORS][2] = {
-    {1, 7} // Pins for Motor 0
+    {1, 0} // Pins for Motor 0
 };
 
 GPIO_TypeDef* mdPorts[NUM_MOTORS][2] = {

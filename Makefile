@@ -69,7 +69,10 @@ Core/Src/debug_log.c \
 Core/Src/encoder.c \
 Core/Src/motor_driver.c \
 Core/Src/interrupts_stm32l4xx.c \
-Core/Src/pushbutton.c
+Core/Src/pushbutton.c \
+Core/Src/tempest.c \
+Core/Src/ambient_light_sensor.c \
+Core/Src/piezo_buzzer.c
 
 # Add driver libraries to C sources
 C_SOURCES += $(DRIVER_SOURCES)

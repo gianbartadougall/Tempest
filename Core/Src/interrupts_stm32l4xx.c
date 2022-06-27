@@ -5,9 +5,7 @@
 
 /* Private Includes */
 #include "interrupts_stm32l4xx.h"
-#include "debug_log.h"
-#include "encoder.h"
-#include "pushbutton.h"
+#include "tempest.h"
 
 /**
  * @brief Interrupt routine for EXTI1 
@@ -94,6 +92,22 @@ void EXTI4_IRQHandler(void) {
  * 
  */
 void EXTI9_5_IRQHandler(void) {
+    // Clear pending interrupt call
+    NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
+
+    // Check if interrupt was for manual override pin
+    if ((EXTI->PR1 & EXTI_PR1_PIF5) == (EXTI_PR1_PIF5)) {
+
+        // Clear the pending interrupt
+        EXTI->PR1 |= EXTI_PR1_PIF5;
+
+        // Check if the interrupt was a rising or falling edge
+        if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == 1) {
+            set_manual_override();
+        } else {
+            clear_manual_override();
+        }
+    }
 
 }
 
@@ -120,4 +134,17 @@ void EXTI15_10_IRQHandler(void) {
 
 void TIM2_IRQHandler(void) {
 
+}
+
+void TIM1_UP_TIM16_IRQHandler(void) {
+
+    // Check and clear overflow flag.
+    if((TIM16->SR & TIM_SR_UIF) == TIM_SR_UIF) {
+
+        // Clear the UIF flag
+        TIM16->SR &= ~TIM_SR_UIF;
+
+        /* Call required functions */
+        piezo_buzzer_isr();
+    }
 }

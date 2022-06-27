@@ -15,5 +15,6 @@ void encoder_set_direction_negative(void);
 uint8_t encoder_at_minimum_distance(void);
 uint8_t encoder_at_maximum_distance(void);
 uint16_t encoder_get_isr_count(void);
+void encoder_reset(void);
 
 #endif // ENCODER_H

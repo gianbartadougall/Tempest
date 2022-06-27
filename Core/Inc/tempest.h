@@ -10,6 +10,7 @@
 #include "motor_driver.h"
 #include "board.h"
 #include "debug_log.h"
+#include "piezo_buzzer.h"
 
 void tempest_update_system_state(void);
 void tempest_update_motor_state(void);
@@ -19,6 +20,9 @@ void tempest_hardware_init(void);
 
 void tempest_print_system_state(void);
 void tempest_print_motor_state(void);
+
+void set_manual_override(void);
+void clear_manual_override(void);
 
 #endif // TEMPEST_H
 

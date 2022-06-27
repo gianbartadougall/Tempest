@@ -36,11 +36,13 @@
 #define DISTANCE_UNIT ENCODER_MICROMETER
 
 #define ENCODER_CIRCUMFERENCE 75398 // micrometers
-#define ENCODER_NUM_GEAR_TEETH 16
+#define ENCODER_NUM_GEAR_TEETH 4
 #define ENCODER_DISTANCE_PER_TOOTH ((uint32_t) (ENCODER_CIRCUMFERENCE / ENCODER_NUM_GEAR_TEETH))
 
+// The maximum distance the object needs to travel in micrometers
+#define ENOCDER_OBJECT_DISTANCE 1450000 // (1.45m)
 #define ENCODER_MINIMUM_DISTANCE 0
-#define ENCODER_MAXIMUM_DISTANCE (ENCODER_DISTANCE_PER_TOOTH * ENCODER_NUM_GEAR_TEETH * 1)
+#define ENCODER_MAXIMUM_DISTANCE (ENOCDER_OBJECT_DISTANCE / (ENCODER_DISTANCE_PER_TOOTH * ENCODER_NUM_GEAR_TEETH))
 
 /* Variable Declarations */
 uint32_t distanceTravelled = 0;
@@ -49,15 +51,18 @@ uint8_t encoderStatus      = 0;
 int encoderDirection   = ENCODER_POSITIVE;
 uint16_t isrCount = 0;
 
+uint32_t time1 = 0;
+uint32_t time2 = 0;
+
 /* Function prototypes */
 
 void encoder_init(void) {
 
     // Initialise GPIO pin
-    ENCODER_PORT->MODER  &= ~(0x11 << ENCODER_PIN); // Set pin to input mode
-    ENCODER_PORT->OSPEEDR &= ~(0x11 << ENCODER_PIN); // Set pin to low speed
-    ENCODER_PORT->PUPDR  &= ~(0x11 << ENCODER_PIN); // Set pin to no pull up/down
-    ENCODER_PORT->OTYPER &= ~(0x01 << ENCODER_PIN_RAW); // Set pin to push-pull
+    ENCODER_PORT->MODER   &= ~(0x03 << ENCODER_PIN); // Set pin to input mode
+    ENCODER_PORT->OSPEEDR &= ~(0x03 << ENCODER_PIN); // Set pin to low speed
+    ENCODER_PORT->PUPDR   &= ~(0x03 << ENCODER_PIN); // Set pin to no pull up/down
+    ENCODER_PORT->OTYPER  &= ~(0x01 << ENCODER_PIN_RAW); // Set pin to push-pull
 
     // Enable GPIO Clock
     __HAL_RCC_GPIOB_CLK_ENABLE();
@@ -76,6 +81,24 @@ void encoder_init(void) {
 }
 
 void encoder_isr(void) {
+
+    // Eliminate 50Hz noise in software
+    time2 = time1;
+    time1 = HAL_GetTick();
+    
+    uint32_t difference;
+    
+    if (time2 > time1) {
+        difference = time2 - time1;
+    } else {
+        difference = time1 - time2;
+    }
+
+    // The motor spinds at 32 RPM. If two ISRs occur within less than 24ms, than the frequency is > 40Hz => 
+    // Not rotary encoder producing this noise
+    if (difference < 23) {
+        return;
+    }
 
     distanceTravelled = encoder_distance_travelled();
     char a[60];
@@ -129,4 +152,8 @@ uint8_t encoder_at_minimum_distance(void) {
 
 uint8_t encoder_at_maximum_distance(void) {
     return encoder_distance_travelled() == ENCODER_MAXIMUM_DISTANCE;
+}
+
+void encoder_reset(void) {
+    teethPassed = 0;
 }
