@@ -43,8 +43,7 @@
 
 #define MANUAL_OVERRIDE_PIN_RAW 5
 #define MANUAL_OVERRIDE_PIN (MANUAL_OVERRIDE_PIN_RAW * 2)
-#define MANUAL_OVERRIDE_PORT GPIOA
-#define MANUAL_OVERRIDE_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
+#define MANUAL_OVERRIDE_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOBEN)
 #define MANUAL_OVERRIDE_IRQn EXTI9_5_IRQn
 
 /* Variable Declarations */
@@ -63,10 +62,7 @@ void tempest_update_system_state(void) {
     uint8_t pbDownState = pb_get_state(DOWN_PUSH_BUTTON);
     
     char msg[40];
-
-    
-    // Update manual override state
-    sprintf(msg, "%i %i\t\tmo: %i\r\n", pbUpState, pbDownState, manualOverride);
+    sprintf(msg, "%i %i\r\n", pbUpState, pbDownState);
     debug_prints(msg);
 
     // Update the system state if both pushbuttons are pressed
@@ -146,17 +142,30 @@ void clear_manual_override(void) {
 void tempest_stop_motor(void) {
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_STOP) != HAL_OK) {
         tempest_error_handler();
+    } else {
+        // Lock the encoder so it's values don't update due to electrical noise
+        encoder_lock();
     }
 }
 
 void tempest_set_motor_up(void) {
+    // Unlock the encoder
+    encoder_unlock();
+    encoder_set_direction_negative();
+
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_UP) != HAL_OK) {
+        encoder_lock(); // relock encoder if motor failed to start
         tempest_error_handler();
     }
 }
 
 void tempest_set_motor_down(void) {
+    // Unlock the encoder
+    encoder_unlock();
+    encoder_set_direction_positive();
+
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_DOWN) != HAL_OK) {
+        encoder_lock(); // relock encoder if motor failed to start
         tempest_error_handler();
     }
 }
@@ -182,14 +191,13 @@ void tempest_update_motor_state(void) {
             tempest_stop_motor();
         } else {
             tempest_set_motor_up();
-            encoder_set_direction_negative();
         }
 
         return;
     }
 
     if (motorState == TEMPEST_MOTOR_MOVE_DOWN) {
-        debug_prints("Moving down\r\n");
+
         // If manual override is on, move motor
         if (manualOverride == 1) {
             tempest_set_motor_down();
@@ -202,7 +210,6 @@ void tempest_update_motor_state(void) {
             tempest_stop_motor();
         } else {
             tempest_set_motor_down();
-            encoder_set_direction_positive();
         }
 
         return;
@@ -242,6 +249,14 @@ void tempest_update_mode(void) {
 
 }
 
+void tempest_isr_encoder_at_min_value(void) {
+    encoder_set_direction_positive();
+}
+
+void tempest_isr_encoder_at_max_value(void) {
+    encoder_set_direction_negative();
+}
+
 void tempest_update_mode_indicator(void) {
 
     if (mode == TEMPEST_MODE_MANAUAL) {
@@ -261,7 +276,7 @@ void tempest_hardware_init(void) {
 	motor_driver_init();
     
 	// Initialise rotary encoder
-	encoder_init();
+    encoder_init();
 
 	// Initialise pushbuttons
 	pb_init();
@@ -283,7 +298,8 @@ void tempest_hardware_init(void) {
     RCC->AHB2ENR |= MANUAL_OVERRIDE_PORT_CLK_POS;
 
     // Configure interrupt for manual override pin
-    SYSCFG->EXTICR[1] &= ~(0x07 << (1  * 4)); // Clear trigger line and set line for PA5
+    SYSCFG->EXTICR[1] &= ~(0x07 << (1  * 4)); // Clear trigger line
+    SYSCFG->EXTICR[1] |= (0x01 << (1  * 4)); // Set line for PB5
 
     EXTI->RTSR1 |= EXTI_RTSR1_RT5; // Enable trigger on rising edge
     EXTI->FTSR1 |= EXTI_FTSR1_FT5; // Enable interrupt on falling edge

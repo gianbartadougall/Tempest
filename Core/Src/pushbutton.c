@@ -22,9 +22,9 @@
 #define PUSH_BUTTONS 2
 
 /* Variable Declarations */
-uint32_t pbPins[PUSH_BUTTONS] = {0, 1};
+uint32_t pbPins[PUSH_BUTTONS] = {0, 7};
 GPIO_TypeDef* pbPorts[PUSH_BUTTONS] = {GPIOA, GPIOA};
-IRQn_Type extiLines[PUSH_BUTTONS] = {EXTI1_IRQn};
+IRQn_Type extiLines[PUSH_BUTTONS] = {EXTI1_IRQn, EXTI9_5_IRQn};
 
 /* Function prototypes */
 void pb_hardware_init(uint8_t index);
@@ -46,15 +46,17 @@ void pb_init(void) {
             SYSCFG->EXTICR[pbPins[i] / 4] |= (0x01 << (4 * pbPins[i])); // Set trigger line for given pin
         }
 
-        EXTI->RTSR1 |= (0x01 << pbPins[i]); // Enable trigger on rising edge
-        EXTI->FTSR1 |= (0x01 << pbPins[i]); // Enable interrupt on falling edge
-        EXTI->IMR1  |= (0x01 << pbPins[i]); // Enabe external interrupt for EXTI line
+        /* Configure ISR if required */
+        
+        // EXTI->RTSR1 |= (0x01 << pbPins[i]); // Enable trigger on rising edge
+        // EXTI->FTSR1 |= (0x01 << pbPins[i]); // Enable interrupt on falling edge
+        // EXTI->IMR1  |= (0x01 << pbPins[i]); // Enabe external interrupt for EXTI line
 
-        // Enable Clock
-        RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+        // // Enable Clock
+        // RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
-        HAL_NVIC_SetPriority(extiLines[i], 10, 0);
-        HAL_NVIC_EnableIRQ(extiLines[i]);
+        // HAL_NVIC_SetPriority(extiLines[i], 10, 0);
+        // HAL_NVIC_EnableIRQ(extiLines[i]);
     }
 }
 

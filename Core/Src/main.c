@@ -43,7 +43,7 @@ int main(void) {
 	MX_USART2_UART_Init();
 	
 	// Initialise hardware
-    hardware_init();
+	hardware_init();
 
 	// Declare local variables
 	char m[40];
@@ -52,18 +52,23 @@ int main(void) {
 	while (1) {
 
 		// Update the system state
-		tempest_update_system_state();
+		// tempest_update_system_state();
 
-		// Update the motor state
-		tempest_update_motor_state();
+		// // Update the motor state
+		// tempest_update_motor_state();
 
-		// Update the mode indicator
-		tempest_update_mode_indicator();
+		// // Update the mode indicator
+		// tempest_update_mode_indicator();
 
 		// Delay for 50ms
 		HAL_Delay(50);
-	}
+    // brd_led_toggle();
 
+		int compValue = ((COMP1->CSR & (0x01 << 30)) == (0x01 << 30)) ? 1 : 0;
+		sprintf(m, "Counter: %lu\tCCR1: %lu\tComp: %i\r\n", TIM1->CNT, TIM1->CCR1, compValue);
+
+    	debug_prints(m);
+	}
     return 0;
 }
 

@@ -57,6 +57,7 @@ Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_uart.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_pwr_ex.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_exti.c \
+Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_comp.c \
 Core/Src/system_stm32l4xx.c  
 
 # ASM sources
@@ -68,11 +69,13 @@ Core/Src/board.c \
 Core/Src/debug_log.c \
 Core/Src/encoder.c \
 Core/Src/motor_driver.c \
-Core/Src/interrupts_stm32l4xx.c \
 Core/Src/pushbutton.c \
 Core/Src/tempest.c \
 Core/Src/ambient_light_sensor.c \
-Core/Src/piezo_buzzer.c
+Core/Src/piezo_buzzer.c \
+Core/Src/comparator.c \
+Core/Src/exti_interrupts.c \
+Core/Src/timer_interrupts.c
 
 # Add driver libraries to C sources
 C_SOURCES += $(DRIVER_SOURCES)
