@@ -17,8 +17,12 @@ uint8_t encoder_at_maximum_distance(void);
 uint16_t encoder_get_isr_count(void);
 void encoder_reset(void);
 void encoder_print_state(void);
-void encoder_lock(void);
-void encoder_unlock(void);
 void encoder_update(void);
+
+void encoder_enter_manual_override(void);
+void encoder_exit_manual_override(void);
+
+// void encoder_lock(void);
+// void encoder_unlock(void);
 
 #endif // ENCODER_H

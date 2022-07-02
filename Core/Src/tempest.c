@@ -32,7 +32,9 @@
 
 #define TEMPEST_BLIND_STATE_UP 10
 #define TEMPEST_BLIND_STATE_DOWN 11
-#define TEMPEST_BLIND_STATE_UNDEFINED 12
+#define TEMPEST_CHANGE_MODE 12
+#define TEMPEST_MANUAL_OVERRIDE 13
+#define TEMPEST_BLIND_STATE_UNDEFINED 14
 
 #define TEMPEST_MOTOR MD_MOTOR_0
 #define MOTOR_STOP MOTOR_DRIVER_STOP
@@ -40,11 +42,7 @@
 #define MOTOR_DOWN MOTOR_DRIVER_DIRECTION_2
 
 #define MIN_MODE_SWITCH_TIME 1000
-
-#define MANUAL_OVERRIDE_PIN_RAW 5
-#define MANUAL_OVERRIDE_PIN (MANUAL_OVERRIDE_PIN_RAW * 2)
-#define MANUAL_OVERRIDE_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOBEN)
-#define MANUAL_OVERRIDE_IRQn EXTI9_5_IRQn
+#define MIN_PB_TIME 3000
 
 /* Variable Declarations */
 uint8_t mode = TEMPEST_MODE_AUTOMATIC;
@@ -54,68 +52,105 @@ uint8_t manualOverride = 0;
 
 /* Function prototypes */
 void tempest_error_handler(void);
+uint8_t tempest_decode_system_state(void);
+void tempest_stop_motor(void);
+void tempest_set_motor_up(void);
+void tempest_set_motor_down(void);
 
 void tempest_update_system_state(void) {
 
     // Read the state of the pushbuttons
+    uint8_t systemState = tempest_decode_system_state();
+
+    switch (systemState) {
+
+        case TEMPEST_CHANGE_MODE:
+
+            // Do nothing if the system is in manual override
+            if (manualOverride == 1) {
+                return;
+            }
+            
+            // Update the system mode if the mode is not in manual override
+            tempest_update_mode();
+
+            return;
+
+        case TEMPEST_MOTOR_MOVE_UP:
+
+            if (manualOverride == 1) {
+                
+
+                break;
+            }
+
+            if (!encoder_at_minimum_distance() || manualOverride == 1) {
+                tempest_set_motor_up();
+            }
+
+            break;
+        
+        case TEMPEST_MOTOR_MOVE_DOWN:
+
+            if (manualOverride == 1) {
+                
+                break;
+            }
+
+            if (!encoder_at_maximum_distance()) {
+                tempest_set_motor_down();
+            }
+
+            break;
+        
+        case TEMPEST_MOTOR_STOP:
+
+            if (manualOverride == 1) {
+                
+
+
+                // Stop the motor
+                tempest_stop_motor();
+            }
+
+            if (mode == TEMPEST_MODE_MANAUAL) {
+                tempest_stop_motor();
+            }
+
+            break;
+    }
+
+    // Reset the timer
+    modeSwitchStartTime = 0;
+}
+
+uint8_t tempest_decode_system_state(void) {
+
+    // Get the states of the buttons
     uint8_t pbUpState = pb_get_state(UP_PUSH_BUTTON);
     uint8_t pbDownState = pb_get_state(DOWN_PUSH_BUTTON);
-    
-    char msg[40];
-    sprintf(msg, "%i %i\r\n", pbUpState, pbDownState);
-    debug_prints(msg);
 
-    // Update the system state if both pushbuttons are pressed
+    // char msg[40];
+    // sprintf(msg, "%i %i\r\n", pbUpState, pbDownState);
+    // debug_prints(msg);
+
     if ((pbUpState == 1) && (pbDownState == 1)) {
-        tempest_update_mode();
-        
-        // Exit function
-        return;
-    } else {
-        modeSwitchStartTime = 0; // Reset timer
+        return TEMPEST_CHANGE_MODE;
     }
 
-    // Update system state based on state of pushbuttons if in manual mode
-    if ((mode == TEMPEST_MODE_MANAUAL) || (manualOverride == 1)) {
-
-        // Set motor to state to MOVE_UP
-        if ((pbUpState == 1) && (pbDownState == 0)) {
-            motorState = TEMPEST_MOTOR_MOVE_UP;
-        }
-
-        if ((pbUpState == 0) && (pbDownState == 1)) {
-            motorState = TEMPEST_MOTOR_MOVE_DOWN;
-        }
-
-        if ((pbUpState == 0) && (pbDownState == 0)) {
-            motorState = TEMPEST_MOTOR_STOP;
-        }
-        
-
-    } 
-    
-    if ((mode == TEMPEST_MODE_AUTOMATIC) && (manualOverride == 0)) {
-
-        // Update system state based on state of the ambient light sensor
-        // uint8_t alsState = ambient_light_sensor_read();
-
-        // Set motor to move up if there is ambient light
-        if ((pbUpState == 1) && (pbDownState == 0)) {
-            motorState = TEMPEST_MOTOR_MOVE_UP;
-        }
-
-        if ((pbUpState == 0) && (pbDownState == 1)) {
-            motorState = TEMPEST_MOTOR_MOVE_DOWN;
-        }
-
-        // if (alsState == 1) {
-        //     motorState = TEMPEST_MOTOR_MOVE_UP;
-        // } 
-        
-        // if (alsState == 0) {
-        //     motorState = TEMPEST_MOTOR_MOVE_DOWN;
-        // }
+    if ((pbUpState == 1) && (pbDownState == 0)) {
+        return TEMPEST_MOTOR_MOVE_UP;
     }
+
+    if ((pbUpState == 0) && (pbDownState == 1)) {
+        return TEMPEST_MOTOR_MOVE_DOWN;
+    }
+
+    if ((pbUpState == 0) && (pbDownState == 0)) {
+        return TEMPEST_MOTOR_STOP;
+    }
+
+    return TEMPEST_BLIND_STATE_UNDEFINED;
 }
 
 void set_manual_override(void) {
@@ -142,36 +177,54 @@ void clear_manual_override(void) {
 void tempest_stop_motor(void) {
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_STOP) != HAL_OK) {
         tempest_error_handler();
-    } else {
-        // Lock the encoder so it's values don't update due to electrical noise
-        encoder_lock();
     }
 }
 
 void tempest_set_motor_up(void) {
-    // Unlock the encoder
-    encoder_unlock();
+
+    // Set the direction of the encoder
     encoder_set_direction_negative();
 
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_UP) != HAL_OK) {
-        encoder_lock(); // relock encoder if motor failed to start
         tempest_error_handler();
     }
 }
 
 void tempest_set_motor_down(void) {
-    // Unlock the encoder
-    encoder_unlock();
+
+    // Set the direction of the encoder
     encoder_set_direction_positive();
 
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_DOWN) != HAL_OK) {
-        encoder_lock(); // relock encoder if motor failed to start
         tempest_error_handler();
     }
 }
 
 void tempest_update_motor_state(void) {
     
+    switch (motorState) {
+
+        case TEMPEST_MOTOR_STOP:
+
+            tempest_stop_motor();
+            break;
+        
+        case TEMPEST_MOTOR_MOVE_UP:
+
+            tempest_set_motor_up();
+            break;
+        
+        case TEMPEST_MOTOR_MOVE_DOWN:
+
+            tempest_set_motor_down();
+            break;
+
+        default:
+            break;
+    }
+  
+  
+  
     if (motorState == TEMPEST_MOTOR_STOP) {
         tempest_stop_motor();
         return;
@@ -249,13 +302,6 @@ void tempest_update_mode(void) {
 
 }
 
-void tempest_isr_encoder_at_min_value(void) {
-    encoder_set_direction_positive();
-}
-
-void tempest_isr_encoder_at_max_value(void) {
-    encoder_set_direction_negative();
-}
 
 void tempest_update_mode_indicator(void) {
 
@@ -287,27 +333,8 @@ void tempest_hardware_init(void) {
     // Initialise piezo buzzer
     piezo_buzzer_init();
 
-    // Initialise manual override pin
-    MANUAL_OVERRIDE_PORT->MODER   &= ~(0x03 << MANUAL_OVERRIDE_PIN); // Set pin to input mode
-    MANUAL_OVERRIDE_PORT->OSPEEDR &= ~(0x03 << MANUAL_OVERRIDE_PIN); // Set pin to low speed
-    MANUAL_OVERRIDE_PORT->PUPDR   &= ~(0x03 << MANUAL_OVERRIDE_PIN); // Reset pull up pull down pin
-    MANUAL_OVERRIDE_PORT->PUPDR   |= (0x02 << MANUAL_OVERRIDE_PIN); // Set pin to pull down
-    MANUAL_OVERRIDE_PORT->OTYPER  &= ~(0x01 << MANUAL_OVERRIDE_PIN_RAW); // Set pin to push-pull
-
-    // Enable GPIO Clock
-    RCC->AHB2ENR |= MANUAL_OVERRIDE_PORT_CLK_POS;
-
-    // Configure interrupt for manual override pin
-    SYSCFG->EXTICR[1] &= ~(0x07 << (1  * 4)); // Clear trigger line
-    SYSCFG->EXTICR[1] |= (0x01 << (1  * 4)); // Set line for PB5
-
-    EXTI->RTSR1 |= EXTI_RTSR1_RT5; // Enable trigger on rising edge
-    EXTI->FTSR1 |= EXTI_FTSR1_FT5; // Enable interrupt on falling edge
-    EXTI->IMR1  |= EXTI_IMR1_IM5; // Enabe external interrupt for EXTI line
-
-    // Configure interrupt priorities
-    HAL_NVIC_SetPriority(MANUAL_OVERRIDE_IRQn, 10, 0);
-	HAL_NVIC_EnableIRQ(MANUAL_OVERRIDE_IRQn);
+    // Initialise flag to act as manual override pin
+    flag_init();
 }
 
 void tempest_print_system_state(void) {
@@ -359,6 +386,62 @@ void tempest_error_handler(void) {
     while (1) {
         piezo_buzzer_play_sound(sound1);
         HAL_Delay(100);
+    }
+
+}
+
+/* ISRs */
+
+void tempest_isr_set_manual_override(void) {
+
+    // Set override mode flag
+    manualOverride = 1;
+
+    // Stop the motor
+    tempest_stop_motor();
+
+    // Enter manual override mode in the encoder
+    encoder_enter_manual_override();
+
+    // Start the timer on the pushbuttons
+    pb_start_timer();
+}
+
+void tempest_isr_clear_manual_override(void) {
+    
+    // Clear override mode flag
+    manualOverride = 0;
+
+    // Exit manual override mode in the encoder
+    encoder_exit_manual_override();
+
+    // Stop push button timer
+    pb_stop_timer();
+}
+
+void tempest_isr_encoder_at_min_value(void) {
+    
+    // Set motor state to STOP
+    motorState = TEMPEST_MOTOR_STOP; // Update motor state
+    tempest_stop_motor();
+}
+
+void tempest_isr_encoder_at_max_value(void) {
+    motorState = TEMPEST_MOTOR_STOP; // Update motor state
+    tempest_stop_motor(); // Stop the motor
+}
+
+void tempest_isr_pushbutton_timer(uint8_t pushbutton) {
+
+    switch (pushbutton) {
+    case UP_PUSH_BUTTON:
+        
+        break;
+    case DOWN_PUSH_BUTTON:
+
+        break;
+    default:
+        break;
     }
 
 }

@@ -67,6 +67,7 @@ void TIM1_CC_IRQHandler(void) {
         tempest_isr_encoder_at_min_value();
     }
 
+    // Check if interrupt for CC3 was triggered
     if ((TIM1->SR & TIM_SR_CC3IF) == TIM_SR_CC3IF) {
     
         // Clear capture compare flag
@@ -93,6 +94,49 @@ void TIM1_IRQHandler(void) {
  * 
  */
 void TIM2_IRQHandler(void) {
+
+    // Check for event
+    if ((TIM2->SR & TIM_SR_UIF) == TIM_SR_UIF) {
+
+        // Clear UIF flag
+        TIM2->SR = ~TIM_SR_UIF;
+
+    }
+
+    // Check if interrupt for CC1 was triggered
+    if ((TIM2->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {
+    
+        // Clear capture compare flag
+        TIM2->SR = ~TIM_SR_CC1IF;
+
+        /* Call required functions */
+
+        if (pb0_triggered_early()) {
+            // Reset min point on blind
+            debug_prints("Resetting minimum point\r\n");
+        } else {
+
+            // Move motor as button has been held down long enough
+            debug_prints("Moving motor up\r\n");
+        }
+    }
+
+    if ((TIM2->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
+    
+        // Clear capture compare flag
+        TIM2->SR = ~TIM_SR_CC2IF;
+        
+        /* Call required functions */
+
+        if (pb1_triggered_early()) {
+            // Reset max point on blind
+            debug_prints("Resetting maximum point\r\n");
+        } else {
+
+            // Move motor as button has been held down long enough
+            debug_prints("Moving motor down\r\n");
+        }
+    }
 
 }
 

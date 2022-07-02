@@ -21,12 +21,13 @@
 #define PERCENT_TO_DUTY_CYCLE(timer, percent) (uint32_t) ((timer->ARR / 100) * (percent))
 
 #define NUM_MOTORS 1
+#define MD_STRUCT_SIZE (NUM_MOTORS * 2)
 
 /* Struct Declarations */
 
 typedef struct Motor_TypeDef {
-    uint32_t pins[2];
-    GPIO_TypeDef* ports[2];
+    uint32_t pins[MD_STRUCT_SIZE];
+    GPIO_TypeDef* ports[MD_STRUCT_SIZE];
 } Motor_TypeDef;
 
 /* Variable Declarations */
@@ -144,4 +145,8 @@ uint8_t motor_driver_get_motor_state(uint8_t motor) {
 
     return 255;
 
+}
+
+uint8_t motor_driver_motor_is_off(uint8_t motor) {
+    return motor_driver_get_motor_state(motor) == MOTOR_DRIVER_STOP;
 }

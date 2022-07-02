@@ -46,15 +46,11 @@
 #define ENCODER_MINIMUM_DISTANCE 0
 #define ENCODER_MAXIMUM_DISTANCE (((uint32_t) (ENOCDER_OBJECT_DISTANCE / ENCODER_CIRCUMFERENCE)) * ENCODER_DISTANCE_PER_TOOTH * ENCODER_NUM_GEAR_TEETH)
 
-#define ENCODER_UNLOCKED 0
-#define ENCODER_LOCKED 1
-
 /* Variable Declarations */
 uint32_t distanceTravelled = 0;
 uint32_t teethPassed       = 0;
 uint8_t encoderStatus      = 0;
 uint16_t isrCount    = 0;
-uint8_t encoderLock  = ENCODER_LOCKED;
 uint16_t absISRCount = 0;
 uint32_t time1 = 0;
 uint32_t time2 = 0;
@@ -149,6 +145,18 @@ uint32_t encoder_distance_travelled(void) {
 
 }
 
+void encoder_enter_manual_override(void) {
+
+    // Disable slave mode selection to prevent counter from ticking
+    ENCODER_TIMER->SMCR &= ~((0x01 << 16) | 0x07);
+}
+
+void encoder_exit_manual_override(void) {
+
+    // Disable slave mode selection to prevent counter from ticking
+    ENCODER_TIMER->SMCR &= ~((0x01 << 16) | 0x07);
+}
+
 void encoder_set_direction_positive(void) {
     // Set counter direction to up counting
     TIM1->CR1 &= ~(0x01 << 4);
@@ -186,12 +194,4 @@ void encoder_print_state(void) {
     // sprintf(msg, "isrCount: %i\r\n", isrCount);
     sprintf(msg, "Distance: %lu\t ISRCount: %i\r\n", encoder_distance_travelled(), isrCount);
     debug_prints(msg);
-}
-
-void encoder_lock(void) {
-    encoderLock = ENCODER_LOCKED;
-}
-
-void encoder_unlock(void) {
-    encoderLock = ENCODER_UNLOCKED;
 }

@@ -17,6 +17,7 @@
 #include "encoder.h"
 #include "tempest.h"
 #include "piezo_buzzer.h"
+#include "flag.h"
 
 /**
  * @brief Interrupt routine for EXTI1 
@@ -33,7 +34,13 @@ void EXTI0_IRQHandler(void) {
         EXTI->PR1 |= EXTI_PR1_PIF0;
 
         /* Call required functions */
+
+        // Update the system state
+        tempest_update_system_state();
+        
+        // Call pb0 ISR
         pb_0_isr();
+
         // *************************
     }
 
@@ -55,6 +62,10 @@ void EXTI1_IRQHandler(void) {
 
         /* Call required functions */
         pb_1_isr();
+
+        // Update the system state
+        tempest_update_system_state();
+        
         // *************************
     }
     
@@ -137,11 +148,12 @@ void EXTI9_5_IRQHandler(void) {
 
         // Clear the pending interrupt
         EXTI->PR1 |= EXTI_PR1_PIF5;
+
         // Check if the interrupt was a rising or falling edge
-        if (HAL_GPIO_ReadPin(MANUAL_OVERRIDE_PORT, MANUAL_OVVERIDE_HAL_PIN) == 1) {
-            set_manual_override();
-        } else {
-            clear_manual_override();
+        if (flag_state(MANUAL_OVERRIDE_FLAG) == 1) {
+            tempest_isr_set_manual_override();
+        } else  {
+            tempest_isr_clear_manual_override();
         }
     }
 

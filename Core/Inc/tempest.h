@@ -12,6 +12,7 @@
 #include "debug_log.h"
 #include "piezo_buzzer.h"
 #include "comparator.h"
+#include "flag.h"
 
 void tempest_update_system_state(void);
 void tempest_update_motor_state(void);
@@ -22,14 +23,13 @@ void tempest_hardware_init(void);
 void tempest_print_system_state(void);
 void tempest_print_motor_state(void);
 
-void set_manual_override(void);
-void clear_manual_override(void);
+void tempest_isr_set_manual_override(void);
+void tempest_isr_clear_manual_override(void);
 
 void tempest_isr_encoder_at_min_value(void);
 void tempest_isr_encoder_at_max_value(void);
 
-#define MANUAL_OVERRIDE_PORT GPIOB
-#define MANUAL_OVVERIDE_HAL_PIN GPIO_PIN_5
+#define MANUAL_OVERRIDE_FLAG FLAG_0
 
 #endif // TEMPEST_H
 

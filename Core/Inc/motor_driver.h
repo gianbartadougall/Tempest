@@ -38,4 +38,7 @@ void motor_driver_init(void);
 HAL_StatusTypeDef motor_driver_set_motor_state(uint8_t motor, uint8_t state);
 
 uint8_t motor_driver_get_motor_state(uint8_t motor);
+
+uint8_t motor_driver_motor_is_off(uint8_t motor);
+
 #endif // MOTOR_DRIVER_h

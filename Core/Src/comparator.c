@@ -44,7 +44,6 @@ void comparator_init(void) {
 
 void comparator_hardware_init(void) {
 
-    debug_prints("initialised 1\r\n");
     // Configure GPIO input pin (Minus)
     COMP1_IN_MINUS_PORT->MODER |= (0x03 << COMP1_IN_MINUS_PIN); // Set mode to analogue
     COMP1_IN_MINUS_PORT->PUPDR &= ~(0x03 << COMP1_IN_MINUS_PIN); // Set pupdr to no pull up/down
@@ -60,7 +59,7 @@ void comparator_hardware_init(void) {
     COMP1->CSR &= ~(0x03 << 25); // Reset input minus pin
     COMP1->CSR |= (0x02 << 25); // Set input minus pin to PA4
     COMP1->CSR |= (0x07 << 4); // Set input for minus pin to be from GPIOx
-    debug_prints("initialised 2\r\n");
+    
     // Select input plus pin
     COMP1->CSR &= ~(0x03 << 7); // Reset input plus pin
     COMP1->CSR |= (0x02 << 7); // Set input plus pin to PA1
@@ -69,7 +68,6 @@ void comparator_hardware_init(void) {
     COMP1->CSR &= ~(0x03 << 16); // Reset hysterisis
     COMP1->CSR |= (0x01 << 16); // Set hysterisis to low
     
-    debug_prints("test\r\n");
     // Configure EXTI line for comparator 1 interrupts. Comparator 1 output is configured to EXTI 21
 
     // Enable clock for comparators
