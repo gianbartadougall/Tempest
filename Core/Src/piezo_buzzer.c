@@ -102,7 +102,7 @@ void piezo_buzzer_hardware_init(void) {
 	HAL_NVIC_EnableIRQ(PIEZO_TIMER_IRQn); // Enable interrupt
 
     // Enable interrupts
-    PIEZO_TIMER->DIER |= TIM_DIER_UIE;    
+    PIEZO_TIMER->DIER |= TIM_DIER_UIE;   
 }
 
 void piezo_buzzer_init_sounds(void) {
@@ -156,10 +156,10 @@ void piezo_buzzer_isr(void) {
     currentSound.index++;
     
     if (currentSound.index == currentSound.numMaxPlays) {
-        // Disable the interrupt
+        // Disable the counter
         PIEZO_TIMER->CR1 &= ~TIM_CR1_CEN;
 
-        // Force timer to go low
+        // Force output to go low
         PIEZO_TIMER->CCMR1 &= ~TIM_CCMR1_OC1M;
         PIEZO_TIMER->CCMR1 |= 0x04 << 4;
 

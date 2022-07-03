@@ -15,6 +15,7 @@
 #include "main.h"
 #include "debug_log.h"
 #include "tempest.h"
+#include "timer_ms.h"
 
 /* STM32 Includes */
 
@@ -36,46 +37,40 @@ void MX_USART2_UART_Init(void);
  * @retval int
  */
 int main(void) {
-    
+		
 	// Reset all peripherals, initialise the flash interface and the systick
-    HAL_Init();
+	HAL_Init();
 	SystemClock_Config();
 	MX_USART2_UART_Init();
 	
 	// Initialise hardware
+	timer_ms_init();
 	hardware_init();
 
 	// Declare local variables
 	char m[40];
-	// 	sprintf(m, "%lu", SystemCoreClock);
-	// debug_prints(m);
-	// Main program loop
+
+	// ambient_light_sensor_enable();
+	timer_ms_enable();
 	while (1) {
 
-		// Update the system state
-		// tempest_update_system_state();
-
-		// // Update the motor state
-		// tempest_update_motor_state();
-
-		// // Update the mode indicator
-		// tempest_update_mode_indicator();
-
-		// Delay for 50ms
-		// HAL_Delay(500);
-    	// brd_led_toggle();
-		HAL_Delay(50);
-		// Pushbutton timer prints
-		sprintf(m, "Counter: %lu\tCCR1: %lu\tCCR2: %lu\r\n", TIM2->CNT, TIM2->CCR1, TIM2->CCR4);
-    	debug_prints(m);		
-
-
-		// Comparator prints
-		// int compValue = ((COMP1->CSR & (0x01 << 30)) == (0x01 << 30)) ? 1 : 0;
-		// sprintf(m, "Counter: %lu\tCCR1: %lu\tComp: %i\r\n", TIM1->CNT, TIM1->CCR1, compValue);
-    	// 	debug_prints(m);
+		HAL_Delay(100);
+		sprintf(m, "CNT: %lu\r\n", TIM16->CNT);
+		debug_prints(m);
 	}
-    return 0;
+
+	while (1) {
+
+		// Update the system state. Called in a loop from main as opposed to from an ISR
+		// to ensure that if bouncing occurs, the correct state is still used
+		tempest_update_system_state();
+
+		HAL_Delay(100);
+		// sprintf(m, "CNT: %lu\r\n", TIM1->CNT);
+		// debug_prints(m);
+		// // Pushbutton timer prints
+	}
+		return 0;
 }
 
 void hardware_init(void) {
@@ -84,141 +79,80 @@ void hardware_init(void) {
 	debug_log_init(&huart2);
 
 	// Initialise tempest hardware
-	tempest_hardware_init();
+	// tempest_hardware_init();
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-//   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-//   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-//   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-
-//   /** Configure LSE Drive Capability
-//   */
-//   HAL_PWR_EnableBkUpAccess();
-//   __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
-//   /** Initializes the RCC Oscillators according to the specified parameters
-//   * in the RCC_OscInitTypeDef structure.
-//   */
-//   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
-//   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-//   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-//   RCC_OscInitStruct.MSICalibrationValue = 0;
-//   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
-//   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-//   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
-//   RCC_OscInitStruct.PLL.PLLM = 1;
-//   RCC_OscInitStruct.PLL.PLLN = 16;
-//   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
-//   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-//   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-//   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-//   {
-//     error_handler();
-//   }
-//   /** Initializes the CPU, AHB and APB buses clocks
-//   */
-//   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-//                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-//   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-//   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-//   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-//   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-//   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
-//   {
-//     error_handler();
-//   }
-//   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_ADC;
-//   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-//   PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_PLLSAI1;
-//   PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_MSI;
-//   PeriphClkInit.PLLSAI1.PLLSAI1M = 1;
-//   PeriphClkInit.PLLSAI1.PLLSAI1N = 16;
-//   PeriphClkInit.PLLSAI1.PLLSAI1P = RCC_PLLP_DIV7;
-//   PeriphClkInit.PLLSAI1.PLLSAI1Q = RCC_PLLQ_DIV2;
-//   PeriphClkInit.PLLSAI1.PLLSAI1R = RCC_PLLR_DIV2;
-//   PeriphClkInit.PLLSAI1.PLLSAI1ClockOut = RCC_PLLSAI1_ADC1CLK;
-//   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-//   {
-//     error_handler();
-//   }
-//   /** Configure the main internal regulator output voltage
-//   */
-//   if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
-//   {
-//     error_handler();
-//   }
-//   /** Enable MSI Auto calibration
-//   */
-//   HAL_RCCEx_EnableMSIPLLMode();
+	* @brief System Clock Configuration
+	* @retval None
+	*/
+void SystemClock_Config(void) {
 	
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+	RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-  /** Configure LSE Drive Capability
-  */
-  HAL_PWR_EnableBkUpAccess();
-  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
-  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-  RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
-  RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 16;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
-  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    error_handler();
-  }
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	/** Configure LSE Drive Capability
+	*/
+	HAL_PWR_EnableBkUpAccess();
+	__HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
+	
+	/** Initializes the RCC Oscillators according to the specified parameters
+	* in the RCC_OscInitTypeDef structure.
+	*/
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
+	RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+	RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+	RCC_OscInitStruct.MSICalibrationValue = 0;
+	RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+	RCC_OscInitStruct.PLL.PLLM = 1;
+	RCC_OscInitStruct.PLL.PLLN = 16; // Sets SYSCLK to run at 32MHz
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
+	RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
-  {
-    error_handler();
-  }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
-  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    error_handler();
-  }
-  /** Configure the main internal regulator output voltage
-  */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
-  {
-    error_handler();
-  }
-  /** Enable MSI Auto calibration
-  */
-  HAL_RCCEx_EnableMSIPLLMode();
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		error_handler();
+	}
+
+	/** Initializes the CPU, AHB and APB buses clocks
+	*/
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+															|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK) {
+		error_handler();
+	}
+	
+	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
+	PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+	
+	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK){
+		error_handler();
+	}
+	
+	/** Configure the main internal regulator output voltage
+	*/
+	if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK) {
+		error_handler();
+	}
+
+	/** Enable MSI Auto calibration
+	*/
+	HAL_RCCEx_EnableMSIPLLMode();
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
+	* @brief USART2 Initialization Function
+	* @param None
+	* @retval None
+	*/
 void MX_USART2_UART_Init(void) {
 
 	huart2.Instance = USART2;
@@ -244,7 +178,7 @@ void MX_USART2_UART_Init(void) {
 void error_handler(void) {
 
 	// Initialisation error shown by blinking LED (LD3) in pattern
-    while (1) {
+		while (1) {
 
 		for (int i = 0; i < 5; i++) {
 			HAL_GPIO_TogglePin(LD3_PORT, LD3_PIN);

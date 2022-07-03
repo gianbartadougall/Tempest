@@ -39,7 +39,6 @@ void comparator_hardware_init(void);
 void comparator_init(void) {
 
     comparator_hardware_init();
-
 }
 
 void comparator_hardware_init(void) {
@@ -67,21 +66,34 @@ void comparator_hardware_init(void) {
     // Add hysterisis to prevent comparator bouncing
     COMP1->CSR &= ~(0x03 << 16); // Reset hysterisis
     COMP1->CSR |= (0x01 << 16); // Set hysterisis to low
+
+    // Enable window mode
+    COMP2->CSR |= (0x01 << 9);
     
+    // Invert polarity of both comparators
+    COMP1->CSR |= (0x01 << 15);
+    COMP2->CSR |= (0x01 << 15);
+
     // Configure EXTI line for comparator 1 interrupts. Comparator 1 output is configured to EXTI 21
 
     // Enable clock for comparators
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
     EXTI->IMR1  |= EXTI_IMR1_IM21; // Enabe external interrupt for EXTI line
-    // EXTI->EMR1  |= EXTI_IMR1_IM21; // Enabe external interrupt for EXTI line
     EXTI->RTSR1 |= EXTI_RTSR1_RT21; // Enable trigger on rising edge
-    EXTI->FTSR1 &= ~EXTI_FTSR1_FT21; // Disable interrupt on falling edge
+    EXTI->FTSR1 |= EXTI_FTSR1_FT21; // Disable interrupt on falling edge
 
     // Configure interrupt priorities
     HAL_NVIC_SetPriority(COMP_IRQn, 9, 0);
 	HAL_NVIC_EnableIRQ(COMP_IRQn);
 
-    // Enable the comparator
-    COMP1->CSR |= 0x01;
+    // Enable comparator 1 and 2
+    COMP1->CSR |= (0x01);
+    COMP2->CSR |= (0x01);
+}
+
+void window_comparator_hardware_init(void) {
+
+
+
 }

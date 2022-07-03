@@ -28,7 +28,8 @@ void tempest_isr_clear_manual_override(void);
 
 void tempest_isr_encoder_at_min_value(void);
 void tempest_isr_encoder_at_max_value(void);
-
+void tempest_isr_force_blind_up(void);
+void tempest_isr_force_blind_down(void);
 #define MANUAL_OVERRIDE_FLAG FLAG_0
 
 #endif // TEMPEST_H

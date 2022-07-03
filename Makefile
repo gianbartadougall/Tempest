@@ -77,7 +77,8 @@ Core/Src/comparator.c \
 Core/Src/exti_interrupts.c \
 Core/Src/timer_interrupts.c \
 Core/Src/flag.c \
-Core/Src/mcu_clock.c
+Core/Src/mcu_clock.c \
+Core/Src/timer_ms.c
 
 # Add driver libraries to C sources
 C_SOURCES += $(DRIVER_SOURCES)

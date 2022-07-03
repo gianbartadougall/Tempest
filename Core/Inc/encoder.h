@@ -22,7 +22,7 @@ void encoder_update(void);
 void encoder_enter_manual_override(void);
 void encoder_exit_manual_override(void);
 
-// void encoder_lock(void);
-// void encoder_unlock(void);
+void encoder_isr_reset_min_value(void);
+void encoder_isr_reset_max_value(void);
 
 #endif // ENCODER_H

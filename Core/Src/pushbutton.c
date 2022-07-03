@@ -35,35 +35,34 @@
 
 #define PB_TIMER TIM2
 #define PB_TIMER_FREQUENCY 1000 // Frequency set to 1kHz
-#define PB_TIMER_MAX_COUNT 65534
+#define PB_TIMER_MAX_COUNT 65535
 #define PB_TIMER_CLK_ENABLE() __HAL_RCC_TIM2_CLK_ENABLE()
 #define PB_TIMER_IRQn TIM2_IRQn
 
 #define PB0_FLAG_TIME 3000
 #define PB1_FLAG_TIME 3000
 
-// Lets ISR know whether the rising edge has been triggered or not
-#define UNDEFINED_TRIGGER_COUNT 65535
-
-// Compilation check to ensure this equality is met
-#if (PB_TIMER_MAX_COUNT > UNDEFINED_TRIGGER_COUNT)
-    #error UNDEFINED_TRIGGER_COUNT must be greater than TIMER_MAX_COUNT
-#endif
+#warning Pushbutton TIMER functionality is included
+#else
+#warning Pushbutton TIMER functionality not included
 
 #endif
 
 /* Variable Declarations */
 uint32_t pbPins[PUSH_BUTTONS] = {0, 3};
 GPIO_TypeDef* pbPorts[PUSH_BUTTONS] = {GPIOA, GPIOA};
-IRQn_Type extiLines[PUSH_BUTTONS] = {EXTI0_IRQn, EXTI2_IRQn};
+IRQn_Type extiLines[PUSH_BUTTONS] = {EXTI0_IRQn, EXTI3_IRQn};
 uint8_t pbTypes[PUSH_BUTTONS] = {PB0_TYPE, PB1_TYPE};
 
 uint32_t pb0StartTime = 0;
-uint32_t pb0TimePressed = 0;
 uint8_t pb0FlagTimeMissed = 0;
+
+uint32_t pb1StartTime = 0;
+uint8_t pb1FlagTimeMissed = 0;
 
 /* Function prototypes */
 void pb_hardware_init(uint8_t index);
+void pb0_reset_timer(void);
 
 void pb_init(void) {
 
@@ -105,23 +104,17 @@ void pb_init(void) {
         PB_TIMER_CLK_ENABLE();
 
         // Set the prescaler
-        PB_TIMER->PSC = (SystemCoreClock / PB_TIMER_FREQUENCY) - 1; // Set frequency to 2Khz
+        PB_TIMER->PSC = (SystemCoreClock / PB_TIMER_FREQUENCY) - 1;
         PB_TIMER->ARR = PB_TIMER_MAX_COUNT;
-    
-        // Enable timer interrupts on CH1 and CH4
-        PB_TIMER->DIER |= TIM_DIER_TIE | TIM_DIER_CC1IE | TIM_DIER_CC2IE | TIM_DIER_UIE;
+
+        PB_TIMER->CR1 &= ~(0x01 << 4); // Set counter to up counting
+
+        // Disbale CCR1 and CCR2 interrupts by default
+        PB_TIMER->DIER &= ~(TIM_DIER_CC1IE | TIM_DIER_CC2IE);
 
         /* Configure and enable output compare on CH1 and CH2 */
         PB_TIMER->CCMR1 &= ~(TIM_CCMR1_CC1S | TIM_CCMR1_CC2S); // Set CH1 and CH2 to output mode
         PB_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M | TIM_CCMR1_OC2M); // Set CH1 and CH2 output compare to Frozen
-
-        PB_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC1E); // Enable capture compare on CH1 and CH2
-
-        /* Set output compare values */
-        PB_TIMER->CCR1 = PB0_FLAG_TIME; // Set output compare on CH1
-        PB_TIMER->CCR2 = PB1_FLAG_TIME; // Set output compare on CH2
-
-        PB_TIMER->CR1 &= ~(0x01 << 4); // Set counter direction to up counting
 
         // Enable interrupts on timer
         HAL_NVIC_SetPriority(PB_TIMER_IRQn, TIM2_ISR_PRIORITY, 0);
@@ -133,8 +126,7 @@ void pb_init(void) {
 void pb_hardware_init(uint8_t index) {
 
     // Set pushbutton to generic input
-    pbPorts[index]->MODER  &= ~(0x03 << (pbPins[index] * 2)); // Reset mode
-    pbPorts[index]->MODER  |= (0x02 << (pbPins[index] * 2)); // Set mode to alternate function
+    pbPorts[index]->MODER  &= ~(0x03 << (pbPins[index] * 2)); // Reset mode to input
     pbPorts[index]->OSPEEDR &= ~(0x03 << (pbPins[index] * 2)); // Set pin to low speed
     pbPorts[index]->PUPDR  &= ~(0x03 << (pbPins[index] * 2)); // Set pin to no pull up/down
     pbPorts[index]->OTYPER &= ~(0x01 << pbPins[index]); // Set pin to push-pull
@@ -148,13 +140,6 @@ void pb_hardware_init(uint8_t index) {
 }
 
 void pb_start_timer(void) {
-
-    // Set the capture compare values to undefined to ensure code in
-    // ISR for rising edge is always executed before code for falling
-    // edge 
-    PB_TIMER->CCR1 = UNDEFINED_TRIGGER_COUNT;
-    PB_TIMER->CCR2 = UNDEFINED_TRIGGER_COUNT;
-
     PB_TIMER->CNT = 0; // Reset the counter to 0
     PB_TIMER->CR1 |= 0x01; // Enable the counter
 }
@@ -184,11 +169,16 @@ void pb_0_isr(void) {
             } else {
                 PB_TIMER->CCR1 = PB_TIMER->CNT + PB0_FLAG_TIME;
             }
-        } else {
             
-            // If CCR1 is undefined exit as the rising edge has not been triggered yet
-            // for this cycle
-            if (PB_TIMER->CCR1 == UNDEFINED_TRIGGER_COUNT) {
+            debug_prints("Rising edge. interrupts enabled\r\n");
+            // Enable interrupts for CCR1
+            PB_TIMER->SR = ~TIM_SR_CC1IF; // Clear any interrupts that were set
+            PB_TIMER->DIER |= TIM_DIER_CC1IE;
+
+        } else {
+
+            // If interrupts have not been enabled then a rising trigger has not occured yet
+            if ((PB_TIMER->DIER & TIM_DIER_CC1IE) == 0) {
                 return;
             }
 
@@ -207,18 +197,87 @@ void pb_0_isr(void) {
             }
 
             if (pb0TimePressed < PB0_FLAG_TIME) {
+
                 pb0FlagTimeMissed = 1; // Set flag to indicate flag time was missed
-                
+       
                 // Call TIM ISR. TIM ISR priority is greater than the EXTI ISR priortiy
                 // thus the system will be notified of this before the flag is reset
                 // in on the following line
                 PB_TIMER->EGR |= (TIM_EGR_CC1G); // Call TIM ISR
-
-                pb0FlagTimeMissed = 0; // Reset flag for new cycle
             }
+
+            debug_prints("Falling edge. Interrupts disabled\r\n");
+            // Disable interrupts for CCR1
+            PB_TIMER->DIER &= ~(TIM_DIER_CC1IE);
         }
     }
 }
+
+void pb_1_isr(void) {
+
+    // Run timer ISR code if the timer has been enabled
+    if ((PB_TIMER->CR1 & TIM_CR1_CEN) == TIM_CR1_CEN) {
+        
+        /* Set capture compare 1 value if ISR was a triggered by a rising edge. 
+            Calculate the time pb0 was pressed for if ISR was trigger by a 
+            falling edge 
+        */
+        if ((pbPorts[1]->IDR & (0x01 << pbPins[1])) != 0) {
+            
+            pb1StartTime = PB_TIMER->CNT; // Store the current timer count
+
+            // Set the CCR register for CH1 to trigger in required time
+            uint32_t difference = PB_TIMER->ARR - PB_TIMER->CNT;
+            
+            if (PB1_FLAG_TIME > difference) {
+                PB_TIMER->CCR2 = PB1_FLAG_TIME - difference;
+            } else {
+                PB_TIMER->CCR2 = PB_TIMER->CNT + PB1_FLAG_TIME;
+            }
+            
+            debug_prints("PB1 Rising edge. interrupts enabled\r\n");
+            // Enable interrupts for CCR2
+            PB_TIMER->SR = ~TIM_SR_CC2IF; // Clear any interrupts that were set
+            PB_TIMER->DIER |= TIM_DIER_CC2IE;
+
+        } else {
+
+            // If interrupts have not been enabled then a rising trigger has not occured yet
+            if ((PB_TIMER->DIER & TIM_DIER_CC2IE) == 0) {
+                return;
+            }
+
+            /* Calculate the length of time the button has been down for. Set the time
+                flag if the calculate time doesn't meet minimum requirement
+            */
+
+            uint32_t timerCount = PB_TIMER->CNT; // Store current count
+            uint32_t pb1TimePressed;
+
+            // Check if timer has reset
+            if (timerCount < PB_TIMER->CNT) {
+                pb1TimePressed = (PB_TIMER_MAX_COUNT - pb1StartTime) + PB_TIMER->CNT; 
+            } else {
+                pb1TimePressed = PB_TIMER->CNT - pb1StartTime;
+            }
+
+            if (pb1TimePressed < PB1_FLAG_TIME) {
+
+                pb1FlagTimeMissed = 1; // Set flag to indicate flag time was missed
+       
+                // Call TIM ISR. TIM ISR priority is greater than the EXTI ISR priortiy
+                // thus the system will be notified of this before the flag is reset
+                // in on the following line
+                PB_TIMER->EGR |= (TIM_EGR_CC2G); // Call TIM ISR
+            }
+
+            debug_prints("PB1 Falling edge. Interrupts disabled\r\n");
+            // Disable interrupts for CCR2
+            PB_TIMER->DIER &= ~(TIM_DIER_CC2IE);
+        }
+    }
+}
+
 
 uint8_t pb_get_state(uint8_t pushButton) {
     
@@ -238,4 +297,23 @@ uint8_t pb_get_state(uint8_t pushButton) {
         default:
             return 255;
     }
+}
+
+uint8_t pb0_triggered_early(void) {
+
+    if (pb0FlagTimeMissed == 1) {
+        pb0FlagTimeMissed = 0;
+        return 1;
+    }
+
+    return 0;
+}
+
+uint8_t pb1_triggered_early(void) {
+    if (pb1FlagTimeMissed == 1) {
+        pb1FlagTimeMissed = 0;
+        return 1;
+    }
+
+    return 0;
 }

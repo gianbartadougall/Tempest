@@ -24,6 +24,7 @@
  * 
  */
 void EXTI0_IRQHandler(void) {
+    debug_prints("EXTI 0\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
     
@@ -31,12 +32,9 @@ void EXTI0_IRQHandler(void) {
     if ((EXTI->PR1 & EXTI_PR1_PIF0) == EXTI_PR1_PIF0) {
 
         // Clear the interrupt flag
-        EXTI->PR1 |= EXTI_PR1_PIF0;
+        EXTI->PR1 = EXTI_PR1_PIF0;
 
         /* Call required functions */
-
-        // Update the system state
-        tempest_update_system_state();
         
         // Call pb0 ISR
         pb_0_isr();
@@ -51,6 +49,7 @@ void EXTI0_IRQHandler(void) {
  * 
  */
 void EXTI1_IRQHandler(void) {
+    debug_prints("EXTI 1\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
     
@@ -58,18 +57,13 @@ void EXTI1_IRQHandler(void) {
     if ((EXTI->PR1 & EXTI_PR1_PIF1) == EXTI_PR1_PIF1) {
 
         // Clear the interrupt flag
-        EXTI->PR1 |= EXTI_PR1_PIF1;
+        EXTI->PR1 = EXTI_PR1_PIF1;
 
         /* Call required functions */
-        pb_1_isr();
-
-        // Update the system state
-        tempest_update_system_state();
         
         // *************************
     }
     
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_3);
 }
 
 /**
@@ -77,7 +71,7 @@ void EXTI1_IRQHandler(void) {
  * 
  */
 void EXTI2_IRQHandler(void) {
-
+    debug_prints("EXTI 2\r\n");
     //  // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI2_IRQn);
     
@@ -85,7 +79,7 @@ void EXTI2_IRQHandler(void) {
     // if ((EXTI->PR1 & EXTI_PR1_PIF2) == EXTI_PR1_PIF2) {
 
     //     // Clear the interrupt flag
-    //     EXTI->PR1 |= EXTI_PR1_PIF2;
+    //     EXTI->PR1 = EXTI_PR1_PIF2;
 
     //     /* Call required functions */
 
@@ -97,19 +91,19 @@ void EXTI2_IRQHandler(void) {
  * 
  */
 void EXTI3_IRQHandler(void) {
-
+    debug_prints("EXTI 3\r\n");
     // // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI3_IRQn);
     
-    // // Confirm pending interrupt exists on EXTI line 3
-    // if ((EXTI->PR1 & EXTI_PR1_PIF3) == EXTI_PR1_PIF3) {
+    // Confirm pending interrupt exists on EXTI line 3
+    if ((EXTI->PR1 & EXTI_PR1_PIF3) == EXTI_PR1_PIF3) {
 
-    //     // Clear the interrupt flag
-    //     EXTI->PR1 |= EXTI_PR1_PIF3;
+        // Clear the interrupt flag
+        EXTI->PR1 = EXTI_PR1_PIF3;
 
-    //     /* Call required functions */
-
-    // }
+        /* Call required functions */
+        pb_1_isr();
+    }
 }
 
 /**
@@ -117,7 +111,7 @@ void EXTI3_IRQHandler(void) {
  * 
  */
 void EXTI4_IRQHandler(void) {
- 
+    debug_prints("EXTI 4\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI4_IRQn);
     
@@ -139,7 +133,7 @@ void EXTI4_IRQHandler(void) {
  * 
  */
 void EXTI9_5_IRQHandler(void) {
-
+    debug_prints("EXTI 9 5\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
     
@@ -147,7 +141,7 @@ void EXTI9_5_IRQHandler(void) {
     if ((EXTI->PR1 & EXTI_PR1_PIF5) == (EXTI_PR1_PIF5)) {
 
         // Clear the pending interrupt
-        EXTI->PR1 |= EXTI_PR1_PIF5;
+        EXTI->PR1 = EXTI_PR1_PIF5;
 
         // Check if the interrupt was a rising or falling edge
         if (flag_state(MANUAL_OVERRIDE_FLAG) == 1) {
@@ -203,7 +197,7 @@ void EXTI9_5_IRQHandler(void) {
  * 
  */
 void EXTI15_10_IRQHandler(void) {
-
+    debug_prints("EXTI 15 10\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 
@@ -269,7 +263,7 @@ void EXTI15_10_IRQHandler(void) {
 }
 
 void COMP_IRQHandler(void) {
-
+    debug_prints("EXTI COMP\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(COMP_IRQn);
 
@@ -277,18 +271,18 @@ void COMP_IRQHandler(void) {
     if ((EXTI->PR1 & EXTI_PR1_PIF21) == EXTI_PR1_PIF21) {
 
         // Clear the interrupt flag
-        EXTI->PR1 |= EXTI_PR1_PIF21;
+        EXTI->PR1 = EXTI_PR1_PIF21;
 
         /* Call required functions */
+        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
     }
 
     // Check if comparator 2 triggered an interrupt
     if ((EXTI->PR1 & EXTI_PR1_PIF22) == EXTI_PR1_PIF22) {
 
         // Clear the interrupt flag
-        EXTI->PR1 |= EXTI_PR1_PIF22;
+        EXTI->PR1 = EXTI_PR1_PIF22;
 
         /* Call required functions */
-
     }
 }

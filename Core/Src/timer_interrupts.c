@@ -21,7 +21,57 @@
  * @brief Interrupt handler for timer 1 and timer 15
  */
 void TIM1_BRK_TIM15_IRQHandler(void) {
+    // debug_prints("ISR TIM 1 15\r\n");
 
+    // Check and clear overflow flag for TIM15
+    if ((TIM15->SR & TIM_SR_UIF) == TIM_SR_UIF) {
+
+        // Clear the UIF flag
+        TIM15->SR = ~TIM_SR_UIF;
+
+        /* Call required functions */
+        
+        // Perform ALS ISR sequence 3
+        ambient_light_sensor_isr_s3();
+
+        // Read the level of ambient light
+        enum AmbientLightLevel lightLevel = ambient_light_read();
+
+        // Call ISR if ambient light level is determined 
+        if (lightLevel == HIGH) {
+            debug_prints("Ambient light level high\r\n");
+            // tempest_isr_ambient_light_level_high();
+        }
+
+        if (lightLevel == LOW) {
+            debug_prints("Ambient light level low\r\n");
+            // tempest_isr_ambient_light_level_low();
+        }
+    }
+
+    // Check and clear CCR1 flag for TIM15
+    if ((TIM15->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {
+
+        // Clear the UIF flag
+        TIM15->SR = ~TIM_SR_CC1IF;
+
+        /* Call required functions */
+
+        // Perform ALS ISR sequence 1
+        ambient_light_sensor_isr_s1();
+    }
+
+    // Check and clear CCR1 flag for TIM15
+    if ((TIM15->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
+
+        // Clear the UIF flag
+        TIM15->SR = ~TIM_SR_CC2IF;
+
+        /* Call required functions */
+
+        // Perform ALS ISR sequence 2
+        ambient_light_sensor_isr_s2();
+    }
 }
 
 /**
@@ -29,16 +79,68 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
  * 
  */
 void TIM1_UP_TIM16_IRQHandler(void) {
+    debug_prints("ISR TIM 1 16\r\n");
 
     // Check and clear overflow flag.
     if ((TIM16->SR & TIM_SR_UIF) == TIM_SR_UIF) {
 
         // Clear the UIF flag
-        TIM16->SR &= ~TIM_SR_UIF;
+        TIM16->SR = ~TIM_SR_UIF;
 
         /* Call required functions */
         piezo_buzzer_isr();
     }
+
+    if ((TIM16->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {
+
+        // Clear the UIF flag
+        TIM16->SR = ~TIM_SR_CC1IF;
+
+        /* Call required functions */
+
+        // Not sure if its a bug or not but the CCIF flag is set at some point
+        // in the piezo buzzer ISR and it needs to be cleared here other wise 
+        // the system will enter an infinte loop
+    }
+
+    if ((TIM1->SR & TIM_SR_TIF) == TIM_SR_TIF) {
+
+        // Clear the UIF flag
+        TIM1->SR = ~TIM_SR_TIF;
+
+        /* Call required functions */
+
+        // Current bug in the system that sets BIF flag so to ensure an infinte ISR loop
+        // doesn't occur, the BIF flag is cleared without doing anything else. To reproduce
+        // this situation, remove the code that clears the BIF flag and then;
+        // 1) Reset the system so it starts in automatic mode
+        // 2) Enter manual override mode
+        // 3) Hold down up button until motor starts moving
+        // 4) Release up button. This ISR should now be calling in an infinite loop
+    }
+
+    if ((TIM1->SR & TIM_SR_UIF) == TIM_SR_UIF) {
+
+        // Clear the UIF flag
+        TIM1->SR = ~TIM_SR_UIF;
+
+        /* Call required functions */
+
+        // Current bug in the system that sets BIF flag so to ensure an infinte ISR loop
+        // doesn't occur, the BIF flag is cleared without doing anything else. To reproduce
+        // this situation, remove the code that clears the BIF flag and then;
+        // 1) Reset the system so it starts in automatic mode
+        // 2) Enter manual override mode
+        // 3) Hold down up button until motor starts moving
+        // 4) Release up button. This ISR should now be calling in an infinite loop
+    }
+
+
+
+    char m[30];
+    sprintf(m, "TIM1: %lu\tTIM16: %lu\r\n", TIM1->SR, TIM16->SR);
+    debug_prints(m);
+
 }
 
 /**
@@ -46,24 +148,25 @@ void TIM1_UP_TIM16_IRQHandler(void) {
  * 
  */
 void TIM1_TRG_COM_IRQHandler(void) {
-
+    debug_prints("ISR TIM COM\r\n");
 }
 
 /**
  * @brief Capture compare interrupt handler for timer 1
  */
 void TIM1_CC_IRQHandler(void) {
-
+    debug_prints("ISR TIM CC\r\n");
     // Check for overflow flag
 
     if ((TIM1->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
     
         // Clear capture compare flag
-        TIM1->SR &= ~TIM_SR_CC2IF;
+        TIM1->SR = ~TIM_SR_CC2IF;
 
         /* Call required functions */
     
         // Call encoder isr to turn motor off
+        debug_prints("REACHED MINIMUM VALUE\r\n");
         tempest_isr_encoder_at_min_value();
     }
 
@@ -71,11 +174,12 @@ void TIM1_CC_IRQHandler(void) {
     if ((TIM1->SR & TIM_SR_CC3IF) == TIM_SR_CC3IF) {
     
         // Clear capture compare flag
-        TIM1->SR &= ~TIM_SR_CC3IF;
+        TIM1->SR = ~TIM_SR_CC3IF;
 
         /* Call required functions */
         
         // Call encoder isr to turn motor off
+        debug_prints("REACHED MAXIMUM VALUE\r\n");
         tempest_isr_encoder_at_max_value();
     }
 
@@ -86,7 +190,7 @@ void TIM1_CC_IRQHandler(void) {
  * 
  */
 void TIM1_IRQHandler(void) {
-
+    debug_prints("ISR TIM 1\r\n");
 }
 
 /**
@@ -101,6 +205,9 @@ void TIM2_IRQHandler(void) {
         // Clear UIF flag
         TIM2->SR = ~TIM_SR_UIF;
 
+        // Return from function to ensure only the capture compare that is both enabled
+        // and triggered is run
+        return;
     }
 
     // Check if interrupt for CC1 was triggered
@@ -110,15 +217,16 @@ void TIM2_IRQHandler(void) {
         TIM2->SR = ~TIM_SR_CC1IF;
 
         /* Call required functions */
-
+    
         if (pb0_triggered_early()) {
-            // Reset min point on blind
-            debug_prints("Resetting minimum point\r\n");
+            encoder_isr_reset_min_value(); // Reset the minimum position of the blind
         } else {
-
-            // Move motor as button has been held down long enough
-            debug_prints("Moving motor up\r\n");
+            tempest_isr_force_blind_up(); // Force blind to move up
         }
+
+        // Return from function to ensure only the capture compare that is both enabled
+        // and triggered is run
+        return;
     }
 
     if ((TIM2->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
@@ -127,15 +235,15 @@ void TIM2_IRQHandler(void) {
         TIM2->SR = ~TIM_SR_CC2IF;
         
         /* Call required functions */
-
         if (pb1_triggered_early()) {
-            // Reset max point on blind
-            debug_prints("Resetting maximum point\r\n");
+            encoder_isr_reset_max_value(); // Reset the maximum position of the blind
         } else {
-
-            // Move motor as button has been held down long enough
-            debug_prints("Moving motor down\r\n");
+            tempest_isr_force_blind_down(); // Force blind to move down
         }
+
+        // Return from function to ensure only the capture compare that is both enabled
+        // and triggered is run
+        return;
     }
 
 }
@@ -145,7 +253,7 @@ void TIM2_IRQHandler(void) {
  * 
  */
 void TIM6_DAC_IRQHandler(void) {
-
+    
 }
 
 /**
@@ -153,5 +261,5 @@ void TIM6_DAC_IRQHandler(void) {
  * 
  */
 void TIM7_IRQHandler(void) {
-
+    
 }
