@@ -8,8 +8,6 @@
 enum AmbientLightLevel {HIGH, LOW, UNDETERMINED};
 
 void ambient_light_sensor_init(void);
-void ambient_light_sensor_enable(void);
-void ambient_light_sensor_disable(void);
 void ambient_light_sensor_isr_s1(void);
 void ambient_light_sensor_isr_s2(void);
 void ambient_light_sensor_isr_s3(void);

@@ -12,6 +12,7 @@
 
 /* Private Includes */
 #include "tempest.h"
+#include "timer_ms.h"
 
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -21,6 +22,9 @@
  * @brief Interrupt handler for timer 1 and timer 15
  */
 void TIM1_BRK_TIM15_IRQHandler(void) {
+    // char m[50];
+    // sprintf(m, "TIM 1 15 ---> CNT: %lu\tSR: %lu\r\n", TIM15->CNT, TIM15->SR);
+    // debug_prints(m);
     // debug_prints("ISR TIM 1 15\r\n");
 
     // Check and clear overflow flag for TIM15
@@ -32,21 +36,21 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
         /* Call required functions */
         
         // Perform ALS ISR sequence 3
-        ambient_light_sensor_isr_s3();
+        // ambient_light_sensor_isr_s3();
 
-        // Read the level of ambient light
-        enum AmbientLightLevel lightLevel = ambient_light_read();
+        // // Read the level of ambient light
+        // enum AmbientLightLevel lightLevel = ambient_light_read();
 
-        // Call ISR if ambient light level is determined 
-        if (lightLevel == HIGH) {
-            debug_prints("Ambient light level high\r\n");
-            // tempest_isr_ambient_light_level_high();
-        }
+        // // Call ISR if ambient light level is determined 
+        // if (lightLevel == HIGH) {
+        //     debug_prints("Ambient light level high\r\n");
+        //     // tempest_isr_ambient_light_level_high();
+        // }
 
-        if (lightLevel == LOW) {
-            debug_prints("Ambient light level low\r\n");
-            // tempest_isr_ambient_light_level_low();
-        }
+        // if (lightLevel == LOW) {
+        //     debug_prints("Ambient light level low\r\n");
+        //     // tempest_isr_ambient_light_level_low();
+        // }
     }
 
     // Check and clear CCR1 flag for TIM15
@@ -56,9 +60,11 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
         TIM15->SR = ~TIM_SR_CC1IF;
 
         /* Call required functions */
+        // debug_prints("ISR called\r\n");
+        timer_ms_isr_ch1();
 
         // Perform ALS ISR sequence 1
-        ambient_light_sensor_isr_s1();
+        // ambient_light_sensor_isr_s1();
     }
 
     // Check and clear CCR1 flag for TIM15
@@ -69,8 +75,9 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
 
         /* Call required functions */
 
+        timer_ms_isr_ch2();
         // Perform ALS ISR sequence 2
-        ambient_light_sensor_isr_s2();
+        // ambient_light_sensor_isr_s2();
     }
 }
 
@@ -95,6 +102,18 @@ void TIM1_UP_TIM16_IRQHandler(void) {
 
         // Clear the UIF flag
         TIM16->SR = ~TIM_SR_CC1IF;
+
+        /* Call required functions */
+
+        // Not sure if its a bug or not but the CCIF flag is set at some point
+        // in the piezo buzzer ISR and it needs to be cleared here other wise 
+        // the system will enter an infinte loop
+    }
+
+    if ((TIM16->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
+
+        // Clear the UIF flag
+        TIM16->SR = ~TIM_SR_CC2IF;
 
         /* Call required functions */
 
@@ -135,11 +154,9 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         // 4) Release up button. This ISR should now be calling in an infinite loop
     }
 
-
-
-    char m[30];
-    sprintf(m, "TIM1: %lu\tTIM16: %lu\r\n", TIM1->SR, TIM16->SR);
-    debug_prints(m);
+    // char m[30];
+    // sprintf(m, "TIM1: %lu\tTIM16: %lu\r\n", TIM1->SR, TIM16->SR);
+    // debug_prints(m);
 
 }
 

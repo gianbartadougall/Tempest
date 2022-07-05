@@ -13,6 +13,7 @@
 #include "piezo_buzzer.h"
 #include "comparator.h"
 #include "flag.h"
+#include "timer_ms.h"
 
 void tempest_update_system_state(void);
 void tempest_update_motor_state(void);

@@ -32,6 +32,10 @@ void error_handler(void);
 void SystemClock_Config(void);
 void MX_USART2_UART_Init(void);
 
+void test_isr1(void) {
+	debug_prints("Testing this ISR\r\n");
+}
+
 /**
  * @brief  The application entry point.
  * @retval int
@@ -44,20 +48,10 @@ int main(void) {
 	MX_USART2_UART_Init();
 	
 	// Initialise hardware
-	timer_ms_init();
 	hardware_init();
 
 	// Declare local variables
 	char m[40];
-
-	// ambient_light_sensor_enable();
-	timer_ms_enable();
-	while (1) {
-
-		HAL_Delay(100);
-		sprintf(m, "CNT: %lu\r\n", TIM16->CNT);
-		debug_prints(m);
-	}
 
 	while (1) {
 
@@ -65,7 +59,7 @@ int main(void) {
 		// to ensure that if bouncing occurs, the correct state is still used
 		tempest_update_system_state();
 
-		HAL_Delay(100);
+		HAL_Delay(1000);
 		// sprintf(m, "CNT: %lu\r\n", TIM1->CNT);
 		// debug_prints(m);
 		// // Pushbutton timer prints
@@ -79,7 +73,7 @@ void hardware_init(void) {
 	debug_log_init(&huart2);
 
 	// Initialise tempest hardware
-	// tempest_hardware_init();
+	tempest_hardware_init();
 }
 
 /**

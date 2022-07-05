@@ -55,6 +55,9 @@ uint8_t manualOverride = 0;
 uint8_t manualOverrideMoveUpFlag = 0;
 uint8_t manualOverrideMoveDownFlag = 0;
 
+TimerMsHandle modeSwitchHandle;
+TimerMsHandle ambientLightSensorHandle;
+
 /* Function prototypes */
 void tempest_error_handler(void);
 uint8_t tempest_decode_input_state(void);
@@ -62,16 +65,37 @@ void tempest_stop_motor(void);
 void tempest_set_motor_up(void);
 void tempest_set_motor_down(void);
 
+/**
+ * @brief ISR to be called when a mode switch needs to occur. Function sets
+ * mode to manual if it's currently automatic and sets mode to automatic if
+ * it's currently manual. Updates LED status based on new mode. Plays sound
+ * on piezo buzzer to indicate mode switch has taken place
+ */
+void tempest_mode_switch_isr(void) {
+
+    switch (systemMode) {
+        case MANUAL:
+            systemMode = AUTOMATIC;
+            piezo_buzzer_play_sound(sound1);
+            brd_led_on(); // Update LED
+            break;
+        case AUTOMATIC:
+            systemMode = MANUAL;
+            piezo_buzzer_play_sound(sound1);
+            brd_led_off(); // Update LED
+            break;
+        default:
+            debug_prints("ERROR: Unknown system mode\r\n");
+            tempest_stop_motor();
+            tempest_error_handler();
+            break;
+    }
+}
+
 void tempest_update_system_state(void) {
 
     // Read the state of the pushbuttons
     uint8_t inputState = tempest_decode_input_state();
-
-    // if (manualOverride == 0) {
-    //     char m[40];
-    //     sprintf(m, "CNT: %lu\r\n", TIM1->CNT);
-	// 	debug_prints(m);
-    // }
 
     switch (inputState) {
 
@@ -81,9 +105,11 @@ void tempest_update_system_state(void) {
             if (manualOverride == 1) {
                 return;
             }
-            
-            // Update the system mode if the mode is not in manual override
-            tempest_update_mode();
+
+            if (timer_ms_handle_in_use(&modeSwitchHandle) == 0) {
+                timer_ms_set_delay(&modeSwitchHandle); // Ignoring result as there will always be a free channel
+                debug_prints("timer delay set for 3 seconds\r\n");
+            }
 
             return;
 
@@ -138,11 +164,39 @@ void tempest_update_system_state(void) {
                 tempest_stop_motor();
             }
 
+            if (systemMode == AUTOMATIC) {
+                
+                // If the delay has ended, set a new delay sequence
+                if (timer_ms_handle_in_use(&ambientLightSensorHandle) == 0) {
+
+                    // Disregard return value as only two handles are used in this system
+                    timer_ms_set_delay(&ambientLightSensorHandle);
+                    
+                    // Read ambient light sensor value
+                    uint8_t lightLevel = ambient_light_read();
+                    
+                    // Set the motor to the correct hight
+                    if ((lightLevel == HIGH) && !encoder_at_minimum_distance()) {
+                        debug_prints("Setting motor up\r\n");
+                        tempest_set_motor_up();
+                    } else if ((lightLevel == LOW) && !encoder_at_maximum_distance()) {
+                        tempest_set_motor_down();
+                        debug_prints("Setting motor down\r\n");
+                    } else {
+                        debug_prints("Light level Undetermined\r\n");
+                    }
+                }
+
+            }
+
             break;
     }
 
-    // Reset the timer
-    modeSwitchStartTime = 0;
+    // Cancel mode switch delay if delay is currently running but both pushbuttons are not pressed
+    if (timer_ms_handle_in_use(&modeSwitchHandle) == 1) {
+        timer_ms_cancel_delay(&modeSwitchHandle);
+    }
+
 }
 
 uint8_t tempest_decode_input_state(void) {
@@ -205,70 +259,6 @@ void tempest_set_motor_down(void) {
     }
 }
 
-void tempest_update_mode(void) {
-
-    // Sudo code using ms timer
-    /**
-     * if (modeSwitchInProgress == 0) {
-     * 
-     *      modeSwitchInProgress = 1;
-     * 
-     *      if (timer_ms_set_new_delay(Handle, &isr, delay) != OK) {
-     *          // Handle this 
-     *      }
-     * } else if (modeSwitchInProgress == 1) {
-     * 
-     *      // Check if both pushbuttons are still down
-     *      if (pb1 or pb2 are not down) {
-     *          cancel_isr(Handle);
-     *      }
-     * 
-     * }
-     * 
-     */
-
-    debug_prints("Init Updating mode\r\n");
-    // Turn the motor off
-    tempest_stop_motor();
-
-    // Set start time if it has not been set
-    if (modeSwitchStartTime == 0) {
-
-        if ((HAL_MAX_DELAY - MIN_MODE_SWITCH_TIME) < HAL_GetTick()) {
-            // Wait for timer to reset if minimum hold time cannot be acheived
-            while ((HAL_MAX_DELAY - MIN_MODE_SWITCH_TIME) < HAL_GetTick()) {}
-        }
-
-        modeSwitchStartTime = HAL_GetTick();
-        debug_prints("Mode switch set\r\n");
-    }
-
-    // Perform mode switch if enough time has passed
-    if ((HAL_GetTick() - modeSwitchStartTime) > MIN_MODE_SWITCH_TIME) {
-        switch (systemMode) {
-            case MANUAL:
-                systemMode = AUTOMATIC;
-                piezo_buzzer_play_sound(sound1);
-                brd_led_on(); // Update LED
-                break;
-            case AUTOMATIC:
-                systemMode = MANUAL;
-                piezo_buzzer_play_sound(sound1);
-                brd_led_off(); // Update LED
-                break;
-            default:
-                debug_prints("ERROR: Unknown system mode\r\n");
-                tempest_stop_motor();
-                tempest_error_handler();
-                break;
-        }
-
-        // Reset mode switch start time
-        modeSwitchStartTime = 0;
-    }
-
-}
-
 void tempest_hardware_init(void) {
     // Initialise LED
 	board_init();
@@ -282,8 +272,20 @@ void tempest_hardware_init(void) {
 	// Initialise pushbuttons
 	pb_init();
 
-    // Initialise ambient light sensor
-    ambient_light_sensor_init();
+    // Initialise generic millisecond timer
+    timer_ms_init();
+    timer_ms_enable(); // Enable timer
+    
+    // Initialise the handles for required delays
+    void (*mshISRList[1])(void) = {&tempest_mode_switch_isr};
+    uint16_t mshDelays[1] = {3000};
+    timer_ms_init_handle(&modeSwitchHandle, mshISRList, mshDelays, 1);
+    
+    void (*alsISRList[3])(void) = {&ambient_light_sensor_isr_s1, 
+                                    &ambient_light_sensor_isr_s2,
+                                    &ambient_light_sensor_isr_s3};
+    uint16_t alsDelays[3] = {60000, 1, 1000};
+    timer_ms_init_handle(&ambientLightSensorHandle, alsISRList, alsDelays, 3);
 
     // Initialise piezo buzzer
     piezo_buzzer_init();
@@ -301,7 +303,6 @@ void tempest_error_handler(void) {
         piezo_buzzer_play_sound(sound1);
         HAL_Delay(100);
     }
-
 }
 
 void play_buzzer(uint8_t length) {
