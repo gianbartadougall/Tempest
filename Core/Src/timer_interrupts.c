@@ -34,23 +34,6 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
         TIM15->SR = ~TIM_SR_UIF;
 
         /* Call required functions */
-        
-        // Perform ALS ISR sequence 3
-        // ambient_light_sensor_isr_s3();
-
-        // // Read the level of ambient light
-        // enum AmbientLightLevel lightLevel = ambient_light_read();
-
-        // // Call ISR if ambient light level is determined 
-        // if (lightLevel == HIGH) {
-        //     debug_prints("Ambient light level high\r\n");
-        //     // tempest_isr_ambient_light_level_high();
-        // }
-
-        // if (lightLevel == LOW) {
-        //     debug_prints("Ambient light level low\r\n");
-        //     // tempest_isr_ambient_light_level_low();
-        // }
     }
 
     // Check and clear CCR1 flag for TIM15
@@ -61,10 +44,7 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
 
         /* Call required functions */
         // debug_prints("ISR called\r\n");
-        timer_ms_isr_ch1();
-
-        // Perform ALS ISR sequence 1
-        // ambient_light_sensor_isr_s1();
+        timer_ms_isr(TIMER_MS_CHANNEL_1);
     }
 
     // Check and clear CCR1 flag for TIM15
@@ -75,9 +55,7 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
 
         /* Call required functions */
 
-        timer_ms_isr_ch2();
-        // Perform ALS ISR sequence 2
-        // ambient_light_sensor_isr_s2();
+        timer_ms_isr(TIMER_MS_CHANNEL_2);
     }
 }
 
@@ -175,6 +153,11 @@ void TIM1_CC_IRQHandler(void) {
     debug_prints("ISR TIM CC\r\n");
     // Check for overflow flag
 
+    if ((TIM1->SR & TIM_SR_UIF) == TIM_SR_UIF) {
+        // Clear update event flag
+        TIM1->SR = ~TIM_SR_UIF;
+    }
+
     if ((TIM1->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
     
         // Clear capture compare flag
@@ -227,41 +210,41 @@ void TIM2_IRQHandler(void) {
         return;
     }
 
-    // Check if interrupt for CC1 was triggered
-    if ((TIM2->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {
+    // // Check if interrupt for CC1 was triggered
+    // if ((TIM2->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {
     
-        // Clear capture compare flag
-        TIM2->SR = ~TIM_SR_CC1IF;
+    //     // Clear capture compare flag
+    //     TIM2->SR = ~TIM_SR_CC1IF;
 
-        /* Call required functions */
+    //     /* Call required functions */
     
-        if (pb0_triggered_early()) {
-            encoder_isr_reset_min_value(); // Reset the minimum position of the blind
-        } else {
-            tempest_isr_force_blind_up(); // Force blind to move up
-        }
+    //     if (pb0_triggered_early()) {
+    //         encoder_isr_reset_min_value(); // Reset the minimum position of the blind
+    //     } else {
+    //         tempest_isr_force_blind_up(); // Force blind to move up
+    //     }
 
-        // Return from function to ensure only the capture compare that is both enabled
-        // and triggered is run
-        return;
-    }
+    //     // Return from function to ensure only the capture compare that is both enabled
+    //     // and triggered is run
+    //     return;
+    // }
 
-    if ((TIM2->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
+    // if ((TIM2->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
     
-        // Clear capture compare flag
-        TIM2->SR = ~TIM_SR_CC2IF;
+    //     // Clear capture compare flag
+    //     TIM2->SR = ~TIM_SR_CC2IF;
         
-        /* Call required functions */
-        if (pb1_triggered_early()) {
-            encoder_isr_reset_max_value(); // Reset the maximum position of the blind
-        } else {
-            tempest_isr_force_blind_down(); // Force blind to move down
-        }
+    //     /* Call required functions */
+    //     if (pb1_triggered_early()) {
+    //         encoder_isr_reset_max_value(); // Reset the maximum position of the blind
+    //     } else {
+    //         tempest_isr_force_blind_down(); // Force blind to move down
+    //     }
 
-        // Return from function to ensure only the capture compare that is both enabled
-        // and triggered is run
-        return;
-    }
+    //     // Return from function to ensure only the capture compare that is both enabled
+    //     // and triggered is run
+    //     return;
+    // }
 
 }
 

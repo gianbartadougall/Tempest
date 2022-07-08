@@ -50,19 +50,38 @@ int main(void) {
 	// Initialise hardware
 	hardware_init();
 
+	// Initialise pin
+	// uint32_t pin = 7 * 2 ;
+    // GPIOB->MODER   &= ~(0x03 << pin); // Reset Pin
+	// GPIOB->MODER   |= (0x01 << pin); // Set pin output
+    // GPIOB->PUPDR   &= ~(0x03 << pin); // Reset pull up pull down pin
+    // GPIOB->PUPDR   |= (0x02 << pin); // Set pin to pull down
+    // GPIOB->OTYPER  &= ~(0x01 << 7); // Set pin to push-pull
+
+	// uint32_t pin2 = 1 * 2 ;
+    // GPIOB->MODER   &= ~(0x03 << pin2); // Reset Pin
+	// GPIOB->MODER   |= (0x01 << pin2); // Set pin output
+    // GPIOB->PUPDR   &= ~(0x03 << pin2); // Reset pull up pull down pin
+    // GPIOB->PUPDR   |= (0x02 << pin2); // Set pin to pull down
+    // GPIOB->OTYPER  &= ~(0x01 << 1); // Set pin to push-pull
+
 	// Declare local variables
-	char m[40];
+	// char m[40];
 
 	while (1) {
-
+		
 		// Update the system state. Called in a loop from main as opposed to from an ISR
 		// to ensure that if bouncing occurs, the correct state is still used
-		tempest_update_system_state();
+		// tempest_update_system_state();
 
-		HAL_Delay(1000);
+		// Check for mode switch
+		tempest_update_system();
+
+		HAL_Delay(50);
+
 		// sprintf(m, "CNT: %lu\r\n", TIM1->CNT);
 		// debug_prints(m);
-		// // Pushbutton timer prints
+		// Pushbutton timer prints
 	}
 		return 0;
 }

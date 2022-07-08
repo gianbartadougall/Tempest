@@ -17,23 +17,67 @@
 
 /* Public Structs */
 
-#define TIMER_MS_MAX_DELAYS_PER_CHANNEL 3
+#define TIMER_MS_MAX_TASK_SIZE 3
+#define TIMER_MS_MAX_QUEUE_SIZE 3
+
 /**
- * @brief Handle for delay tasks. This handle allows a running delay to be cancelled
- * if required
+ * @brief Task struct that contains information on delay lengths and ISRs that need
+ * to be performed
+ * 
+ * @id: A unique ID that allows tasks to be differentiated from eachother
+ * @isrs: A list of ISRs that are called (in order) between the list of delays
+ * @delays: A list of delays that are carried out (in order) before calling each isr
+ * @size: The number of ISRs/delays that need to be performed to compelte the task 
+ * @index: The current delay/isr the task is up to
+ * @delayremaining: In the case that a task is paused due to another task with a higher
+ * priority that needs to be run, the amount of time the current task delay has left
+ * is saved such that when it resumes, it continues it's delay from where it paused
+ * @priority: The priority level of the task. Tasks with higher priorities will run
+ * before tasks with lower priorities. A task with a higher priority will cancel an
+ * already running task with a lower priority
+ * @actiononprioritycancel: Determines what will happen to the task if it gets
+ * cancelled because a higher priority task needs to run
  */
-typedef struct TimerMsHandle {
-    uint8_t handleID;
-    void (*isrs[TIMER_MS_MAX_DELAYS_PER_CHANNEL]) (void); // Set the maximum number of ISRs to 3
-    uint16_t delays[TIMER_MS_MAX_DELAYS_PER_CHANNEL];
-    uint8_t numberOfDelays;
+typedef struct TimerMsTask {
+    uint8_t id;
+    void (*isrs[TIMER_MS_MAX_TASK_SIZE]) (void);
+    uint16_t delays[TIMER_MS_MAX_TASK_SIZE];
+    uint8_t size;
     uint8_t index;
-} TimerMsHandle;
+    uint8_t status;
+    uint16_t delayRemaining;
+    uint8_t priority;
+    uint8_t actionOnPriorityCancel;
+    uint8_t actionOnCompletion;
+} TimerMsTask;
+
+/**
+ * @brief Handle for each channel that timer has. This handle stores the tasks that
+ * it needs to run in order
+ * 
+ * @queue: The list of tasks that the channel will perform in order
+ * @size: The number of tasks in the queue
+ */
+typedef struct TimerMsChannel {
+    TimerMsTask* queue[TIMER_MS_MAX_QUEUE_SIZE];
+    uint8_t size;
+} TimerMsChannel;
 
 /* Public Enumerations */
 
-// Status symbols to allow user to know whether a delay has been accepted or not
-enum TimerMsStatus {TASK_ACCEPTED, TASK_REJECTED};
+enum TaskActionOnCancel {TIMER_MS_TASK_CANCEL, TIMER_MS_TASK_RESET, TIMER_MS_TASK_PAUSE};
+
+enum TaskActionOnCompletion {TIMER_MS_TASK_FINISH, TIMER_MS_TASK_REPEAT};
+
+
+#define TASK_MS_PRIORITY_1 5
+#define TASK_MS_PRIORITY_2 4
+#define TASK_MS_PRIORITY_3 3
+#define TASK_MS_PRIORITY_4 2
+#define TASK_MS_PRIORITY_5 1
+
+#define TIMER_MS_CHANNEL_1 0
+#define TIMER_MS_CHANNEL_2 1
 
 /**
  * @brief Initialise the timer hardware. This function does not start the timer
@@ -41,25 +85,25 @@ enum TimerMsStatus {TASK_ACCEPTED, TASK_REJECTED};
 void timer_ms_init(void);
 
 /**
- * @brief Initialise parameters into Timer Handle struct. This function also assigns
- * an ID to the handle
+ * @brief Initialise parameters into Timer task struct. This function also assigns
+ * an ID to the task
  * 
- * @param handle The pointer to the handle to be initialised
+ * @param task The pointer to the task to be initialised
  * @param isrs The list of ISRs that need to be run (in order)
  * @param delays The list of delays to wait between each ISR (in order)
  * @param numberOfDelays The size of the list of delays. Note this should be the
- * same size as the list of ISRs 
+ * same size as the list of ISRs
+ * @param actionOnPriorityCancel
+ * @param priority
  */
-void timer_ms_init_handle(TimerMsHandle* handle, void (*isrs[TIMER_MS_MAX_DELAYS_PER_CHANNEL])(void), 
-        uint16_t delays[TIMER_MS_MAX_DELAYS_PER_CHANNEL], uint8_t numberOfDelays);
+void timer_ms_init_task(TimerMsTask* task, void (*isrs[TIMER_MS_MAX_TASK_SIZE])(void), 
+        uint16_t delays[TIMER_MS_MAX_TASK_SIZE], uint8_t numberOfDelays, 
+        uint8_t actionOnPriorityCancel, uint8_t priority, 
+        uint8_t TaskActionOnCompletion);
 
-/**
- * @brief Initialise the Channels to run the ISRs at the delay points specified by the handle
- * 
- * @param handle The handle containing the information
- * @return uint8_t 1 if there is a free channel and the delay can be run else 0
- */
-uint8_t timer_ms_set_delay(TimerMsHandle* handle);
+void timer_ms_add_task(TimerMsTask* task);
+
+uint8_t timer_ms_task_is_in_queue(TimerMsTask* task);
 
 /**
  * @brief Starts the timer
@@ -73,57 +117,9 @@ void timer_ms_enable(void);
  */
 void timer_ms_disable(void);
 
-/**
- * @brief Cancels a delay that is currently in operation. This function has no affect if the
- * handle passed does not point to a channel
- * 
- * @param handle Handle to the delay that needs to be cancelled
- */
-void timer_ms_cancel_delay(TimerMsHandle* handle);
 
-/**
- * @brief ISR for channel 1. Calls the ISR of the given delay and automatically resets the channel
- * once the ISR has been called
- * 
- */
-void timer_ms_isr_ch1(void);
+void timer_ms_cancel_task(TimerMsTask* handle);
 
-/**
- * @brief ISR for channel 2. Calls the ISR of the given delay and automatically resets the channel
- * once the ISR has been called
- * 
- */
-void timer_ms_isr_ch2(void);
-
-/**
- * @brief Returns true or false depending on whether channel 1 is free
- * 
- * @return uint8_t 1 if channel 1 is free else 0
- */
-uint8_t timer_ms_ch1_is_free(void);
-
-/**
- * @brief Returns true or false depending on whether channel 1 is free
- * 
- * @return uint8_t 1 if channel 1 is free else 0
- */
-uint8_t timer_ms_ch2_is_free(void);
-
-/**
- * @brief Determines whether a given handle has a current delay set or not
- * 
- * @param handle The handle to check
- * @return uint8_t 1 if the handle does have a delay set else 0
- */
-uint8_t timer_ms_handle_in_use(TimerMsHandle* handle);
-
-/**
- * @brief Prints the current status of the channel that is running the handles delay.
- * If the handle is not being used by a channel, prints the current timer count and
- * a message stating the handle is not in use
- * 
- * @param handle The handle to check the status of
- */
-void timer_ms_print_handle_status(TimerMsHandle* handle);
+void timer_ms_isr(uint8_t chnl);
 
 #endif // TIMER_MS_H

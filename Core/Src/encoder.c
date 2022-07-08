@@ -25,12 +25,6 @@
 #define ENCODER_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
 #define ENCODER_IRQn EXTI9_5_IRQn
 
-#define ENCODER_MICROMETER 1000000
-#define ENCODER_MILLIMETER 1000
-#define ENCODER_CENTIMETER 100
-#define ENCODER_METER 1
-#define DISTANCE_UNIT ENCODER_MICROMETER
-
 #define ENCODER_CIRCUMFERENCE 75398 // micrometers
 #define ENCODER_NUM_GEAR_TEETH 8
 #define ENCODER_DISTANCE_PER_TOOTH ((uint32_t) (ENCODER_CIRCUMFERENCE / ENCODER_NUM_GEAR_TEETH))
@@ -43,17 +37,7 @@
 #define ENCODER_MAXIMUM_DISTANCE (((uint32_t) (ENOCDER_OBJECT_DISTANCE / ENCODER_CIRCUMFERENCE)) * ENCODER_DISTANCE_PER_TOOTH * ENCODER_NUM_GEAR_TEETH)
 
 /* Variable Declarations */
-uint32_t distanceTravelled = 0;
-uint32_t teethPassed       = 0;
-uint8_t encoderStatus      = 0;
-uint16_t isrCount    = 0;
-uint16_t absISRCount = 0;
-uint32_t time1 = 0;
-uint32_t time2 = 0;
 uint16_t maximumCount = 88;
-
-uint16_t ccr1Temp = 0;
-uint16_t ccr2Temp = 0;
 
 /* Function prototypes */
 void encoder_timer_init(void);
@@ -74,18 +58,14 @@ void encoder_hardware_init(void) {
     
     ENCODER_PORT->AFR[1] &= ~(0x0F); // Reset alternate function
     ENCODER_PORT->AFR[1] |= (0x01); // Set alternate function to AF1
-
 }
 
 void encoder_init(void) {
 
-    // Initialise internal comparator
-    // comparator_init();
     // Initialise input pin
     encoder_hardware_init();
 
-    // Initialise timer such that it will count on the rising edge of the output
-    // of the comparator
+    // Initialise timer such that it will count on the rising edge of the input pin
     encoder_timer_init();
 }
 
@@ -120,6 +100,7 @@ void encoder_timer_init(void) {
     
     /* Configure channel 2 and 3 to trigger interrupts on capture compare values */
     ENCODER_TIMER->DIER = 0x00; // Clear all interrupts
+
     // Enable capture compare on CH2, CH3 and UIE
     ENCODER_TIMER->DIER |= ((0x01 << 0) | (0x01 << 2) | (0x01 << 3));
 
@@ -132,6 +113,10 @@ void encoder_timer_init(void) {
     // Set counter values for the interrupts to be triggered on for each channel 
     ENCODER_TIMER->CCR2 = 0;
     ENCODER_TIMER->CCR3 = maximumCount;
+
+    // Disables UEV generation. This ensures that on counter underflow/overflow, the counter continues
+    // count correctly as the shadow registers retain all their values
+    ENCODER_TIMER->CR1 |= TIM_CR1_UDIS;
     
     // Enable counter
     ENCODER_TIMER->CR1 |= TIM_CR1_CEN;
@@ -139,22 +124,10 @@ void encoder_timer_init(void) {
     // Enable the interrupts
     HAL_NVIC_SetPriority(TIM1_CC_IRQn, 9, 0);
 	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
-
-    debug_prints("Initialised\r\n");
 }
 
-void encoder_enter_manual_override(void) {
-
-    // Disable counter interrupts to prevent motor from stopping during manual override
-    ENCODER_TIMER->DIER &= ~(TIM_DIER_CC2IE | TIM_DIER_CC3IE);
-}
-
-void encoder_exit_manual_override(void) {
-
-    // Enable counter to let encoder update
-    // Clear any interrupts that were triggered during the manual overried
-    ENCODER_TIMER->SR = ~(TIM_SR_CC2IF | TIM_SR_CC3IF);
-    ENCODER_TIMER->DIER |= (TIM_DIER_CC2IE | TIM_DIER_CC3IE);
+void encoder_disable(void) {
+    ENCODER_TIMER->CR1 &= ~(TIM_CR1_CEN);
 }
 
 void encoder_set_direction_positive(void) {
@@ -188,6 +161,7 @@ void encoder_isr_reset_min_value(void) {
 }
 
 void encoder_isr_reset_max_value(void) {
+
     maximumCount = ENCODER_TIMER->CNT;
     ENCODER_TIMER->CCR3 = maximumCount;
     encoder_set_direction_negative();
@@ -200,6 +174,6 @@ void encoder_print_state(void) {
 
     char msg[70];
     // sprintf(msg, "isrCount: %i\r\n", isrCount);
-    sprintf(msg, "Distance: %lu\t ISRCount: %i\r\n", encoder_distance_travelled(), isrCount);
+    sprintf(msg, "Count: %lu\r\n", ENCODER_TIMER->CNT);
     debug_prints(msg);
 }

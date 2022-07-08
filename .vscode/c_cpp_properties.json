@@ -14,7 +14,7 @@
                 "__CC_ARM"
             ],
             "intelliSenseMode": "${default}",
-            "compilerPath": "${env:ARMGCC_DIR}/arm-none-eabi-gcc.exe",
+            "compilerPath": "${env:ARMGCC_DIR}\\arm-none-eabi-gcc.exe",
             "compilerArgs": [
                 "-mcpu-cortex-m4"
             ],

@@ -78,14 +78,14 @@ void ambient_light_sensor_isr_s2(void) {
 
     if ((ALS_PORT->IDR & (0x01 << ALS_PIN_RAW)) == (0x01 << ALS_PIN_RAW)) {
         ambientLightNotDetectedStreak = 0;
-        debug_prints("ambient light detected\r\n");
+            debug_prints("Light detected\r\n");
         
         if (ambientLightDetectedStreak < ALS_MINIMUM_STREAK_COUNT) {
             ambientLightDetectedStreak++;;
         }
     } else  {
         ambientLightDetectedStreak = 0;
-        debug_prints("ambient light not detected\r\n");
+        debug_prints("Light not detected\r\n");
         // Increment streak if current count is less than required count
         if (ambientLightNotDetectedStreak < ALS_MINIMUM_STREAK_COUNT) {
             ambientLightNotDetectedStreak++;

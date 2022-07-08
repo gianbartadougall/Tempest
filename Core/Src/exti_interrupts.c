@@ -37,7 +37,7 @@ void EXTI0_IRQHandler(void) {
         /* Call required functions */
         
         // Call pb0 ISR
-        pb_0_isr();
+        pb_isr(PUSH_BUTTON_0);
 
         // *************************
     }
@@ -102,7 +102,7 @@ void EXTI3_IRQHandler(void) {
         EXTI->PR1 = EXTI_PR1_PIF3;
 
         /* Call required functions */
-        pb_1_isr();
+        pb_isr(PUSH_BUTTON_1);
     }
 }
 
@@ -145,9 +145,10 @@ void EXTI9_5_IRQHandler(void) {
 
         // Check if the interrupt was a rising or falling edge
         if (flag_state(MANUAL_OVERRIDE_FLAG) == 1) {
-            tempest_isr_set_manual_override();
+            debug_prints("Entered manual override\r\n");
+            tempest_set_mode_manual_override();
         } else  {
-            tempest_isr_clear_manual_override();
+            tempest_set_mode_automatic();
         }
     }
 
