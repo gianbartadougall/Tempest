@@ -30,39 +30,22 @@ enum Mode {MANUAL, AUTOMATIC};
 #define PB_DOWN PUSH_BUTTON_1
 
 /* Private #defines */
-#define UP_PUSH_BUTTON PUSH_BUTTON_0
-#define DOWN_PUSH_BUTTON PUSH_BUTTON_1
-
-#define TEMPEST_MODE_MOTOR_UP 5
-#define TEMPEST_MODE_MOTOR_DOWN 6
 
 #define TEMPEST_MOTOR_STOP 7
 #define TEMPEST_MOTOR_MOVE_UP 8
 #define TEMPEST_MOTOR_MOVE_DOWN 9
-
-#define TEMPEST_BLIND_STATE_UP 10
-#define TEMPEST_BLIND_STATE_DOWN 11
-#define TEMPEST_CHANGE_MODE 12
-#define TEMPEST_MANUAL_OVERRIDE 13
-#define TEMPEST_BLIND_STATE_UNDEFINED 14
 
 #define TEMPEST_MOTOR MD_MOTOR_0
 #define MOTOR_STOP MOTOR_DRIVER_STOP
 #define MOTOR_UP MOTOR_DRIVER_DIRECTION_1
 #define MOTOR_DOWN MOTOR_DRIVER_DIRECTION_2
 
-#define MIN_MODE_SWITCH_TIME 1000
-#define MIN_PB_TIME 3000
-
 /* Variable Declarations */
 uint8_t systemMode;
-uint8_t motorState = TEMPEST_MOTOR_STOP;
 uint32_t modeSwitchStartTime = 0;
-uint8_t manualOverride = 0;
-uint8_t manualOverrideMoveUpFlag = 0;
-uint8_t manualOverrideMoveDownFlag = 0;
 
 uint32_t encoderLastCount = 0;
+uint8_t modeSwitchTimerStarted = 0;
 
 TimerMsTask ModeSwitchTask; // Task task used to switch modes
 TimerMsTask AlsTask; // Task to record ambient light
@@ -77,6 +60,11 @@ void tempest_stop_motor(void);
 void tempest_set_motor_up(void);
 void tempest_set_motor_down(void);
 void tempest_init_timer_ms(void);
+void tempest_set_mode_manual(void);
+void tempest_set_mode_automatic(void);
+void tempest_set_mode_manual_override(void);
+void empty_func(void);
+void tempest_read_als(void);
 
 /**
  * @brief ISR to be called when a mode switch needs to occur. Function sets
@@ -88,12 +76,12 @@ void tempest_mode_switch_isr(void) {
 
     switch (systemMode) {
         case TEMPEST_MODE_MANUAL:
-            systemMode = TEMPEST_MODE_AUTOMATIC;
+            tempest_set_mode_automatic();
             piezo_buzzer_play_sound(sound1);
             brd_led_on(); // Update LED
             break;
         case TEMPEST_MODE_AUTOMATIC:
-            systemMode = TEMPEST_MODE_MANUAL;
+            tempest_set_mode_manual();
             piezo_buzzer_play_sound(sound1);
             brd_led_off(); // Update LED
             break;
@@ -106,15 +94,16 @@ void tempest_stop_motor(void) {
 
     debug_prints("Stopping motor\r\n");
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_STOP) != HAL_OK) {
+        debug_prints("ERROR HANDLER 2\r\n");
         tempest_error_handler();
     }
 
     timer_ms_cancel_task(&EncoderRunningTask);
+
+    timer_ms_status();
 }
 
 void tempest_set_motor_up(void) {
-    
-    encoderLastCount = encoder_get_count();
     
     debug_prints("Motor UP\r\n");
     // Set the direction of the encoder
@@ -125,38 +114,44 @@ void tempest_set_motor_up(void) {
     }
   
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_UP) != HAL_OK) {
+        debug_prints("ERROR HANDLER 3\r\n");
         tempest_error_handler();
     }
 
     if (systemMode == TEMPEST_MODE_AUTOMATIC) {
-        debug_prints("STARTING ENCODER RUNNING TASK UP\r\n");
-        timer_ms_add_task(&EncoderRunningTask);
+        if (timer_ms_task_is_in_queue(&EncoderRunningTask) == 0) {
+            debug_prints("STARTING ENCODER RUNNING TASK UP\r\n");
+            timer_ms_add_task(&EncoderRunningTask);
+        }
     }
 }
 
 void tempest_set_motor_down(void) {
-    encoderLastCount = encoder_get_count();
 
-    debug_prints("Motor DOWN\r\n");
-    // Set the direction of the encoder
-    encoder_set_direction_positive();
-    
     if ((systemMode != TEMPEST_MODE_MANUAL_OVERRIDE) && encoder_at_maximum_distance()) {
         return;
     }
 
+    // Set the direction of the encoder
+    encoder_set_direction_positive();
+    
+    debug_prints("Motor DOWN\r\n");
+
     if (motor_driver_set_motor_state(TEMPEST_MOTOR, MOTOR_DOWN) != HAL_OK) {
+        debug_prints("ERROR HANDLER 4\r\n");
         tempest_error_handler();
     }
 
     if (systemMode == TEMPEST_MODE_AUTOMATIC) {
-        debug_prints("STARTING ENCODER RUNNING TASK DOWN\r\n");
-        timer_ms_add_task(&EncoderRunningTask);
+        if (timer_ms_task_is_in_queue(&EncoderRunningTask) == 0) {
+            debug_prints("STARTING ENCODER RUNNING TASK DOWN\r\n");
+            timer_ms_add_task(&EncoderRunningTask);
+        }
     }
 }
 
 void tempest_isr_confirm_encoder_running(void) {
-    debug_prints("Confirming encoder is running\r\n");
+
     // Check whether the last the current encoder count has changed since
     // this function was last called. If it hasn't, then the counter isn't
     // picking up encoder counts thus stopping the motor, disabling everything
@@ -174,6 +169,7 @@ void tempest_isr_confirm_encoder_running(void) {
         __HAL_RCC_GPIOB_CLK_DISABLE();
         
         // Call error handler
+        debug_prints("ERROR HANDLER 1\r\n");
         tempest_error_handler();
 
     } else {
@@ -195,14 +191,16 @@ void tempest_init_timer_ms(void) {
 		&ModeSwitchTask, t1ISRs, t1Delays, 1, TIMER_MS_TASK_PAUSE, TASK_MS_PRIORITY_3, TIMER_MS_TASK_FINISH
 	);
 
-	void (*t2ISRs[3]) (void) = {&ambient_light_sensor_isr_s1, &ambient_light_sensor_isr_s2, &ambient_light_sensor_isr_s3};
-	uint16_t t2Delays[3] = {
-		60000, // Wait 30 seconds for capacitor to charge before setting pin to input
+	void (*t2ISRs[5]) (void) = {&empty_func, &ambient_light_sensor_isr_s1, &ambient_light_sensor_isr_s2, &ambient_light_sensor_isr_s3, &tempest_read_als};
+	uint16_t t2Delays[5] = {
+        60000, // Wait 60 seconds for capacitor to charge
+		20000, // Wait another 20 seconds for capacitor to charge before setting pin to input
 		1, // Read voltage on capacitor 1ms after pin is set to input
-		3000 // Wait 3 seconds for capacitor to discharge
+		3000, // Wait 3 seconds for capacitor to discharge
+        10 // Wait 10ms then read light sensor and update blind position 
 	}; 
 	timer_ms_init_task(
-		&AlsTask, t2ISRs, t2Delays, 3, TIMER_MS_TASK_CANCEL, TASK_MS_PRIORITY_4, TIMER_MS_TASK_FINISH
+		&AlsTask, t2ISRs, t2Delays, 5, TIMER_MS_TASK_PAUSE, TASK_MS_PRIORITY_4, TIMER_MS_TASK_REPEAT
 	);
 
     void (*t3ISRs[1]) (void) = {&tempest_set_motor_up};
@@ -223,6 +221,9 @@ void tempest_init_timer_ms(void) {
         &EncoderRunningTask, t5ISRs, t5Delays, 1, TIMER_MS_TASK_PAUSE, TASK_MS_PRIORITY_1, TIMER_MS_TASK_REPEAT
     );
 
+    char m[40];
+    sprintf(m, "ALS id: %i\r\n", AlsTask.id);
+    debug_prints(m);
 }
 
 void tempest_error_handler(void) {
@@ -255,23 +256,6 @@ void tempest_isr_encoder_at_max_value(void) {
         tempest_stop_motor(); // Stop the motor
     }
 }
-
-void tempest_isr_force_blind_up(void) {
-    
-    // Confirm manual override is set
-    if (manualOverride == 1) {
-        manualOverrideMoveUpFlag = 1; // Set flag to allow blind to move up
-    }
-}
-
-void tempest_isr_force_blind_down(void) {
-    
-    // Confirm manual override is set
-    if (manualOverride == 1) {
-        manualOverrideMoveDownFlag = 1; // Set flag to allow blind to move down
-    }
-}
-
 
 /* Configure callbacks for pushbuttons */
 
@@ -312,8 +296,8 @@ void pb_down_re_manual_override(void) {
 }
 
 /**
- * @brief Determines what happens when the UP pushbutton is pressed whilst
- * the system is in manual override 
+ * @brief Determines what happens when the DOWN pushbutton is pressed whilst
+ * the system is in manual override
  */
 void pb_down_fe_manual_override(void) {
     // Stop the motor
@@ -337,24 +321,52 @@ void empty_func(void) {
 
 void tempest_set_mode_manual(void) {
 
+    // If the system is already in manual mode, do nothing
+    if (systemMode == TEMPEST_MODE_MANUAL) {
+        return;
+    }
+
+    debug_prints("Mode IS now manual\r\n");
     // Set the system mode to manual
     systemMode = TEMPEST_MODE_MANUAL;
 
     // Set the pushbutton mode to manual
     pb_set_mode(TEMPEST_MODE_MANUAL);
+
+    // Cancel ALS task
+    debug_prints("Cancelling ALS task\r\n");
+    timer_ms_cancel_task(&AlsTask);
 }
 
 void tempest_set_mode_automatic(void) {
 
+    // If the mode is already in automatic mode, do nothing
+    if (systemMode == TEMPEST_MODE_AUTOMATIC) {
+        return;
+    }
+
+    debug_prints("Mode IS now auto\r\n");
     // Set the system mode to automatic
     systemMode = TEMPEST_MODE_AUTOMATIC;
 
     // Set the pushbutton mode to automatic
     pb_set_mode(TEMPEST_MODE_AUTOMATIC);
+
+    // Initialise ALS timer
+    if (timer_ms_task_is_in_queue(&AlsTask) == 0) {
+        debug_prints("Starting ALS task\r\n");
+        timer_ms_add_task(&AlsTask);
+    }
 }
 
 void tempest_set_mode_manual_override(void) {
-    debug_prints("Entered manual override mode\r\n");
+
+    // If mode is already in manual override, do nothing
+    if (systemMode == TEMPEST_MODE_MANUAL_OVERRIDE) {
+        return;
+    }
+
+    debug_prints("Mode IS now manual override\r\n");
     // Set the system mode to manual override
     systemMode = TEMPEST_MODE_MANUAL_OVERRIDE;
 
@@ -363,11 +375,89 @@ void tempest_set_mode_manual_override(void) {
 
     // Play sound on buzzer
     play_buzzer(50);
+
+    // Cancel ALS task
+    debug_prints("Cancelling ALS task\r\n");
+    timer_ms_cancel_task(&AlsTask);
 }
 
 void tempest_update_system(void) {
 
-    // Update system state
+    // TESTING FUNCTIONALITY
+    led_toggle(TEMPEST_LED_ORANGE);
+    led_toggle(TEMPEST_LED_RED);
+    brd_led_toggle();
+    HAL_Delay(1000);
+    return;
+
+    // Cancel mode switch task if both pushbuttons aren't down
+    if (modeSwitchStartTime == 1) {
+        if ((pb_get_state(PB_UP) == 0) || (pb_get_state(PB_DOWN) == 0)) {
+            // Cancel task if it exists in the queue
+            timer_ms_cancel_task(&ModeSwitchTask);
+            modeSwitchStartTime = 0;
+        }
+    }
+
+    switch (systemMode) {
+        case TEMPEST_MODE_MANUAL_OVERRIDE:
+            // debug_prints("Manual override mode\r\n");
+            break;
+
+        case TEMPEST_MODE_MANUAL:
+            // debug_prints("Manual mode\r\n");
+            break;
+        
+        case TEMPEST_MODE_AUTOMATIC:
+
+
+            break;
+        default:
+            break;
+    }
+}
+
+void tempest_read_als(void) {
+
+    // Read ambient light sensor value
+    uint8_t lightLevel = ambient_light_read();
+
+    // Set the motor to the correct hight
+    if ((lightLevel == HIGH) && !encoder_at_minimum_distance()) {
+        debug_prints("Setting motor up\r\n");
+        tempest_set_motor_up();
+    } else if ((lightLevel == LOW) && !encoder_at_maximum_distance()) {
+        tempest_set_motor_down();
+        debug_prints("Setting motor down\r\n");
+    }
+}
+
+void tempest_pb_up(void) {
+    // Wait 100ms then check if mode needs to be updated 
+    HAL_Delay(100);
+
+    // Check if both pushbuttons are currently down
+    if ((pb_get_state(PB_UP) == 1) && (pb_get_state(PB_DOWN) == 1)) {
+
+        // Check if the task already exists in the queue
+        if (timer_ms_task_is_in_queue(&ModeSwitchTask) == 0) {
+            modeSwitchTimerStarted = 1;
+            timer_ms_add_task(&ModeSwitchTask);
+        }
+
+        return;
+    }
+
+    // Only pb UP is being pressed thus set motor up
+    tempest_set_motor_up();
+}
+
+void tempest_pb_down(void) {
+
+    // Wait 100ms then check if mode needs to be updated 
+    HAL_Delay(100);
+
+    // Check if both pushbuttons are currently down
     if ((pb_get_state(PB_UP) == 1) && (pb_get_state(PB_DOWN) == 1)) {
         
         // Check if the task already exists in the queue
@@ -378,70 +468,44 @@ void tempest_update_system(void) {
         return;
     }
 
-    switch (systemMode) {
-    case TEMPEST_MODE_MANUAL_OVERRIDE:
-        break;
-
-    case TEMPEST_MODE_MANUAL:
-        break;
-    
-    case TEMPEST_MODE_AUTOMATIC:
-
-        // If the als task is not already in the queue, add it to the queue
-        if (timer_ms_task_is_in_queue(&AlsTask) == 0) {
-            timer_ms_add_task(&AlsTask);
-        }
-
-        // Read ambient light sensor value
-        uint8_t lightLevel = ambient_light_read();
-
-        // Set the motor to the correct hight
-        if ((lightLevel == HIGH) && !encoder_at_minimum_distance()) {
-            debug_prints("Setting motor up\r\n");
-            tempest_set_motor_up();
-        } else if ((lightLevel == LOW) && !encoder_at_maximum_distance()) {
-            tempest_set_motor_down();
-            debug_prints("Setting motor down\r\n");
-        }
-
-        break;
-    default:
-        break;
-    }
-
-    // Cancel task if it exists in the queue
-    timer_ms_cancel_task(&ModeSwitchTask);
+    // Only pb DOWN is being pressed thus set motor down
+    tempest_set_motor_down();
 }
 
 void tempest_hardware_init(void) {
-    // Initialise LED
+
+    // Initialise the LEDs on the nucleo board
 	board_init();
 
+    // Initialise the LEDs on the Tempest board
+    led_init();
+
 	// Initialise motor driver
-	motor_driver_init();
+	// motor_driver_init();
     
 	// Initialise rotary encoder
-    encoder_init();
+   // encoder_init();
 
 	// Initialise pushbuttons
-	pb_init();
-    pb_set_callbacks(PB_UP, TEMPEST_MODE_MANUAL, &tempest_set_motor_up, &tempest_stop_motor);
-    pb_set_callbacks(PB_UP, TEMPEST_MODE_AUTOMATIC, &tempest_set_motor_up, &empty_func);
-    pb_set_callbacks(PB_UP, TEMPEST_MODE_MANUAL_OVERRIDE, &pb_up_re_manual_override, &pb_up_fe_manual_override);
+	// pb_init();
+    // pb_set_callbacks(PB_UP, TEMPEST_MODE_MANUAL, &tempest_pb_up, &tempest_stop_motor);
+    // pb_set_callbacks(PB_UP, TEMPEST_MODE_AUTOMATIC, &tempest_pb_up, &empty_func);
+    // pb_set_callbacks(PB_UP, TEMPEST_MODE_MANUAL_OVERRIDE, &pb_up_re_manual_override, &pb_up_fe_manual_override);
 
-    pb_set_callbacks(PB_DOWN, TEMPEST_MODE_MANUAL, &tempest_set_motor_down, &tempest_stop_motor);
-    pb_set_callbacks(PB_DOWN, TEMPEST_MODE_AUTOMATIC, &tempest_set_motor_down, &empty_func);
-    pb_set_callbacks(PB_DOWN, TEMPEST_MODE_MANUAL_OVERRIDE, &pb_down_re_manual_override, &pb_down_fe_manual_override);
+    // pb_set_callbacks(PB_DOWN, TEMPEST_MODE_MANUAL, &tempest_pb_down, &tempest_stop_motor);
+    // pb_set_callbacks(PB_DOWN, TEMPEST_MODE_AUTOMATIC, &tempest_pb_down, &empty_func);
+    // pb_set_callbacks(PB_DOWN, TEMPEST_MODE_MANUAL_OVERRIDE, &pb_down_re_manual_override, &pb_down_fe_manual_override);
 
     // Initialise generic millisecond timer
-    tempest_init_timer_ms();
+    //tempest_init_timer_ms();
 
     // Initialise piezo buzzer
-    piezo_buzzer_init();
+    //piezo_buzzer_init();
 
     // Initialise flag to act as manual override pin
-    flag_init();
+    //flag_init();
 
     // Set system mode to automatic
-    tempest_set_mode_automatic();
+    // tempest_set_mode_automatic();
+
 }

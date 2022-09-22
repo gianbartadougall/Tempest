@@ -102,7 +102,8 @@ void piezo_buzzer_hardware_init(void) {
 	HAL_NVIC_EnableIRQ(PIEZO_TIMER_IRQn); // Enable interrupt
 
     // Enable interrupts
-    PIEZO_TIMER->DIER |= TIM_DIER_UIE;   
+    PIEZO_TIMER->DIER = 0x00; // Disable all interrupts
+    PIEZO_TIMER->DIER |= TIM_DIER_UIE; 
 }
 
 void piezo_buzzer_init_sounds(void) {
@@ -138,6 +139,8 @@ void piezo_buzzer_play_sound(PiezoSound sound) {
     // Set the sound to play and reset the index
     currentSound = sound;
     currentSound.index = 0;
+
+    // Clear all current interrupts
 
     PIEZO_TIMER->ARR = PIEZO_TIMER_ARR_VALUE(currentSound.frequencies[currentSound.index]);
     PIEZO_TIMER->CCR1 = PIEZO_TIMER_DUTY_CYCLE(currentSound.dutyCycles[currentSound.index]);

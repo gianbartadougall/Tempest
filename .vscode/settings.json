@@ -3,5 +3,7 @@
         "stm32l4xx_hal.h": "c",
         "stm32l4xx.h": "c",
         "tempest.h": "c"
-    }
+    },
+    "cortex-debug.gdbPath": "${env:ARMGCC_DIR}/arm-none-eabi-gdb", // This is used for cortex-debug
+    "cortex-debug.stutilPath": "C:/Users/Gian/Desktop/home/Engineering_Projects/Support/STLink/stlink-develop/src/st-util"
 }

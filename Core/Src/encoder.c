@@ -37,7 +37,7 @@
 #define ENCODER_MAXIMUM_DISTANCE (((uint32_t) (ENOCDER_OBJECT_DISTANCE / ENCODER_CIRCUMFERENCE)) * ENCODER_DISTANCE_PER_TOOTH * ENCODER_NUM_GEAR_TEETH)
 
 /* Variable Declarations */
-uint16_t maximumCount = 88;
+uint16_t maximumCount = 90;
 
 /* Function prototypes */
 void encoder_timer_init(void);

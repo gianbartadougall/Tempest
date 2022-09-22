@@ -50,23 +50,8 @@ int main(void) {
 	// Initialise hardware
 	hardware_init();
 
-	// Initialise pin
-	// uint32_t pin = 7 * 2 ;
-    // GPIOB->MODER   &= ~(0x03 << pin); // Reset Pin
-	// GPIOB->MODER   |= (0x01 << pin); // Set pin output
-    // GPIOB->PUPDR   &= ~(0x03 << pin); // Reset pull up pull down pin
-    // GPIOB->PUPDR   |= (0x02 << pin); // Set pin to pull down
-    // GPIOB->OTYPER  &= ~(0x01 << 7); // Set pin to push-pull
-
-	// uint32_t pin2 = 1 * 2 ;
-    // GPIOB->MODER   &= ~(0x03 << pin2); // Reset Pin
-	// GPIOB->MODER   |= (0x01 << pin2); // Set pin output
-    // GPIOB->PUPDR   &= ~(0x03 << pin2); // Reset pull up pull down pin
-    // GPIOB->PUPDR   |= (0x02 << pin2); // Set pin to pull down
-    // GPIOB->OTYPER  &= ~(0x01 << 1); // Set pin to push-pull
-
 	// Declare local variables
-	// char m[40];
+	char m[40];
 
 	while (1) {
 		

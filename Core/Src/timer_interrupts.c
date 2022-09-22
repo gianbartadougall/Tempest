@@ -64,7 +64,9 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
  * 
  */
 void TIM1_UP_TIM16_IRQHandler(void) {
-    debug_prints("ISR TIM 1 16\r\n");
+    // char m[40];
+    // sprintf(m, "TIMER 1 16 ISR: %lu\r\n", TIM1->SR);
+    // debug_prints(m);
 
     // Check and clear overflow flag.
     if ((TIM16->SR & TIM_SR_UIF) == TIM_SR_UIF) {
@@ -107,9 +109,9 @@ void TIM1_UP_TIM16_IRQHandler(void) {
 
         /* Call required functions */
 
-        // Current bug in the system that sets BIF flag so to ensure an infinte ISR loop
-        // doesn't occur, the BIF flag is cleared without doing anything else. To reproduce
-        // this situation, remove the code that clears the BIF flag and then;
+        // Current bug in the system that sets TIF flag so to ensure an infinte ISR loop
+        // doesn't occur, the TIF flag is cleared without doing anything else. To reproduce
+        // this situation, remove the code that clears the TIF flag and then;
         // 1) Reset the system so it starts in automatic mode
         // 2) Enter manual override mode
         // 3) Hold down up button until motor starts moving

@@ -24,7 +24,7 @@
  * 
  */
 void EXTI0_IRQHandler(void) {
-    debug_prints("EXTI 0\r\n");
+    // debug_prints("EXTI 0\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
     
@@ -91,7 +91,7 @@ void EXTI2_IRQHandler(void) {
  * 
  */
 void EXTI3_IRQHandler(void) {
-    debug_prints("EXTI 3\r\n");
+    // debug_prints("EXTI 3\r\n");
     // // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI3_IRQn);
     
@@ -133,7 +133,10 @@ void EXTI4_IRQHandler(void) {
  * 
  */
 void EXTI9_5_IRQHandler(void) {
-    debug_prints("EXTI 9 5\r\n");
+    // char m[40];
+    // sprintf(m, "EXTI 9 5 SR: %li\r\n", EXTI->PR1);
+    // debug_prints(m);
+    
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
     
@@ -145,7 +148,7 @@ void EXTI9_5_IRQHandler(void) {
 
         // Check if the interrupt was a rising or falling edge
         if (flag_state(MANUAL_OVERRIDE_FLAG) == 1) {
-            debug_prints("Entered manual override\r\n");
+            // debug_prints("Entered manual override\r\n");
             tempest_set_mode_manual_override();
         } else  {
             tempest_set_mode_automatic();

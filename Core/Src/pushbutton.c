@@ -43,7 +43,7 @@ PushButton pushbuttons[PUSH_BUTTONS];
 // still bouncing or not
 uint8_t pbDebouncedFlag[PUSH_BUTTONS];
 
-// List of function pointers. These are called by the ISR depending on the mode
+// List of function pointers. These are called by the ISR depending on the mode and
 // the edge that triggered the ISR
 void (*mode_0_re_callbacks[PUSH_BUTTONS]) (void); // Mode 0 rising edge callback
 void (*mode_0_fe_callbacks[PUSH_BUTTONS]) (void); // Mode 0 falling edge callback
@@ -129,7 +129,6 @@ void pb_init(void) {
 	);
     
 }
-
 
 void pb_set_mode(uint8_t mode) {
     pbMode = mode;

@@ -78,7 +78,8 @@ Core/Src/exti_interrupts.c \
 Core/Src/timer_interrupts.c \
 Core/Src/flag.c \
 Core/Src/mcu_clock.c \
-Core/Src/timer_ms.c
+Core/Src/timer_ms.c \
+Core/Src/led.c
 
 # Add driver libraries to C sources
 C_SOURCES += $(DRIVER_SOURCES)
@@ -202,7 +203,12 @@ $(BUILD_DIR):
 # clean up
 #######################################
 clean:
-	-rm -fR $(BUILD_DIR)
+	echo y | rd /s $(BUILD_DIR)
+#	-rm -fR $(BUILD_DIR) - For linux
+
+# Command for flashing .elf file to target board
+flash:
+	
   
 #######################################
 # dependencies

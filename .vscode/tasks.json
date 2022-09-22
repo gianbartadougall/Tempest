@@ -1,0 +1,26 @@
+// Pressing Control + Shift + B will bring up an option to select these tasks
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build all",
+            "group": "build",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "" // No arguments for this task
+            ]
+        },
+        {
+            "label": "Build clean",
+            "group": "build",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "clean" // Adding argument to clean
+            ]
+        }
+    ]
+}

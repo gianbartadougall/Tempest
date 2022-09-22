@@ -17,8 +17,8 @@
 
 /* Public Structs */
 
-#define TIMER_MS_MAX_TASK_SIZE 3
-#define TIMER_MS_MAX_QUEUE_SIZE 3
+#define TIMER_MS_MAX_TASK_SIZE 5
+#define TIMER_MS_MAX_QUEUE_SIZE 5
 
 /**
  * @brief Task struct that contains information on delay lengths and ISRs that need
@@ -121,5 +121,7 @@ void timer_ms_disable(void);
 void timer_ms_cancel_task(TimerMsTask* handle);
 
 void timer_ms_isr(uint8_t chnl);
+
+void timer_ms_status(void);
 
 #endif // TIMER_MS_H

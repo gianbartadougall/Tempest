@@ -44,6 +44,9 @@ enum TimeMsTaskStatus {TMS_TASK_STATUS_PAUSED, TMS_TASK_STATUS_QUEUED, TMS_TASK_
 TimerMsChannel Channels[NUM_CHANNELS];
 uint8_t numIdsAssigned = 0;
 
+
+// These #defines don't add functionality, they are just there to abbreviate long bits
+// of repetitive code
 #define CH(chnl) (Channels[chnl])
 #define CH_QUEUE(chnl, i) (Channels[chnl].queue[i])
 #define CH_SIZE(chnl) (Channels[chnl].size)
@@ -65,7 +68,7 @@ void timer_ms_init(void) {
 
     // Verify the frequency of the system clock is within range to create a millisecond timer
     if (SystemCoreClock > 65535000) {
-        debug_prints("TIMER MS error. System clock frequency too high to generate a millisecond timer on TIM3\r\n");
+        debug_prints("TIMER MS error. System clock frequency is too high to generate a millisecond timer on TIM3\r\n");
     }
 
     /* Configure timer */
@@ -76,7 +79,10 @@ void timer_ms_init(void) {
     // Set counter to up counting
     TIMER_MS->CR1 &= ~TIM_CR1_DIR;
 
+    // Set the prescaler to run at defined timer frequency
     TIMER_MS->PSC = (SystemCoreClock / MS_TIMER_FREQUENCY) - 1;
+
+    // Set the auto reload value to maximum timer value to get the maximum duty cycle
     TIMER_MS->ARR = MS_TIMER_MAX_VALUE;
     
     // Disable all interrupts
@@ -96,7 +102,7 @@ void timer_ms_init(void) {
 }
 
 void timer_ms_enable(void) {
-    TIMER_MS->EGR |= (TIM_EGR_UG); // Init counter to 0 and update all registers
+    TIMER_MS->EGR |= (TIM_EGR_UG); // Initialise counter to 0 and update all registers
     TIMER_MS->CR1 |= (TIM_CR1_CEN); // Enable counter
 }
 
@@ -132,12 +138,12 @@ void timer_ms_init_task(TimerMsTask* task, void (*isrs[TIMER_MS_MAX_TASK_SIZE])(
 
 void timer_ms_add_task(TimerMsTask* task) {
 
-    // Exit if both channels are full
+    // Exit function each timer channel's queue is full and has no room for a new task to be added
     if ((CH_SIZE(CH1) == TIMER_MS_MAX_QUEUE_SIZE) && (CH_SIZE(CH2) == TIMER_MS_MAX_QUEUE_SIZE)) {
         return;
     }
 
-    /* Add task to a queue that is free if possible */
+    /* Check each timer channel for free space to add a new task. Add task to a queue if possible */
     if (CH_SIZE(CH1) == 0) {
         timer_ms_add_task_to_queue(CH1, task);
         timer_ms_start_next_delay(CH1);
@@ -216,7 +222,7 @@ void timer_ms_isr(uint8_t chnl) {
 
     if (CH_SIZE(chnl) != 0) {
 
-        // Run the next ISR
+        // Run the next ISR in the current running task
         (*CH_QUEUE(chnl, 0)->isrs[CH_QUEUE(chnl, 0)->index]) ();
         CH_QUEUE(chnl, 0)->index++;
 
@@ -236,13 +242,19 @@ void timer_ms_isr(uint8_t chnl) {
             return;
         }
         
+        debug_prints("ISR cancel\r\n");
         // Task is finished. Removed task from queue
         timer_ms_remove_task(chnl, 0);
 
         // Check if there is another task to run
         if (CH_SIZE(chnl) > 0) {
+            char m[40];
+            sprintf(m, "Running new task with ID: %i\r\n", CH_QUEUE(chnl, 0)->id);
             timer_ms_start_next_delay(chnl);
+            debug_prints(m);
             return;
+        } else {
+            debug_prints("NO more tasks to run\r\n");
         }
     }
 
@@ -270,7 +282,7 @@ void timer_ms_cancel_task(TimerMsTask* task) {
     for (uint chnl = CH1; chnl < NUM_CHANNELS; chnl++) {
         for (uint8_t i = 0; i < CH_SIZE(chnl); i++) {
             if (CH_QUEUE(chnl, i)->id == task->id) {
-                
+                debug_prints("External cancel\r\n");
                 // Remove task if ID matches
                 timer_ms_remove_task(chnl, i);
                 break;
@@ -282,6 +294,10 @@ void timer_ms_cancel_task(TimerMsTask* task) {
 /* Private Functions */
 
 void timer_ms_add_task_to_queue(uint8_t chnl, TimerMsTask* task) {
+
+    char m[40];
+    sprintf(m, "Adding task with id: %i\r\n", task->id);
+    debug_prints(m);
 
     // Create a new queue to store tasks temporarily whilst sorting
     TimerMsTask* sortedQueue[TIMER_MS_MAX_QUEUE_SIZE];
@@ -365,6 +381,10 @@ void timer_ms_remove_task(uint8_t chnl, uint8_t index) {
     // Reset task back to its default state. This ensures if it is added
     // to the queue again, it has the correct values
     CH_QUEUE(chnl, index)->index = 0;
+    
+    char m[40];
+    sprintf(m, "Removing task with id: %i\r\n", CH_QUEUE(chnl, index)->id);
+    debug_prints(m);
 
     // Start one index above the index of the task to remove
     for (int i = 1 + index; i < CH_SIZE(chnl); i++) {
@@ -386,6 +406,7 @@ void timer_ms_priority_cancel_current_task(uint8_t chnl) {
 
     switch (CH_QUEUE(chnl, 0)->actionOnPriorityCancel) {
         case TIMER_MS_TASK_CANCEL:
+            debug_prints("Priority cancel\r\n");
             timer_ms_remove_task(chnl, 0);
             break;
         
@@ -454,4 +475,26 @@ void timer_ms_channel_reset(uint8_t chnl) {
 
 void timer_ms_reset_first_task(uint8_t chnl) {
     CH_QUEUE(chnl, 0)->index = 0;
+}
+
+
+void timer_ms_channel_status(uint8_t chnl) {
+
+    char m[30];
+    sprintf(m, "CHANNEL %i. Queue IDs: ", chnl);
+    debug_prints(m);
+
+    for (uint8_t i = 0; i < CH(chnl).size; i++) {
+        char j[10];
+        sprintf(j, "%i ", CH_QUEUE(chnl, i)->id);
+        debug_prints(j);
+    }
+
+    debug_prints("\r\n");
+}
+
+void timer_ms_status(void) {
+
+    timer_ms_channel_status(CH1);
+    timer_ms_channel_status(CH2);
 }
