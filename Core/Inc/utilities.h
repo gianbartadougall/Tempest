@@ -1,15 +1,15 @@
 /**
- * @file button.h
+ * @file utilities.h
  * @author Gian Barta-Dougall
- * @brief System file for button
+ * @brief System file for utilities
  * @version 0.1
  * @date --
  *
  * @copyright Copyright (c)
  *
  */
-#ifndef BUTTON_H
-#define BUTTON_H
+#ifndef UTILITIES_H
+#define UTILITIES_H
 
 /* Public Includes */
 
@@ -17,6 +17,11 @@
 #include "stm32l4xx.h"
 
 /* Public #defines */
+#define PIN_LOW  0
+#define PIN_HIGH 1
+
+#define TRUE  1
+#define FALSE 0
 
 /* Public Structures and Enumerations */
 
@@ -27,8 +32,6 @@
 /**
  * @brief Initialise the system library.
  */
-void button_init(void);
+void utilities_init(void);
 
-void button_enable(uint8_t button);
-
-#endif // BUTTON_H
+#endif // UTILITIES_H

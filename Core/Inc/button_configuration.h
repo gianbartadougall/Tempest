@@ -30,6 +30,9 @@
 // each button is known so the button states can be checked when required
 #include "hardware_configuration.h"
 
+// Imports for #defines such as TRUE and FALSE
+#include "utilities.h"
+
 /* Public STM Includes */
 #include "stm32l4xx.h"
 
@@ -43,12 +46,16 @@ typedef struct ButtonSettingsTypeDef {
     enum ButtonActiveState activeState;
     uint32_t minTimeBeforeReset;
     uint32_t minTimeBeforeActive;
+    uint16_t doubleClickMaxTimeDifference;
 } ButtonSettingsTypeDef;
 
 typedef struct ButtonTypeDef {
     const GPIO_TypeDef* port;
     const uint32_t pin;
     const ButtonSettingsTypeDef settings;
+    uint8_t reset;
+    uint32_t t1Released;
+    uint32_t t2Released;
 } ButtonTypeDef;
 
 /**
@@ -63,23 +70,30 @@ typedef struct ButtonTypeDef {
 #if (VERSION_MAJOR == 0)
 
 const struct ButtonSettingsTypeDef ButtonSettings = {
-    .activeState         = ACTIVE_HIGH,
-    .minTimeBeforeReset  = 0,
-    .minTimeBeforeActive = 0,
+    .activeState                  = ACTIVE_HIGH,
+    .minTimeBeforeReset           = 0,
+    .minTimeBeforeActive          = 0,
+    .doubleClickMaxTimeDifference = 10,
 };
 
 // Declare a structure for button 1
 const struct ButtonTypeDef ButtonUp = {
-    .port     = HC_BUTTON_0_PORT,
-    .pin      = HC_BUTTON_0_PIN,
-    .settings = ButtonSettings,
+    .port       = HC_BUTTON_0_PORT,
+    .pin        = HC_BUTTON_0_PIN,
+    .reset      = TRUE,
+    .t1Released = 0,
+    .t2Released = 0,
+    .settings   = ButtonSettings,
 };
 
 // Declare a structure for button 2
 const struct ButtonTypeDef ButtonDown = {
-    .port     = HC_BUTTON_1_PORT,
-    .pin      = HC_BUTTON_1_PIN,
-    .settings = ButtonSettings,
+    .port       = HC_BUTTON_1_PORT,
+    .pin        = HC_BUTTON_1_PIN,
+    .reset      = TRUE,
+    .t1Released = 0,
+    .t2Released = 0,
+    .settings   = ButtonSettings,
 };
 
     /* Configure generic macros based on the number of buttons being used */
@@ -121,6 +135,33 @@ struct TimerMsTask1 buttonUpReleasedTmsTask = {
     .status   = INITIAL_STATUS_VALUES,
 };
 
+struct TimerMsTask1 buttonUpSingleClickTmsTask = {
+    .id       = 1,
+    .tasks    = {},
+    .delays   = {},
+    .size     = 0,
+    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
+    .status   = INITIAL_STATUS_VALUES,
+};
+
+struct TimerMsTask1 buttonUpDoubleClickTmsTask = {
+    .id       = 1,
+    .tasks    = {},
+    .delays   = {},
+    .size     = 0,
+    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
+    .status   = INITIAL_STATUS_VALUES,
+};
+
+struct TimerMsTask1 buttonUpPressAndHoldTmsTask = {
+    .id       = 1,
+    .tasks    = {},
+    .delays   = {},
+    .size     = 0,
+    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
+    .status   = INITIAL_STATUS_VALUES,
+};
+
 struct TimerMsTask1 buttonDownPressedTmsTask = {
     .id       = 0,
     .tasks    = {},
@@ -139,8 +180,42 @@ struct TimerMsTask1 buttonDownReleasedTmsTask = {
     .status   = INITIAL_STATUS_VALUES,
 };
 
-TimerMsTask1* buttonPressedTimerTasks[NUM_BUTTONS];
-TimerMsTask1* buttonReleasedTimerTasks[NUM_BUTTONS];
+struct TimerMsTask1 buttonDownSingleClickTmsTask = {
+    .id       = 1,
+    .tasks    = {},
+    .delays   = {},
+    .size     = 0,
+    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
+    .status   = INITIAL_STATUS_VALUES,
+};
+
+struct TimerMsTask1 buttonDownDoubleClickTmsTask = {
+    .id       = 1,
+    .tasks    = {},
+    .delays   = {},
+    .size     = 0,
+    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
+    .status   = INITIAL_STATUS_VALUES,
+};
+
+struct TimerMsTask1 buttonDownPressAndHoldTmsTask = {
+    .id       = 1,
+    .tasks    = {},
+    .delays   = {},
+    .size     = 0,
+    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
+    .status   = INITIAL_STATUS_VALUES,
+};
+
+void nullFunction(void) {}
+
+void (*buttonDoubleClickFunctions[NUM_BUTTONS])(void) = {&nullFunction, &nullFunction};
+
+TimerMsTask1* buttonPressedDebouncingTimerTasks[NUM_BUTTONS];
+TimerMsTask1* buttonReleasedDebouncingTimerTasks[NUM_BUTTONS];
+TimerMsTask1* buttonSingleClickTimerTasks[NUM_BUTTONS];
+TimerMsTask1* buttonPressAndHoldTimerTasks[NUM_BUTTONS];
+
 ButtonTypeDef buttons[NUM_BUTTONS] = {ButtonUp, ButtonDown};
 
 /* Preprocessor statments to check certain configuration settings to detect any mistakes */
