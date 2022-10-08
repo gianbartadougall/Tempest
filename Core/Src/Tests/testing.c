@@ -18,6 +18,7 @@
 #include "board.h"
 #include "motor.h"
 #include "hardware_config.h"
+#include "adc_config.h"
 
 /* Private STM Includes */
 
@@ -141,40 +142,19 @@ void motor_test() {
     }
 }
 
-uint16_t adc_convert(void) {
-
-    // ADC1->SQR1 &= ~(0x0F << 6);                 // Reset sequence
-    ADC1->SQR1 &= ~(0x0F << 6);                 // Reset sequence
-    ADC1->SQR1 &= ~(0x0F << 12);                // Reset sequence
-    ADC1->SQR1 &= ~(0x0F << 18);                // Reset sequence
-    ADC1->SQR1 &= ~(0x0F << 24);                // Reset sequence
-    ADC1->SQR1 |= (0x0A << 6);                  // Set channel 10
-    ADC1->SQR1 |= (0x0A << 12);                 // Set channel 10
-    ADC1->SQR1 |= (0x0A << 18);                 // Set channel 10
-    ADC1->SQR1 |= (0x0A << 24);                 // Set channel 10
-    while ((ADC1->CR & ADC_CR_ADSTART) != 0) {} // Ensure there are no converstions currently running
-
-    ADC1->CR |= ADC_CR_ADSTART; // Start regular conversions
-
-    while ((ADC1->ISR & (0x01 << 2)) == 0) {} // Wait for ADC conversion to complete
-
-    return ADC1->DR;
-}
-
 void adc_test(void) {
 
+    adc_config_als1_init();
+
     // Turn the ADC on
-    ADC1->CR &= ~(ADC_CR_DEEPPWD); // Take ADC out of deep power down mode
-    ADC1->CR |= (ADC_CR_ADVREGEN); // Enable ADC voltage regulator
-    HAL_Delay(1);                  // Wait for voltage regulator to stabalise
-    ADC1->CR |= (0x01);            // Enable the ADC
+    // ADC1->CR |= (0x01); // Enable the ADC
     char m[40];
 
-    while ((ADC1->ISR & 0x01) == 0) {} // Wait for ADC to stabalise
+    // while ((ADC1->ISR & 0x01) == 0) {} // Wait for ADC to stabalise
 
     while (1) {
 
-        sprintf(m, "V = %i\r\n", adc_convert());
+        sprintf(m, "Voltage = %i\r\n", adc_config_adc1_convert());
         debug_prints(m);
         HAL_Delay(500);
     }

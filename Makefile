@@ -105,6 +105,11 @@ TEST_SOURCES = \
 Core/Src/Tests/testing.c \
 Core/Src/Tests/unit_tests.c
 
+# Beta sources are files that are still in development and are not ready for
+# production yet
+BETA_SOURCES = \
+Core/Src/Beta/adc_config.c
+
 # Add driver libraries to C sources
 C_SOURCES += $(BOARD_SOURCES) 
 C_SOURCES += $(SENSOR_SOURCES)
@@ -113,6 +118,7 @@ C_SOURCES += $(INTERRUPT_SOURCES)
 C_SOURCES += $(UTILITIY_SOURCES)
 C_SOURCES += $(RANDOM_SOURCES)
 C_SOURCES += $(TEST_SOURCES)
+C_SOURCES += $(BETA_SOURCES)
 
 #######################################
 # binaries
@@ -166,6 +172,7 @@ AS_INCLUDES =
 C_INCLUDES =  \
 -ICore/Inc \
 -ICore/Inc/Board \
+-ICore/Inc/Beta \
 -ICore/Inc/Interrupts \
 -ICore/Inc/Peripherals \
 -ICore/Inc/Sensors \

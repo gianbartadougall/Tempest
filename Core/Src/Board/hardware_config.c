@@ -147,29 +147,7 @@ void hardware_config_timer_init(void) {
 #endif
 }
 
-void hardware_config_adc_init(void) {
-
-    // Initialise the system clock for ADC
-    RCC->AHB2ENR |= RCC_AHB2ENR_ADCEN; // Enables the ADC clock
-
-    RCC->CCIPR |= 0x03 << 28; // Selects the system clock to be ADC clock
-
-    // Configure ADC clock
-    ADC1_COMMON->CCR &= ~(0x03 << 18); // Set no prescaler on ADC clock
-    ADC1_COMMON->CCR &= ~(0x03 << 16); // Set the clock mode to system clock
-
-    // Configure ADC settings
-    ADC1->CFGR &= ~(0x03 << 3);  // Set the resolution to 12 Bit
-    ADC1->CFGR &= ~(0x01 << 5);  // Align the data to the right
-    ADC1->CFGR &= ~(0x01 << 16); // Enable discontinuous mode
-    ADC1->CFGR &= ~(0x01 << 13); // Set mode to single
-
-    ADC1->ISR |= (0x01 << 2); // Enable EOC flag (End of Conversion Flag)
-
-    // Set the sampling to maximum
-    ADC1->SMPR1 = 0x00;        // Set sampling time of channels 0-9 to 2.5 clock cycles
-    ADC1->SQR1 &= ~(0xF << 0); // Set channel sequence length to 1
-}
+void hardware_config_adc_init(void) {}
 
 /**
  * @brief USART2 Initialization Function

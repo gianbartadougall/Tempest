@@ -16,6 +16,7 @@
 #include "ambient_light_sensor_config.h"
 #include "debug_log.h"
 #include "interrupts_config.h"
+#include "adc_config.h"
 
 /* STM32 Includes */
 
@@ -37,7 +38,16 @@ uint8_t count[NUM_AL_SENSORS] = {0};
 
 /* Function prototypes */
 
+/**
+ * @brief Determines whether an ambient light sensor has been connected or not
+ *
+ */
 void als_init(void) {
+
+    // Setup the ADC for this channel
+    adc_config_als1_init();
+
+    // Discharge the capacitor completely
 
     // This function needs to work out whether the als sensor has been connected or not
 }
