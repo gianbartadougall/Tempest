@@ -21,14 +21,14 @@
 // Including timer file to get access to the timer structure and
 
 // Import the version to compile so the correct hardware is used for the buttons
-#include "version_configuration.h"
+#include "version_config.h"
 
 // Import timer structures and public functions to be used by the buttons
-#include "timer_ms.h"
+#include "task_scheduler.h"
 
 // Import hardware configurations so the buttons GPIO port and pin for
 // each button is known so the button states can be checked when required
-#include "hardware_configuration.h"
+#include "hardware_config.h"
 
 // Imports for #defines such as TRUE and FALSE
 #include "utilities.h"
@@ -44,8 +44,8 @@ enum ButtonActiveState { ACTIVE_HIGH, ACTIVE_LOW };
 
 typedef struct ButtonSettingsTypeDef {
     enum ButtonActiveState activeState;
-    uint32_t minTimeBeforeReset;
-    uint32_t minTimeBeforeActive;
+    uint32_t minTimeBeforeReleased;
+    uint32_t minTimeBeforePressed;
     uint16_t doubleClickMaxTimeDifference;
 } ButtonSettingsTypeDef;
 
@@ -71,8 +71,8 @@ typedef struct ButtonTypeDef {
 
 const struct ButtonSettingsTypeDef ButtonSettings = {
     .activeState                  = ACTIVE_HIGH,
-    .minTimeBeforeReset           = 0,
-    .minTimeBeforeActive          = 0,
+    .minTimeBeforeReleased        = 0,
+    .minTimeBeforePressed         = 0,
     .doubleClickMaxTimeDifference = 10,
 };
 
@@ -101,120 +101,87 @@ const struct ButtonTypeDef ButtonDown = {
 
 #endif
 
-// Creating constant structures to be shared among tasks
-const TimerTaskSettings PR_4_MUT_PAUSE_AWF_FINISH = {
-    .priority               = TASK_MS_PRIORITY_4,
-    .actionIfMoreUrgentTask = TIMER_MS_TASK_PAUSE,
-    .actionWhenFinished     = TIMER_MS_TASK_FINISH,
-};
-
-const TimerTaskStatus INITIAL_STATUS_VALUES = {
-    .index          = 0,
-    .status         = 0,
-    .delayRemaining = 0,
-};
-
 /** Defining the functions to be called when button 1 is pressed and
  *  released
  */
-struct TimerMsTask1 buttonUpPressedTmsTask = {
-    .id       = 0,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonUpPressedTmsTask = {
+    .id          = 0,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonUpReleasedTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonUpReleasedTmsTask = {
+    .id          = 1,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonUpSingleClickTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonUpSingleClickTmsTask = {
+    .id          = 2,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonUpDoubleClickTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonUpDoubleClickTmsTask = {
+    .id          = 3,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonUpPressAndHoldTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonUpPressAndHoldTmsTask = {
+    .id          = 4,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonDownPressedTmsTask = {
-    .id       = 0,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonDownPressedTmsTask = {
+    .id          = 5,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonDownReleasedTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonDownReleasedTmsTask = {
+    .id          = 6,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonDownSingleClickTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonDownSingleClickTmsTask = {
+    .id          = 7,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonDownDoubleClickTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonDownDoubleClickTmsTask = {
+    .id          = 8,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
-struct TimerMsTask1 buttonDownPressAndHoldTmsTask = {
-    .id       = 1,
-    .tasks    = {},
-    .delays   = {},
-    .size     = 0,
-    .settings = PR_4_MUT_PAUSE_AWF_FINISH,
-    .status   = INITIAL_STATUS_VALUES,
+struct Recipe buttonDownPressAndHoldTmsTask = {
+    .id          = 9,
+    .functionIds = {},
+    .delays      = {},
+    .numTasks    = 0,
 };
 
 void nullFunction(void) {}
 
 void (*buttonDoubleClickFunctions[NUM_BUTTONS])(void) = {&nullFunction, &nullFunction};
 
-TimerMsTask1* buttonPressedDebouncingTimerTasks[NUM_BUTTONS];
-TimerMsTask1* buttonReleasedDebouncingTimerTasks[NUM_BUTTONS];
-TimerMsTask1* buttonSingleClickTimerTasks[NUM_BUTTONS];
-TimerMsTask1* buttonPressAndHoldTimerTasks[NUM_BUTTONS];
+Recipe* buttonPressedDebouncingTimerTasks[NUM_BUTTONS];
+Recipe* buttonReleasedDebouncingTimerTasks[NUM_BUTTONS];
+Recipe* buttonSingleClickTimerTasks[NUM_BUTTONS];
+Recipe* buttonPressAndHoldTimerTasks[NUM_BUTTONS];
 
 ButtonTypeDef buttons[NUM_BUTTONS] = {ButtonUp, ButtonDown};
 

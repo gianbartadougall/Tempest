@@ -30,6 +30,7 @@
 #define DOUBLE_CLICK_TIME(button)     (buttons[button].settings.doubleClickMaxTimeDifference)
 #define BUTTON_PRESSED                0x29
 #define BUTTON_RELEASED               0x30
+
 /* Private Structures and Enumerations */
 
 /* Private Variable Declarations */
@@ -43,13 +44,11 @@ uint8_t button_state(uint8_t button);
 
 void button_init(void) {
 
-    // Initialise the list holding all the timer tasks for the buttons
-    // when they are pressed
+    // Add the debouncing tasks for each button to the button pressed list
     buttonPressedDebouncingTimerTasks[0] = &buttonUpPressedTmsTask;
     buttonPressedDebouncingTimerTasks[1] = &buttonDownPressedTmsTask;
 
-    // Initialise the list holding all the timer tasks for the buttons
-    // when they release
+    // Add the debouncing tasks for each button to the button released list
     buttonReleasedDebouncingTimerTasks[0] = &buttonUpReleasedTmsTask;
     buttonReleasedDebouncingTimerTasks[1] = &buttonDownReleasedTmsTask;
 
@@ -96,7 +95,7 @@ void button_isr(uint8_t button) {
         // button must be bouncing => we don't know the final state of the
         // button => cancel button being released and assume button has been
         // pressed.
-        timer_ms_cancel_task(*buttonReleasedDebouncingTimerTasks[button]);
+        ts_cancel_recipe(buttonReleasedDebouncingTimerTasks[button]->id);
 
         // The button is automatically reset as soon as it has been released
         // for long enough time t1. If during a button press random oscillations
@@ -107,7 +106,7 @@ void button_isr(uint8_t button) {
         if (BUTTON_IS_RESET(button)) {
 
             // Add pressed timer task to timer.
-            timer_ms_add_task(*buttonPressedDebouncingTimerTasks[button]);
+            ts_add_recipe_to_queue(buttonPressedDebouncingTimerTasks[button]);
         }
 
         // Returning to ensure the button released code is not run
@@ -121,14 +120,14 @@ void button_isr(uint8_t button) {
     // button must be bouncing => we don't know the final state of the
     // button => cancel button being pressed and assume button has been
     // released.
-    timer_ms_cancel_task(*buttonPressedDebouncingTimerTasks[button]);
+    ts_cancel_recipe(buttonPressedDebouncingTimerTasks[button]->id);
 
     // Add released timer task to timer. If the button goes high before
     // the timer task completes then the task will be cancelled (meant
     // the buton was bouncing). If the button stays released for long
     // enough, the released timer task will finish and automatically call
     // the appropriate 'button released' function for the given button
-    timer_ms_add_task(*buttonReleasedDebouncingTimerTasks[button]);
+    ts_add_recipe_to_queue(buttonReleasedDebouncingTimerTasks[button]);
 }
 
 void button_action_on_pressed(uint8_t button) {
@@ -148,7 +147,7 @@ void button_action_on_pressed(uint8_t button) {
     // and that timer task will have already finished and left
     // the timer queue thus it doesn't matter if we try cancel
     // it
-    timer_ms_cancel_task(*buttonSingleClickTimerTasks[button]);
+    ts_cancel_recipe(buttonSingleClickTimerTasks[button]->id);
 
     // Any button press may be a 'press and hold' button press.
     // Given this, we need to start a timer task for press and
@@ -157,7 +156,7 @@ void button_action_on_pressed(uint8_t button) {
     // If the button is released before the press and hold timer
     // task can finish, it will be cancelled when the button is
     // released
-    timer_ms_add_task(*buttonPressAndHoldTimerTasks[button]);
+    ts_add_recipe_to_queue(buttonPressAndHoldTimerTasks[button]);
 }
 
 void button_action_on_released(uint8_t button) {
@@ -179,7 +178,7 @@ void button_action_on_released(uint8_t button) {
     // 'press and hold' => either a double or a single click. If the function
     // returns 0 then the press and hold timer task must have finished and
     // been removed already which means it was a press and hold
-    if (timer_ms_cancel_task1(*buttonPressAndHoldTimerTasks[button])) {
+    if (ts_cancel_recipe(buttonPressAndHoldTimerTasks[button]->id) == TRUE) {
 
         // If the difference between this button release and the last button
         // release < (max time difference between releases for a double click)
@@ -198,7 +197,7 @@ void button_action_on_released(uint8_t button) {
         // to timer. If another click doesn't happen quickly enough the timer task
         // will call the appropriate function. If another click does happen quickly
         // enough, this task will be cancelled
-        timer_ms_add_task(buttonSingleClickTimerTasks[button]);
+        ts_add_recipe_to_queue(buttonSingleClickTimerTasks[button]);
 
         // Return so only the single click function is called
         return;

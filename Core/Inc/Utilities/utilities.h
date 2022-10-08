@@ -12,6 +12,7 @@
 #define UTILITIES_H
 
 /* Public Includes */
+#include "debug_log.h"
 
 /* Public STM Includes */
 #include "stm32l4xx.h"

@@ -21,6 +21,15 @@
             "args": [
                 "clean" // Adding argument to clean
             ]
+        },
+        { // This task will run the format.bat file which will format all the .c and .h files in the Core directory
+            "label": "Format",
+            "group": "build",
+            "type": "shell",
+            "command": "format.bat",
+            "args": [
+                "" // No arguments
+            ]
         }
     ]
 }

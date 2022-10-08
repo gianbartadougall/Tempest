@@ -4,9 +4,9 @@
  * @brief File to store EXTI interrupts for GPIO pins for STM32L432KC mcu
  * @version 0.1
  * @date 2022-06-28
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -20,14 +20,14 @@
 #include "flag.h"
 
 /**
- * @brief Interrupt routine for EXTI1 
- * 
+ * @brief Interrupt routine for EXTI1
+ *
  */
 void EXTI0_IRQHandler(void) {
     // debug_prints("EXTI 0\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
-    
+
     // Function calls for pin 4
     if ((EXTI->PR1 & EXTI_PR1_PIF0) == EXTI_PR1_PIF0) {
 
@@ -35,24 +35,23 @@ void EXTI0_IRQHandler(void) {
         EXTI->PR1 = EXTI_PR1_PIF0;
 
         /* Call required functions */
-        
+
         // Call pb0 ISR
         pb_isr(PUSH_BUTTON_0);
 
         // *************************
     }
-
 }
 
 /**
- * @brief Interrupt routine for EXTI1 
- * 
+ * @brief Interrupt routine for EXTI1
+ *
  */
 void EXTI1_IRQHandler(void) {
     debug_prints("EXTI 1\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
-    
+
     // Function calls for pin 4
     if ((EXTI->PR1 & EXTI_PR1_PIF1) == EXTI_PR1_PIF1) {
 
@@ -60,21 +59,20 @@ void EXTI1_IRQHandler(void) {
         EXTI->PR1 = EXTI_PR1_PIF1;
 
         /* Call required functions */
-        
+
         // *************************
     }
-    
 }
 
 /**
  * @brief Interrupt handler for EXTI2
- * 
+ *
  */
 void EXTI2_IRQHandler(void) {
     debug_prints("EXTI 2\r\n");
     //  // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI2_IRQn);
-    
+
     // // Confirm pending interrupt exists on EXTI line 2
     // if ((EXTI->PR1 & EXTI_PR1_PIF2) == EXTI_PR1_PIF2) {
 
@@ -83,18 +81,18 @@ void EXTI2_IRQHandler(void) {
 
     //     /* Call required functions */
 
-    // }   
+    // }
 }
 
 /**
  * @brief Interrupt handler for EXTI3
- * 
+ *
  */
 void EXTI3_IRQHandler(void) {
     // debug_prints("EXTI 3\r\n");
     // // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI3_IRQn);
-    
+
     // Confirm pending interrupt exists on EXTI line 3
     if ((EXTI->PR1 & EXTI_PR1_PIF3) == EXTI_PR1_PIF3) {
 
@@ -108,38 +106,37 @@ void EXTI3_IRQHandler(void) {
 
 /**
  * @brief Interrupt routine for EXTI4
- * 
+ *
  */
 void EXTI4_IRQHandler(void) {
     debug_prints("EXTI 4\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI4_IRQn);
-    
+
     // Function calls for pin 4
     if ((EXTI->PR1 & EXTI_PR1_PIF4) == EXTI_PR1_PIF4) {
 
         // Clear the interrupt flag
         EXTI->PR1 = EXTI_PR1_PIF4;
-        
+
         /* Call required functions */
         // encoder_isr();
         // *************************
     }
-
 }
 
 /**
  * @brief Interrupt handler for EXTI5 - EXTI9
- * 
+ *
  */
 void EXTI9_5_IRQHandler(void) {
     // char m[40];
     // sprintf(m, "EXTI 9 5 SR: %li\r\n", EXTI->PR1);
     // debug_prints(m);
-    
+
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
-    
+
     // Check if interrupt was for manual override pin
     if ((EXTI->PR1 & EXTI_PR1_PIF5) == (EXTI_PR1_PIF5)) {
 
@@ -150,7 +147,7 @@ void EXTI9_5_IRQHandler(void) {
         if (flag_state(MANUAL_OVERRIDE_FLAG) == 1) {
             // debug_prints("Entered manual override\r\n");
             tempest_set_mode_manual_override();
-        } else  {
+        } else {
             tempest_set_mode_automatic();
         }
     }
@@ -198,7 +195,7 @@ void EXTI9_5_IRQHandler(void) {
 
 /**
  * @brief Interrupt handler for EXTI10 - EXTI15
- * 
+ *
  */
 void EXTI15_10_IRQHandler(void) {
     debug_prints("EXTI 15 10\r\n");

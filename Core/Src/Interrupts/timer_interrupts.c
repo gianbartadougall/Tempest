@@ -4,15 +4,17 @@
  * @brief File to store interrupt handlers for timers for STM32L432KC mcu
  * @version 0.1
  * @date 2022-06-28
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 /* Public Includes */
 
 /* Private Includes */
-#include "tempest.h"
+// #include "tempest.h"
+#include "utilities.h"
 #include "timer_ms.h"
+#include "task_scheduler.h"
 
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -43,11 +45,10 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
         TIM15->SR = ~TIM_SR_CC1IF;
 
         /* Call required functions */
-        // debug_prints("ISR called\r\n");
-        timer_ms_isr(TIMER_MS_CHANNEL_1);
+        ts_isr();
     }
 
-    // Check and clear CCR1 flag for TIM15
+    // Check and clear CCR2 flag for TIM15
     if ((TIM15->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
 
         // Clear the UIF flag
@@ -61,7 +62,7 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
 
 /**
  * @brief Interrupt handler for timer 1 and timer 16
- * 
+ *
  */
 void TIM1_UP_TIM16_IRQHandler(void) {
     // char m[40];
@@ -75,7 +76,7 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         TIM16->SR = ~TIM_SR_UIF;
 
         /* Call required functions */
-        piezo_buzzer_isr();
+        // piezo_buzzer_isr();
     }
 
     if ((TIM16->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {
@@ -86,7 +87,7 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         /* Call required functions */
 
         // Not sure if its a bug or not but the CCIF flag is set at some point
-        // in the piezo buzzer ISR and it needs to be cleared here other wise 
+        // in the piezo buzzer ISR and it needs to be cleared here other wise
         // the system will enter an infinte loop
     }
 
@@ -98,7 +99,7 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         /* Call required functions */
 
         // Not sure if its a bug or not but the CCIF flag is set at some point
-        // in the piezo buzzer ISR and it needs to be cleared here other wise 
+        // in the piezo buzzer ISR and it needs to be cleared here other wise
         // the system will enter an infinte loop
     }
 
@@ -137,12 +138,11 @@ void TIM1_UP_TIM16_IRQHandler(void) {
     // char m[30];
     // sprintf(m, "TIM1: %lu\tTIM16: %lu\r\n", TIM1->SR, TIM16->SR);
     // debug_prints(m);
-
 }
 
 /**
  * @brief Interrupt handler for timer 1
- * 
+ *
  */
 void TIM1_TRG_COM_IRQHandler(void) {
     debug_prints("ISR TIM COM\r\n");
@@ -161,35 +161,34 @@ void TIM1_CC_IRQHandler(void) {
     }
 
     if ((TIM1->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
-    
+
         // Clear capture compare flag
         TIM1->SR = ~TIM_SR_CC2IF;
 
         /* Call required functions */
-    
+
         // Call encoder isr to turn motor off
         debug_prints("REACHED MINIMUM VALUE\r\n");
-        tempest_isr_encoder_at_min_value();
+        // tempest_isr_encoder_at_min_value();
     }
 
     // Check if interrupt for CC3 was triggered
     if ((TIM1->SR & TIM_SR_CC3IF) == TIM_SR_CC3IF) {
-    
+
         // Clear capture compare flag
         TIM1->SR = ~TIM_SR_CC3IF;
 
         /* Call required functions */
-        
+
         // Call encoder isr to turn motor off
         debug_prints("REACHED MAXIMUM VALUE\r\n");
-        tempest_isr_encoder_at_max_value();
+        // tempest_isr_encoder_at_max_value();
     }
-
 }
 
 /**
  * @brief Interrupt handler for timer 1
- * 
+ *
  */
 void TIM1_IRQHandler(void) {
     debug_prints("ISR TIM 1\r\n");
@@ -197,7 +196,7 @@ void TIM1_IRQHandler(void) {
 
 /**
  * @brief Interrupt handler for timer 2
- * 
+ *
  */
 void TIM2_IRQHandler(void) {
 
@@ -214,12 +213,12 @@ void TIM2_IRQHandler(void) {
 
     // // Check if interrupt for CC1 was triggered
     // if ((TIM2->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {
-    
+
     //     // Clear capture compare flag
     //     TIM2->SR = ~TIM_SR_CC1IF;
 
     //     /* Call required functions */
-    
+
     //     if (pb0_triggered_early()) {
     //         encoder_isr_reset_min_value(); // Reset the minimum position of the blind
     //     } else {
@@ -232,10 +231,10 @@ void TIM2_IRQHandler(void) {
     // }
 
     // if ((TIM2->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
-    
+
     //     // Clear capture compare flag
     //     TIM2->SR = ~TIM_SR_CC2IF;
-        
+
     //     /* Call required functions */
     //     if (pb1_triggered_early()) {
     //         encoder_isr_reset_max_value(); // Reset the maximum position of the blind
@@ -247,21 +246,16 @@ void TIM2_IRQHandler(void) {
     //     // and triggered is run
     //     return;
     // }
-
 }
 
 /**
  * @brief Interrupt handler for timer 6
- * 
+ *
  */
-void TIM6_DAC_IRQHandler(void) {
-    
-}
+void TIM6_DAC_IRQHandler(void) {}
 
 /**
  * @brief Interrupt handler for timer 7
- * 
+ *
  */
-void TIM7_IRQHandler(void) {
-    
-}
+void TIM7_IRQHandler(void) {}

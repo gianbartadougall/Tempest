@@ -1,9 +1,16 @@
 {
+    "cortex-debug.gdbPath": "${env:ARMGCC_DIR}/arm-none-eabi-gdb", // This is used for cortex-debug
+    "cortex-debug.stutilPath": "C:/Users/Gian/Desktop/home/Engineering_Projects/Support/STLink/stlink-develop/src/st-util",
+    "editor.formatOnSave": true,
+    "clang-format.executable": "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
+    "clang-format.style": "file",
+    "C_Cpp.errorSquiggles": "Disabled",
     "files.associations": {
         "stm32l4xx_hal.h": "c",
-        "stm32l4xx.h": "c",
-        "tempest.h": "c"
+        "task_scheduler.h": "c",
+        "motor.h": "c",
+        "utilities.h": "c",
+        "hardware_config.h": "c"
     },
-    "cortex-debug.gdbPath": "${env:ARMGCC_DIR}/arm-none-eabi-gdb", // This is used for cortex-debug
-    "cortex-debug.stutilPath": "C:/Users/Gian/Desktop/home/Engineering_Projects/Support/STLink/stlink-develop/src/st-util"
+    //"editor.detectIndentation": false // Prevents VScode from defaulting to using 2 spaces instead of 4 for files because it tries to guess file types
 }

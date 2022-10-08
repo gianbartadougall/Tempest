@@ -36,9 +36,6 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/main.c \
-Core/Src/stm32l4xx_it.c \
-Core/Src/stm32l4xx_hal_msp.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim_ex.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c \
@@ -64,25 +61,58 @@ Core/Src/system_stm32l4xx.c
 ASM_SOURCES =  \
 startup_stm32l432xx.s
 
-DRIVER_SOURCES = \
-Core/Src/board.c \
-Core/Src/debug_log.c \
-Core/Src/encoder.c \
-Core/Src/motor_driver.c \
-Core/Src/pushbutton.c \
-Core/Src/tempest.c \
-Core/Src/ambient_light_sensor.c \
-Core/Src/piezo_buzzer.c \
-Core/Src/comparator.c \
-Core/Src/exti_interrupts.c \
-Core/Src/timer_interrupts.c \
-Core/Src/flag.c \
-Core/Src/mcu_clock.c \
+# Include Board files
+BOARD_SOURCES = \
+Core/Src/Board/hardware_config.c
+# Core/Src/Board/mcu_clock.c
+
+# Include Sensor files
+SENSOR_SOURCES = \
+Core/Src/Sensors/ambient_light_sensor.c \
+Core/Src/Sensors/encoder.c
+
+# Include Peripheral files
+PERIPHERAL_SOURCES = \
+Core/Src/Peripherals/button.c \
+Core/Src/Peripherals/motor.c
+# Core/Src/Peripherals/piezo_buzzer.c 
+# Core/Src/Peripherals/motor_driver.c
+# Core/Src/Peripherals/led.c 
+
+# Include Interrupt files
+INTERRUPT_SOURCES = \
+Core/Src/Interrupts/stm32l4xx_it.c \
+Core/Src/Interrupts/timer_interrupts.c
+# Core/Src/Interrupts/exti_interrupts.c
+
+# Include Utility files
+UTILITIY_SOURCES = \
+Core/Src/Utilities/flag.c \
+Core/Src/Utilities/debug_log.c \
+Core/Src/Utilities/task_scheduler.c
+
+# Include random files
+RANDOM_SOURCES = \
+Core/Src/main.c \
+Core/Src/stm32l4xx_hal_msp.c \
 Core/Src/timer_ms.c \
-Core/Src/led.c
+Core/Src/pushbutton.c \
+Core/Src/comparator.c \
+Core/Src/board.c
+# Core/Src/tempest.c \
+
+TEST_SOURCES = \
+Core/Src/Tests/testing.c \
+Core/Src/Tests/unit_tests.c
 
 # Add driver libraries to C sources
-C_SOURCES += $(DRIVER_SOURCES)
+C_SOURCES += $(BOARD_SOURCES) 
+C_SOURCES += $(SENSOR_SOURCES)
+C_SOURCES += $(PERIPHERAL_SOURCES)
+C_SOURCES += $(INTERRUPT_SOURCES)
+C_SOURCES += $(UTILITIY_SOURCES)
+C_SOURCES += $(RANDOM_SOURCES)
+C_SOURCES += $(TEST_SOURCES)
 
 #######################################
 # binaries
@@ -128,17 +158,23 @@ C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32L432xx
 
-
 # AS includes
 AS_INCLUDES = 
+
 
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-ICore/Inc/Board \
+-ICore/Inc/Interrupts \
+-ICore/Inc/Peripherals \
+-ICore/Inc/Sensors \
+-ICore/Inc/Utilities \
+-ICore/Inc/Tests \
 -IDrivers/STM32L4xx_HAL_Driver/Inc \
 -IDrivers/STM32L4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32L4xx/Include \
--IDrivers/CMSIS/Include
+-IDrivers/CMSIS/Include 
 
 
 # compile gcc flags

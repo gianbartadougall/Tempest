@@ -10,8 +10,8 @@
  * @copyright Copyright (c)
  *
  */
-#ifndef TEMPEST_CONFIG_H
-#define TEMPEST_CONFIG_H
+#ifndef VERSION_CONFIG_H
+#define VERSION_CONFIG_H
 
 /**
  * The MAJOR, MINOR, PATCH #defines represents the current version of the system in the form
@@ -38,29 +38,30 @@
  * (xxxxyyyyyyzzzzzz) where x represents a 4-bit MAJOR number, y represents a 6-bit MINOR number
  * and z represents a 6-bit PATCH number.
  */
-#define MAJOR 0
-#define MINOR 0
-#define PATH  0
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 0
+#define VERSION_PATH  0
 
 // Confirm the MAJOR, MINOR, PATCH numbers do not exceed their maximum values. If the MAJOR,
 // MINOR or PATCH numbers exceeed their maximum values, they cannot fit into a 16-bit number
-#if ((MAJOR > 15) || (MINOR > 127) || (PATCH > 127))
+#if ((VERSION_MAJOR > 15) || (VERSION_MINOR > 127) || (VERSION_PATCH > 127))
     #error Illegal version number. MAJOR > 15 or MINOR > 127 or PATCH > 127
 #endif
 
 // Define which version of Tempest the project will compile for
-#define PROJECT_VERSION ((MAJOR << 12) | (MINOR < 7) | (PATCH))
+#define PROJECT_VERSION ((VERSION_MAJOR << 12) | (VERSION_MINOR < 7) | (VERSION_PATCH))
 
 /** List of all the different modules used in the project. These modules can be commented out
  *  to disable them for debugging purposes. These modules also may only be included in certain
  *  versions of the system
  */
-#if (MAJOR == 0)
-    #define BUTTON_MODULE_ENABLED
+#if (VERSION_MAJOR == 0)
+    // #define BUTTON_MODULE_ENABLED
+    // #define TASK_SCHEDULER_ENABLED
     // #define MOTOR_MODULE_ENABLED
-    // #define AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
+    #define AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
     // #define ENCODER_MODULE_ENABLED
     // #define WINDOW_SENSOR_MODULE_ENABLED
 #endif
 
-#endif // TEMPEST_CONFIG_H
+#endif // VERSION_CONFIG_H
