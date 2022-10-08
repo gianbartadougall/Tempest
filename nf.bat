@@ -126,23 +126,13 @@ EXIT
 	call :text %c% "/* Private Variable Declarations */"
 	call :bs %c%
 	call :text %c% "/* Private Function Prototypes */"
-	call :text %c% "void !filename!_hardware_init(void);"
 	call :bs %c%
 	call :text %c% "/* Public Functions */"
 	call :bs %c%
 	call :text %c% "void !fileName!_init(void) {"
 	call :bs %c%
-	call :text %c% "	// Initialise hardware "
-	call :text %c% "	!fileName!_hardware_init();"
-	call :bs %c%
 	call :text %c% "}"
 	call :bs %c%
 	call :text %c% "/* Private Functions */"
 	call :bs %c%
-	call :text %c% "/**"
-	call :text %c% " * @brief Initialise the hardware for the library."
-	call :text %c% " */"
-	call :text %c% "void !fileName!_hardware_init(void) {"
-	call :bs %c%
-	call :text %c% "}"
 	goto :eof

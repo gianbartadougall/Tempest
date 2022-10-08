@@ -1,15 +1,15 @@
 /**
- * @file hardware_config.h
+ * @file testing.h
  * @author Gian Barta-Dougall
- * @brief This file contains all the pin and GPIO assignments for all the harware peripherals on the board
+ * @brief System file for testing
  * @version 0.1
  * @date --
  * 
  * @copyright Copyright (c) 
  * 
  */
-#ifndef HARDWARE_CONFIG_H
-#define HARDWARE_CONFIG_H
+#ifndef TESTING_H
+#define TESTING_H
 
 /* Public Includes */
 
@@ -17,10 +17,6 @@
 #include "stm32l4xx.h"
 
 /* Public #defines */
-#define LED_ORANGE_PIN 4
-#define LED_ORANGE_PORT GPIOB
-#define LED_RED_PIN 11
-#define LED_RED_PORT GPIOA
 
 /* Public Structures and Enumerations */
 
@@ -31,6 +27,6 @@
 /**
  * @brief Initialise the system library.
  */
-void hardware_config_init(void);
+void testing_init(void);
 
-#endif // HARDWARE_CONFIG_H
+#endif // TESTING_H

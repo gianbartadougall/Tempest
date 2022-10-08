@@ -1,7 +1,7 @@
 /**
- * @file hardware_config.c
+ * @file utilities.c
  * @author Gian Barta-Dougall
- * @brief System file for hardware_config
+ * @brief System file for utilities
  * @version 0.1
  * @date --
  * 
@@ -11,7 +11,7 @@
 /* Public Includes */
 
 /* Private Includes */
-#include "hardware_config.h"
+#include "utilities.h"
 
 /* Private STM Includes */
 
@@ -22,14 +22,14 @@
 /* Private Variable Declarations */
 
 /* Private Function Prototypes */
-void hardware_config_hardware_init(void);
+void utilities_hardware_init(void);
 
 /* Public Functions */
 
-void hardware_config_init(void) {
+void utilities_init(void) {
 
 	// Initialise hardware 
-	hardware_config_hardware_init();
+	utilities_hardware_init();
 
 }
 
@@ -38,6 +38,6 @@ void hardware_config_init(void) {
 /**
  * @brief Initialise the hardware for the library.
  */
-void hardware_config_hardware_init(void) {
+void utilities_hardware_init(void) {
 
 }

@@ -4,9 +4,9 @@
  * @brief Generic millisecond timer
  * @version 0.1
  * @date 2022-07-04
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 #ifndef TIMER_MS_H
 #define TIMER_MS_H
@@ -17,17 +17,17 @@
 
 /* Public Structs */
 
-#define TIMER_MS_MAX_TASK_SIZE 5
+#define TIMER_MS_MAX_TASK_SIZE  5
 #define TIMER_MS_MAX_QUEUE_SIZE 5
 
 /**
  * @brief Task struct that contains information on delay lengths and ISRs that need
  * to be performed
- * 
+ *
  * @id: A unique ID that allows tasks to be differentiated from eachother
  * @isrs: A list of ISRs that are called (in order) between the list of delays
  * @delays: A list of delays that are carried out (in order) before calling each isr
- * @size: The number of ISRs/delays that need to be performed to compelte the task 
+ * @size: The number of ISRs/delays that need to be performed to compelte the task
  * @index: The current delay/isr the task is up to
  * @delayremaining: In the case that a task is paused due to another task with a higher
  * priority that needs to be run, the amount of time the current task delay has left
@@ -40,7 +40,7 @@
  */
 typedef struct TimerMsTask {
     uint8_t id;
-    void (*isrs[TIMER_MS_MAX_TASK_SIZE]) (void);
+    void (*isrs[TIMER_MS_MAX_TASK_SIZE])(void);
     uint16_t delays[TIMER_MS_MAX_TASK_SIZE];
     uint8_t size;
     uint8_t index;
@@ -51,10 +51,31 @@ typedef struct TimerMsTask {
     uint8_t actionOnCompletion;
 } TimerMsTask;
 
+typedef struct TimerTaskStatus {
+    uint8_t index;
+    uint8_t status;
+    uint8_t delayRemaining;
+} TimerTaskStatus;
+
+typedef struct TimerTaskSettings {
+    uint8_t priority;
+    uint8_t actionIfMoreUrgentTask;
+    uint8_t actionWhenFinished;
+} TimerTaskSettings;
+
+typedef struct TimerMsTask1 {
+    const uint8_t id;
+    const void (*tasks[TIMER_MS_MAX_TASK_SIZE])(void);
+    const uint16_t delays[TIMER_MS_MAX_TASK_SIZE];
+    const uint8_t size;
+    const TimerTaskSettings settings;
+    TimerTaskStatus status;
+} TimerMsTask1;
+
 /**
  * @brief Handle for each channel that timer has. This handle stores the tasks that
  * it needs to run in order
- * 
+ *
  * @queue: The list of tasks that the channel will perform in order
  * @size: The number of tasks in the queue
  */
@@ -65,10 +86,9 @@ typedef struct TimerMsChannel {
 
 /* Public Enumerations */
 
-enum TaskActionOnCancel {TIMER_MS_TASK_CANCEL, TIMER_MS_TASK_RESET, TIMER_MS_TASK_PAUSE};
+enum TaskActionOnCancel { TIMER_MS_TASK_CANCEL, TIMER_MS_TASK_RESET, TIMER_MS_TASK_PAUSE };
 
-enum TaskActionOnCompletion {TIMER_MS_TASK_FINISH, TIMER_MS_TASK_REPEAT};
-
+enum TaskActionOnCompletion { TIMER_MS_TASK_FINISH, TIMER_MS_TASK_REPEAT };
 
 #define TASK_MS_PRIORITY_1 5
 #define TASK_MS_PRIORITY_2 4
@@ -87,7 +107,7 @@ void timer_ms_init(void);
 /**
  * @brief Initialise parameters into Timer task struct. This function also assigns
  * an ID to the task
- * 
+ *
  * @param task The pointer to the task to be initialised
  * @param isrs The list of ISRs that need to be run (in order)
  * @param delays The list of delays to wait between each ISR (in order)
@@ -96,10 +116,9 @@ void timer_ms_init(void);
  * @param actionOnPriorityCancel
  * @param priority
  */
-void timer_ms_init_task(TimerMsTask* task, void (*isrs[TIMER_MS_MAX_TASK_SIZE])(void), 
-        uint16_t delays[TIMER_MS_MAX_TASK_SIZE], uint8_t numberOfDelays, 
-        uint8_t actionOnPriorityCancel, uint8_t priority, 
-        uint8_t TaskActionOnCompletion);
+void timer_ms_init_task(TimerMsTask* task, void (*isrs[TIMER_MS_MAX_TASK_SIZE])(void),
+                        uint16_t delays[TIMER_MS_MAX_TASK_SIZE], uint8_t numberOfDelays, uint8_t actionOnPriorityCancel,
+                        uint8_t priority, uint8_t TaskActionOnCompletion);
 
 void timer_ms_add_task(TimerMsTask* task);
 
@@ -113,12 +132,13 @@ void timer_ms_enable(void);
 /**
  * @brief Stops the counter from updating. Does not cancel any delays that have
  * currently been assigned
- * 
+ *
  */
 void timer_ms_disable(void);
 
-
 void timer_ms_cancel_task(TimerMsTask* handle);
+
+uint8_t timer_ms_cancel_task1(TimerMsTask* task);
 
 void timer_ms_isr(uint8_t chnl);
 

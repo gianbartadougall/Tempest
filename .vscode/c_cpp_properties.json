@@ -3,7 +3,12 @@
         {
             "name": "STM32L4",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/Core/Src",
+                "${workspaceFolder}/Core/Inc",
+                "${workspaceFolder}/Tests/Src",
+                "${workspaceFolder}/Tests/Inc",
+                "${workspaceFolder}/Drivers/STM32L4xx_HAL_Driver/Inc"
             ],
             "defines": [
                 "_DEBUG",
@@ -16,7 +21,8 @@
             "intelliSenseMode": "${default}",
             "compilerPath": "${env:ARMGCC_DIR}\\arm-none-eabi-gcc.exe",
             "compilerArgs": [
-                "-mcpu-cortex-m4"
+                "-mcpu-cortex-m4",
+                "-mthumb"
             ],
             "cStandard": "c11",
             "cppStandard": "c++17",
