@@ -2,19 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Cortex Debug",
             "cwd": "${workspaceRoot}",
             "executable": "./build/Tempest.elf",
+            "name": "Debug with OpenOCD",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
-            "device": "STM32L432KC",
-            "showDevDebugOutput": "raw",
             "configFiles": [
-                "interface/stlink.cfg",
-                "target/stm32l4x.cfg"
+                "C:\\dev\\tools\\OpenOCD-20211118-0.11.0\\share\\openocd\\scripts\\board\\stm32l4discovery.cfg"
             ],
-            "svdFile": "STM32L432.svd"
-        }
+            "searchDir": [],
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none"
+        },
     ]
 }

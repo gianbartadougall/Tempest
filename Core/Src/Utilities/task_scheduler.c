@@ -54,7 +54,7 @@ Task* headTask;
 
 /* Private Function Prototypes */
 uint8_t ts_search_queue_for_empty_index(void);
-uint32_t ts_calculate_task_execution_time(uint32_t delayUntilExecution);
+uint32_t ts_calculate_task_execution_time(Recipe* recipe, uint8_t index);
 void ts_add_task_to_queue(Recipe* recipe, uint8_t ri, uint8_t qi);
 void ts_add_task_to_queue(Recipe* recipe, uint8_t ri, uint8_t qi);
 void ts_print_task(Task* task);
@@ -67,7 +67,7 @@ uint8_t ts_remove_recipe(uint8_t recipeId);
 
 /* Public Functions */
 
-void task_scheduler_init(void) {
+void ts_init(void) {
 
     // No tasks in queue yet
     headTask = NULL;
@@ -84,9 +84,9 @@ void task_scheduler_init(void) {
 }
 
 void ts_enable_scheduler(void) {
-    TS_TIMER->EGR |= (TIM_EGR_UG); // Reset counter to 0 and update all registers
-    TS_TIMER->CR1 |= TIM_CR1_CEN;
+    TS_TIMER->EGR |= (TIM_EGR_UG);    // Reset counter to 0 and update all registers
     TS_TIMER->DIER |= TIM_DIER_CC1IE; // Enable interrupts
+    TS_TIMER->CR1 |= TIM_CR1_CEN;
 }
 
 void ts_disable_scheduler(void) {
@@ -95,9 +95,6 @@ void ts_disable_scheduler(void) {
 }
 
 void ts_add_recipe_to_queue(Recipe* recipe) {
-
-    // Turn task scheduler on
-    ts_enable_scheduler();
 
     // Return if there is no room free room in task list
     uint8_t emptyIndex = ts_search_queue_for_empty_index();
@@ -113,6 +110,11 @@ void ts_add_recipe_to_queue(Recipe* recipe) {
 
     // Update the capture compare of timer
     ts_update_capture_compare();
+
+    // Turn on timer if required
+    if ((TS_TIMER->CR1 & TIM_CR1_CEN) == 0) {
+        ts_enable_scheduler();
+    }
 }
 
 /**
@@ -152,6 +154,9 @@ uint8_t ts_search_queue_for_recipe(Recipe* recipe) {
 void ts_update_capture_compare(void) {
     if (headTask->executionTime != TS_NONE) {
         TS_TIMER->CCR1 = headTask->executionTime;
+        char m[40];
+        sprintf(m, "cap compare = %li\r\n", TS_TIMER->CCR1);
+        debug_prints(m);
     }
 }
 
@@ -187,14 +192,19 @@ void ts_add_task_to_queue(Recipe* recipe, uint8_t ri, uint8_t qi) {
 
     // Ensure the empty task is empty
     if (queue[qi].functionId != TS_NONE) {
+        debug_prints("returning\r\n");
         return;
     }
 
-    queue[qi].executionTime = ts_calculate_task_execution_time(recipe->delays[ri]);
+    queue[qi].executionTime = ts_calculate_task_execution_time(recipe, ri);
     queue[qi].recipieId     = recipe->id;
     queue[qi].functionId    = recipe->functionIds[ri];
     queue[qi].group         = recipe->group;
     queue[qi].nextTask      = NULL;
+
+    char m[50];
+    sprintf(m, "Execution time: %li\r\n", queue[qi].executionTime);
+    debug_prints(m);
 }
 
 /**
@@ -203,7 +213,12 @@ void ts_add_task_to_queue(Recipe* recipe, uint8_t ri, uint8_t qi) {
  * @param delayUntilExecution The given delay
  * @return uint32_t The current count + delay
  */
-uint32_t ts_calculate_task_execution_time(uint32_t delayUntilExecution) {
+uint32_t ts_calculate_task_execution_time(Recipe* recipe, uint8_t index) {
+    uint32_t delayUntilExecution = 0;
+    for (uint8_t i = 0; i <= index; i++) {
+        delayUntilExecution += recipe->delays[i];
+    }
+
     return (TS_TIMER->CNT + delayUntilExecution) % TS_TIMER_MAX_COUNT;
 }
 
@@ -265,9 +280,9 @@ void ts_link_task_in_queue(uint8_t qi) {
 }
 
 void ts_isr(void) {
-    // char m[100];
-    // sprintf(m, "ISR Run @t = %li\r\n", TIM15->CNT);
-    // debug_prints(m);
+    char m[100];
+    sprintf(m, "ISR Run @t = %li\r\n", TIM15->CNT);
+    debug_prints(m);
     uint32_t executionTime = headTask->executionTime;
 
     // Set flags for all tasks that have the current execution time
@@ -282,6 +297,8 @@ void ts_isr(void) {
                 break;
             case AMBIENT_LIGHT_SENSOR_GROUP:
                 ambientLightSensorFlag |= (0x01 << headTask->functionId);
+                // sprintf(m, "Id: %i\tFlag: %li\r\n", headTask->functionId, ambientLightSensorFlag);
+                // debug_prints(m);
                 break;
             default:
                 break;
@@ -444,7 +461,7 @@ void ts_run_unit_tests(void) {
 
 void add_recipe_to_queue_test1(void) {
 
-    task_scheduler_init();
+    ts_init();
     ts_add_recipe_to_queue(&recipe1);
     ts_add_recipe_to_queue(&recipe2);
     ts_add_recipe_to_queue(&recipe3);
@@ -467,7 +484,7 @@ void add_recipe_to_queue_test1(void) {
 
 void add_recipe_to_queue_test2(void) {
 
-    task_scheduler_init();
+    ts_init();
     ts_add_recipe_to_queue(&recipe1);
     ts_add_recipe_to_queue(&recipe2);
     ts_add_recipe_to_queue(&recipe3);
@@ -484,7 +501,7 @@ void add_recipe_to_queue_test2(void) {
 
 void remove_recipe_test1(void) {
 
-    task_scheduler_init();
+    ts_init();
     debug_clear();
     ts_add_recipe_to_queue(&recipe1);
     ts_add_recipe_to_queue(&recipe2);
@@ -509,7 +526,7 @@ void remove_recipe_test1(void) {
 
 void remove_recipe_test2(void) {
 
-    task_scheduler_init();
+    ts_init();
     ts_add_recipe_to_queue(&recipe1);
     ts_add_recipe_to_queue(&recipe2);
     ts_add_recipe_to_queue(&recipe3);

@@ -30,74 +30,78 @@
 #define MAX_COUNT     (CUT_OFF_COUNT * 2)
 
 /* Variable Declarations */
+extern uint32_t ambientLightSensorFlag;
 
 // Keeps track of how many times in a row ambient light has or has not been found.
 // This ensures that a light from a passing car or a dark shadow won't fool the
 // sensor into recording a false state
 uint8_t count[NUM_AL_SENSORS] = {0};
 
+// List keeps track of the state of each sensor
+enum ALSensorState { DISCONNECTED, CONNECTED };
+uint8_t sensorStatus[NUM_AL_SENSORS] = {DISCONNECTED};
+
 /* Function prototypes */
-
-/**
- * @brief Determines whether an ambient light sensor has been connected or not
- *
- */
-void als_init(void) {
-
-    // Setup the ADC for this channel
-    adc_config_als1_init();
-
-    // Discharge the capacitor completely
-
-    // This function needs to work out whether the als sensor has been connected or not
-}
 
 /**
  * @brief Setting the pin to input allows the capacitor in the circuit to discharge
  * creating a voltage that can be read to determine if there was ambient light
  */
-void als_mode_input(uint8_t alsId) {
+void al_sensor_set_mode_read(uint8_t alSensorId) {
+    debug_prints("ALS: Set to input mode\r\n");
 
     // Ensure the sensor ID is valid
-    if (ID_INVALID(alsId)) {
+    if (ID_INVALID(alSensorId)) {
         return;
     }
 
-    uint8_t index = alsId - AL_SENSOR_OFFSET;
-    alSensors[index].port->MODER &= ~(0x03 << alSensors[index].pin);
+    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
+    alSensors[index].port->MODER &= ~(0x03 << (alSensors[index].pin * 2));
 }
 
 /**
  * @brief Setting the pin to analogue mode prevents the capacitor from dishcharging
- * too quickly allowing it to slowly charge based on the amount of ambient ligh
+ * too quickly allowing it to slowly charge based on the amount of ambient light
  */
-void als_mode_reset(uint8_t alsId) {
-
+void al_sensor_start_new_cycle(uint8_t alSensorId) {
+    debug_prints("ALS: Starting new cycle\r\n");
     // Ensure the sensor ID is valid
-    if (ID_INVALID(alsId)) {
+    if (ID_INVALID(alSensorId)) {
         return;
     }
 
-    uint8_t index = alsId - AL_SENSOR_OFFSET;
-    alSensors[index].port->MODER |= (0x03 << alSensors[index].pin);
+    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
+    alSensors[index].port->MODER |= (0x03 << (alSensors[index].pin * 2));
+
+    // Capacitor should be fully disharged. Confirm sensor is still connected by
+    // reading voltage on the data pin
+    for (uint8_t i = 0; i < 10; i++) {
+        if (adc_config_adc1_convert() > 50) {
+            // debug_prints("Could not detect sensor\r\n");
+            sensorStatus[index] = DISCONNECTED;
+            return;
+        }
+    }
+
+    sensorStatus[index] = CONNECTED;
 }
 
 /**
  * @brief Update the count that keeps track of how many times in a row
  * ambient light has either been found or not been found
  */
-void als_update_status(uint8_t alsId) {
-
+void al_sensor_read(uint8_t alSensorId) {
+    debug_prints("ALS: Reading\r\n");
     // Ensure the sensor ID is valid
-    if (ID_INVALID(alsId)) {
+    if (ID_INVALID(alSensorId)) {
         return;
     }
 
     // Calculate the index of the sensor from the ID
-    uint8_t index = alsId - AL_SENSOR_OFFSET;
+    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
 
     // Read sensor
-    uint8_t lightFound = (alSensors[index].port->IDR & (0x01 << alSensors[index].pin * 2)) != 0;
+    uint8_t lightFound = (alSensors[index].port->IDR & (0x01 << (alSensors[index].pin * 2))) != 0;
 
     // Update count
     if (lightFound) {
@@ -105,11 +109,23 @@ void als_update_status(uint8_t alsId) {
     } else {
         count[index] = (count[index] == CUT_OFF_COUNT) ? 0 : (count[index] - 1);
     }
+}
 
-    // Discharge capacitor to 0V
-    alSensors[index].port->MODER &= ~(0x03 << alSensors[index].pin);      // Reset pin mode
-    alSensors[index].port->MODER |= (0x01 << alSensors[index].pin);       // Set pin mode to output
-    alSensors[index].port->BSRR |= (0x01 << (alSensors[index].pin + 16)); // Set output low to discharge capacitor
+/**
+ * @brief The sensor is reset by fully discharging the capacitor. This can be done by setting the
+ * data pin low
+ */
+void al_sensor_reset(uint8_t alSensorId) {
+    debug_prints("ALS: Resetting\r\n");
+    // Ensure the sensor ID is valid
+    if (ID_INVALID(alSensorId)) {
+        return;
+    }
+
+    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
+    alSensors[index].port->MODER &= ~(0x03 << (alSensors[index].pin * 2)); // Reset pin mode
+    alSensors[index].port->MODER |= (0x01 << (alSensors[index].pin * 2));  // Set pin mode to output
+    alSensors[index].port->BSRR |= (0x01 << (alSensors[index].pin + 16));  // Set output low to discharge capacitor
 }
 
 /**
@@ -117,14 +133,42 @@ void als_update_status(uint8_t alsId) {
  *
  * @return uint8_t Returns 1 if ambient light sensor detects light else 0
  */
-uint8_t als_light_found(uint8_t alsId) {
+uint8_t al_sensor_status(uint8_t alSensorId) {
 
     // Ensure the sensor ID is valid
-    if (ID_INVALID(alsId)) {
+    if (ID_INVALID(alSensorId)) {
         return 255;
     }
 
     // Return whether light has been detected or not
-    uint8_t index = alsId - AL_SENSOR_OFFSET;
-    return count[index] >= CUT_OFF_COUNT;
+    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
+
+    if (sensorStatus[index] == DISCONNECTED) {
+        return 254;
+    }
+
+    return (count[index] >= CUT_OFF_COUNT) ? 1 : 0;
+}
+
+void al_sensor_process_flags(void) {
+
+    if (ambientLightSensorFlag & (0x01 << 0)) {
+        al_sensor_reset(AL_SENSOR_1);
+        ambientLightSensorFlag &= ~(0x01 << 0);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 1)) {
+        al_sensor_start_new_cycle(AL_SENSOR_1);
+        ambientLightSensorFlag &= ~(0x01 << 1);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 2)) {
+        al_sensor_set_mode_read(AL_SENSOR_1);
+        ambientLightSensorFlag &= ~(0x01 << 2);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 3)) {
+        al_sensor_read(AL_SENSOR_1);
+        ambientLightSensorFlag &= ~(0x01 << 3);
+    }
 }

@@ -39,18 +39,21 @@ typedef struct Recipe {
 
 /* Public Function Prototypes */
 
+void ts_isr(void);
+
 /**
  * @brief Initialise the system library.
  */
-void task_scheduler_init(void);
-void ts_add_recipe_to_queue(Recipe* recipe);
-void ts_link_task_in_queue(uint8_t qi);
-void ts_add_task_to_queue(Recipe* Recipe, uint8_t ri, uint8_t qi);
-void ts_print_linked_list(void);
+void ts_init(void);
 void ts_print_queue(void);
-void ts_isr(void);
+void ts_print_linked_list(void);
+void ts_link_task_in_queue(uint8_t qi);
+void ts_add_recipe_to_queue(Recipe* recipe);
+void ts_add_task_to_queue(Recipe* Recipe, uint8_t ri, uint8_t qi);
+void ts_enable_scheduler(void);
 uint8_t ts_search_queue_for_recipe(Recipe* recipe);
 uint8_t ts_cancel_recipe(uint8_t recipeId);
+
 #if (PROJECT_STATUS == UNIT_TESTS)
 void ts_run_unit_tests(void);
 #endif

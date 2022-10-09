@@ -30,6 +30,6 @@
 void adc_config_init(void);
 
 void adc_config_als1_init(void);
-void adc_config_disable_adc1(void);
+void adc_config_adc1_disable(void);
 uint16_t adc_config_adc1_convert(void);
 #endif // ADC_CONFIG_H

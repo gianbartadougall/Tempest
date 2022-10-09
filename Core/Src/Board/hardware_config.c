@@ -15,6 +15,7 @@
 // #include "stm32l4xx_hal_msp.h"
 
 /* Private Includes */
+#include "adc_config.h"
 
 /* Private STM Includes */
 #include "stm32l4xx_hal.h"
@@ -82,9 +83,9 @@ void hardware_config_gpio_init(void) {
     // being compiled
 #ifdef BUTTON_MODULE_ENABLED
 
-    // Set pins to inputs so they can be set to outputs afterwards
-    HC_BUTTON_0_PORT->MODER &= ~(MODER_INPUT << (HC_BUTTON_0_PIN * 2));
-    HC_BUTTON_1_PORT->MODER &= ~(MODER_INPUT << (HC_BUTTON_1_PIN * 2));
+    // Set pins to input so they can be set to outputs afterwards
+    HC_BUTTON_0_PORT->MODER &= ~(MODER_ANALOGUE << (HC_BUTTON_0_PIN * 2));
+    HC_BUTTON_1_PORT->MODER &= ~(MODER_ANALOGUE << (HC_BUTTON_1_PIN * 2));
 
     // Configure both push button GPIO pins to be outputs
     HC_BUTTON_0_PORT->MODER |= (MODER_OUTPUT << (HC_BUTTON_0_PIN * 2));
@@ -95,10 +96,10 @@ void hardware_config_gpio_init(void) {
 #ifdef MOTOR_MODULE_ENABLED
 
     // Set pins to inputs so they can be set to outputs afterwards
-    HC_MOTOR_PORT_1->MODER &= ~(MODER_INPUT << (HC_MOTOR_PIN_1 * 2));
-    HC_MOTOR_PORT_2->MODER &= ~(MODER_INPUT << (HC_MOTOR_PIN_2 * 2));
-    HC_MOTOR_PORT_3->MODER &= ~(MODER_INPUT << (HC_MOTOR_PIN_3 * 2));
-    HC_MOTOR_PORT_4->MODER &= ~(MODER_INPUT << (HC_MOTOR_PIN_4 * 2));
+    HC_MOTOR_PORT_1->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_1 * 2));
+    HC_MOTOR_PORT_2->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_2 * 2));
+    HC_MOTOR_PORT_3->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_3 * 2));
+    HC_MOTOR_PORT_4->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_4 * 2));
 
     // Set motor pins to be outputs
     HC_MOTOR_PORT_1->MODER |= (MODER_OUTPUT << (HC_MOTOR_PIN_1 * 2));
@@ -147,7 +148,10 @@ void hardware_config_timer_init(void) {
 #endif
 }
 
-void hardware_config_adc_init(void) {}
+void hardware_config_adc_init(void) {
+    // Setup ADC for ALS1
+    adc_config_als1_init();
+}
 
 /**
  * @brief USART2 Initialization Function

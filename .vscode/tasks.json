@@ -1,7 +1,4 @@
-// Pressing Control + Shift + B will bring up an option to select these tasks
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
         {
@@ -10,7 +7,7 @@
             "type": "shell",
             "command": "make",
             "args": [
-                "" // No arguments for this task
+                ""
             ]
         },
         {
@@ -19,17 +16,17 @@
             "type": "shell",
             "command": "make",
             "args": [
-                "clean" // Adding argument to clean
+                "clean"
             ]
         },
-        { // This task will run the format.bat file which will format all the .c and .h files in the Core directory
+        {
             "label": "Format",
             "group": "build",
             "type": "shell",
             "command": "format.bat",
             "args": [
-                "" // No arguments
+                ""
             ]
-        }
+        },
     ]
 }

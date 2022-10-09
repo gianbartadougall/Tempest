@@ -19,7 +19,7 @@
 #include "motor.h"
 #include "hardware_config.h"
 #include "adc_config.h"
-
+#include "ambient_light_sensor.h"
 /* Private STM Includes */
 
 /* Private #defines */
@@ -34,7 +34,6 @@ void testing_hardware_init(void);
 /* Public Functions */
 
 extern uint32_t tempestTasksFlag;
-extern uint32_t ambientLightSensorFlag;
 
 Recipe r = {
     .delays      = {1000, 2000, 3000},
@@ -146,17 +145,44 @@ void adc_test(void) {
 
     adc_config_als1_init();
 
-    // Turn the ADC on
-    // ADC1->CR |= (0x01); // Enable the ADC
     char m[40];
-
-    // while ((ADC1->ISR & 0x01) == 0) {} // Wait for ADC to stabalise
 
     while (1) {
 
         sprintf(m, "Voltage = %i\r\n", adc_config_adc1_convert());
         debug_prints(m);
+        adc_config_adc1_disable();
+        debug_prints("HEre\r\n");
         HAL_Delay(500);
+    }
+}
+
+void als_test(void) {
+
+    uint8_t status = 0;
+    while (1) {
+
+        al_sensor_process_flags();
+
+        if (status != al_sensor_status(AL_SENSOR_1)) {
+            status = al_sensor_status(AL_SENSOR_1);
+
+            if (status == 1) {
+                debug_prints("Light!\r\n");
+            } else if (status == 0) {
+                debug_prints("Dark\r\n");
+            } else if (status == 254) {
+                debug_prints("Disconnected\r\n");
+            }
+        }
+
+        HAL_Delay(1000);
+
+        if (HC_TS_TIMER->CNT > 50000) {
+            char m[40];
+            sprintf(m, "TIMER CNT: %li\r\n", HC_TS_TIMER->CNT);
+            debug_prints(m);
+        }
     }
 }
 
@@ -164,8 +190,11 @@ void testing_init(void) {
 
     // Initialise hardware for tests
     hardware_config_init();
+    debug_clear();
+    ts_init();
+    ts_enable_scheduler();
 
-    adc_test();
+    als_test();
 
     // Set the GPIO pin to input and read
     while (1) {}

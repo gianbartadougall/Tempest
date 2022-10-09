@@ -80,7 +80,7 @@ uint16_t adc_config_adc1_convert(void) {
     return ADC1->DR; // Return conversion
 }
 
-void adc_config_disable_adc1(void) {
+void adc_config_adc1_disable(void) {
 
     // Wait until there are no on going conversions
     while ((ADC1->CR & (ADC_CR_ADSTART | ADC_CR_JADSTART)) != 0) {}

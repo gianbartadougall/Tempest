@@ -4,10 +4,20 @@
             "name": "STM32L4",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/Core/Src",
-                "${workspaceFolder}/Core/Inc",
-                "${workspaceFolder}/Tests/Src",
-                "${workspaceFolder}/Tests/Inc",
+                "${workspaceFolder}/Core/Src/Tests",
+                "${workspaceFolder}/Core/Src/Board",
+                "${workspaceFolder}/Core/Src/Interrupts",
+                "${workspaceFolder}/Core/Src/Sensors",
+                "${workspaceFolder}/Core/Src/Peripherals",
+                "${workspaceFolder}/Core/Src/Beta",
+                "${workspaceFolder}/Core/Src/Utilities",
+                "${workspaceFolder}/Core/Inc/Tests",
+                "${workspaceFolder}/Core/Inc/Board",
+                "${workspaceFolder}/Core/Inc/Interrupts",
+                "${workspaceFolder}/Core/Inc/Sensors",
+                "${workspaceFolder}/Core/Inc/Peripherals",
+                "${workspaceFolder}/Core/Inc/Beta",
+                "${workspaceFolder}/Core/Inc/Utilities",
                 "${workspaceFolder}/Drivers/STM32L4xx_HAL_Driver/Inc"
             ],
             "defines": [
@@ -19,7 +29,7 @@
                 "__CC_ARM"
             ],
             "intelliSenseMode": "${default}",
-            "compilerPath": "${env:ARMGCC_DIR}\\arm-none-eabi-gcc.exe",
+            "compilerPath": "C:\\dev\\tools\\gcc-arm-none-eabi-10.3-2021.10\\bin\\arm-none-eabi-gcc.exe",
             "compilerArgs": [
                 "-mcpu-cortex-m4",
                 "-mthumb"
