@@ -116,6 +116,24 @@ void hardware_config_gpio_init(void) {
     HC_ALS_PORT_2->MODER |= (MODER_ANALOGUE << (HC_ALS_PIN_2 * 2));
 
 #endif
+
+#ifdef LED_MODULE_ENABLED
+
+    // Set pins to inputs so they can be set to outputs afterwards
+    HC_LED_RED_PORT->MODER &= ~(MODER_ANALOGUE << (HC_LED_RED_PIN * 2));
+    HC_LED_GREEN_PORT->MODER &= ~(MODER_ANALOGUE << (HC_LED_GREEN_PIN * 2));
+    HC_LED_ORANGE_PORT->MODER &= ~(MODER_ANALOGUE << (HC_LED_ORANGE_PIN * 2));
+
+    // Set pins to outputs
+    HC_LED_RED_PORT->MODER |= (MODER_OUTPUT << (HC_LED_RED_PIN * 2));
+    HC_LED_GREEN_PORT->MODER |= (MODER_OUTPUT << (HC_LED_GREEN_PIN * 2));
+    HC_LED_ORANGE_PORT->MODER |= (MODER_OUTPUT << (HC_LED_ORANGE_PIN * 2));
+
+    // Set all LEDs off
+    HC_LED_RED_PORT->BSRR |= (0x10000 << HC_LED_RED_PIN);
+    HC_LED_GREEN_PORT->BSRR |= (0x10000 << HC_LED_GREEN_PIN);
+    HC_LED_ORANGE_PORT->BSRR |= (0x10000 << HC_LED_ORANGE_PIN);
+#endif
 }
 
 void hardware_config_timer_init(void) {

@@ -20,6 +20,8 @@
 #include "hardware_config.h"
 #include "adc_config.h"
 #include "ambient_light_sensor.h"
+#include "led.h"
+
 /* Private STM Includes */
 
 /* Private #defines */
@@ -34,6 +36,7 @@ void testing_hardware_init(void);
 /* Public Functions */
 
 extern uint32_t tempestTasksFlag;
+extern uint32_t buttonTasksFlag;
 
 Recipe r = {
     .delays      = {1000, 2000, 3000},
@@ -85,41 +88,43 @@ void task6(void) {
     debug_prints(m);
 }
 
-void run_tasks(void) {
+void button_test(void) {
 
-    if ((tempestTasksFlag & (0x01 << 0)) != 0) {
-        task0();
-        tempestTasksFlag &= ~(0x01 << 0);
-    }
+    while (1) {
+        if ((buttonTasksFlag & (0x01 << 0)) != 0) {
+            task0();
+            buttonTasksFlag &= ~(0x01 << 0);
+        }
 
-    if ((tempestTasksFlag & (0x01 << 1)) != 0) {
-        task1();
-        tempestTasksFlag &= ~(0x01 << 1);
-    }
+        if ((buttonTasksFlag & (0x01 << 1)) != 0) {
+            task1();
+            buttonTasksFlag &= ~(0x01 << 1);
+        }
 
-    if ((tempestTasksFlag & (0x01 << 2)) != 0) {
-        task2();
-        tempestTasksFlag &= ~(0x01 << 2);
-    }
+        if ((buttonTasksFlag & (0x01 << 2)) != 0) {
+            task2();
+            buttonTasksFlag &= ~(0x01 << 2);
+        }
 
-    if ((tempestTasksFlag & (0x01 << 3)) != 0) {
-        task3();
-        tempestTasksFlag &= ~(0x01 << 3);
-    }
+        if ((buttonTasksFlag & (0x01 << 3)) != 0) {
+            task3();
+            buttonTasksFlag &= ~(0x01 << 3);
+        }
 
-    if (tempestTasksFlag & (0x01 << 4)) {
-        task4();
-        tempestTasksFlag &= ~(0x01 << 4);
-    }
+        if (buttonTasksFlag & (0x01 << 4)) {
+            task4();
+            buttonTasksFlag &= ~(0x01 << 4);
+        }
 
-    if (tempestTasksFlag & (0x01 << 5)) {
-        task5();
-        tempestTasksFlag &= ~(0x01 << 5);
-    }
+        if (buttonTasksFlag & (0x01 << 5)) {
+            task5();
+            buttonTasksFlag &= ~(0x01 << 5);
+        }
 
-    if (tempestTasksFlag & (0x01 << 6)) {
-        task6();
-        tempestTasksFlag &= ~(0x01 << 6);
+        if (buttonTasksFlag & (0x01 << 6)) {
+            task6();
+            buttonTasksFlag &= ~(0x01 << 6);
+        }
     }
 }
 
@@ -158,6 +163,10 @@ void adc_test(void) {
 }
 
 void als_test(void) {
+    hardware_config_init();
+    debug_clear();
+    ts_init();
+    ts_enable_scheduler();
 
     uint8_t status = 0;
     while (1) {
@@ -189,12 +198,6 @@ void als_test(void) {
 void testing_init(void) {
 
     // Initialise hardware for tests
-    hardware_config_init();
-    debug_clear();
-    ts_init();
-    ts_enable_scheduler();
-
-    als_test();
 
     // Set the GPIO pin to input and read
     while (1) {}

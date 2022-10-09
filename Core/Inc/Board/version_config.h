@@ -56,10 +56,11 @@
  *  versions of the system
  */
 #if (VERSION_MAJOR == 0)
-    // #define BUTTON_MODULE_ENABLED
+    #define BUTTON_MODULE_ENABLED
     #define TASK_SCHEDULER_ENABLED
     // #define MOTOR_MODULE_ENABLED
-    #define AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
+    // #define AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
+    // #define LED_MODULE_ENABLED
     // #define ENCODER_MODULE_ENABLED
     // #define WINDOW_SENSOR_MODULE_ENABLED
 #endif

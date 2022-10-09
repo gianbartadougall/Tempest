@@ -74,10 +74,10 @@ Core/Src/Sensors/encoder.c
 # Include Peripheral files
 PERIPHERAL_SOURCES = \
 Core/Src/Peripherals/button.c \
-Core/Src/Peripherals/motor.c
+Core/Src/Peripherals/motor.c \
+Core/Src/Peripherals/led.c 
 # Core/Src/Peripherals/piezo_buzzer.c 
 # Core/Src/Peripherals/motor_driver.c
-# Core/Src/Peripherals/led.c 
 
 # Include Interrupt files
 INTERRUPT_SOURCES = \

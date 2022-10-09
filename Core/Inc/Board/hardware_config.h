@@ -63,6 +63,16 @@
 #define HC_ALS_PIN_2 4
 /*****************************************************************************/
 
+/********** Marcos for hardware related to the LEDs **********/
+#define HC_LED_RED_PORT    GPIOA
+#define HC_LED_GREEN_PORT  GPIOB
+#define HC_LED_ORANGE_PORT GPIOB
+
+#define HC_LED_RED_PIN    11
+#define HC_LED_GREEN_PIN  3
+#define HC_LED_ORANGE_PIN 4
+/*************************************************************/
+
 /********** Marcos for hardware related to the task scheduler **********/
 
 #define HC_TS_TIMER              TIM15
