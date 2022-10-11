@@ -82,14 +82,14 @@ Core/Src/Peripherals/led.c
 # Include Interrupt files
 INTERRUPT_SOURCES = \
 Core/Src/Interrupts/stm32l4xx_it.c \
-Core/Src/Interrupts/timer_interrupts.c
-# Core/Src/Interrupts/exti_interrupts.c
+Core/Src/Interrupts/timer_interrupts.c \
+Core/Src/Interrupts/exti_interrupts.c
 
 # Include Utility files
 UTILITIY_SOURCES = \
 Core/Src/Utilities/flag.c \
 Core/Src/Utilities/debug_log.c \
-Core/Src/Utilities/task_scheduler.c
+Core/Src/Utilities/task_scheduler_1.c
 
 # Include random files
 RANDOM_SOURCES = \

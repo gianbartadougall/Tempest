@@ -36,11 +36,20 @@
 // Define ports and pins for peripherals that have been enabled in configuration.h file
 
 /********** Marcos for hardware related to the buttons **********/
-#define HC_BUTTON_0_PORT GPIOA
-#define HC_BUTTON_1_PORT GPIOB
+#define HC_BUTTON_1_PORT GPIOA
+#define HC_BUTTON_2_PORT GPIOB
 
-#define HC_BUTTON_0_PIN 1
-#define HC_BUTTON_1_PIN 5
+#define HC_BUTTON_1_PIN 1
+#define HC_BUTTON_2_PIN 5
+
+#define HC_BUTTON_1_IQRn EXTI1_IRQn
+#define HC_BUTTON_2_IQRn EXTI9_5_IRQn
+
+#define HC_BUTTON_1_ISR_PRIORITY EXTI1_ISR_PRIORITY
+#define HC_BUTTON_2_ISR_PRIORITY EXTI9_5_ISR_PRIORITY
+
+#define HC_BUTTON_1_ISR_SUBPRIORITY 0
+#define HC_BUTTON_2_ISR_SUBPRIORITY 0
 /****************************************************************/
 
 /********** Marcos for hardware related to the motors **********/

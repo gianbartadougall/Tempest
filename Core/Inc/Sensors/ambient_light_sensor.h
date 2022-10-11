@@ -11,6 +11,6 @@
 #define AL_SENSOR_2      (1 + AL_SENSOR_OFFSET)
 
 void al_sensor_process_flags(void);
-uint8_t al_sensor_status(uint8_t alsId);
+uint8_t al_sensor_read_status(uint8_t alSensorId);
 
 #endif // AMBIENT_LIGHT_SENSOR_H

@@ -18,6 +18,10 @@
 
 /* Public #defines */
 
+#define BUTTON_ID_OFFSET 74
+#define BUTTON_UP        (0 + BUTTON_ID_OFFSET)
+#define BUTTON_DOWN      (1 + BUTTON_ID_OFFSET)
+
 /* Public Structures and Enumerations */
 
 /* Public Variable Declarations */
@@ -29,6 +33,8 @@
  */
 void button_init(void);
 
-void button_enable(uint8_t button);
+void button_isr(uint8_t buttonId);
+
+void button_process_flags();
 
 #endif // BUTTON_H

@@ -14,7 +14,7 @@
 
 /* Private Includes */
 #include "ambient_light_sensor_config.h"
-#include "debug_log.h"
+#include "utilities.h"
 #include "interrupts_config.h"
 #include "adc_config.h"
 
@@ -47,85 +47,57 @@ uint8_t sensorStatus[NUM_AL_SENSORS] = {DISCONNECTED};
  * @brief Setting the pin to input allows the capacitor in the circuit to discharge
  * creating a voltage that can be read to determine if there was ambient light
  */
-void al_sensor_set_mode_read(uint8_t alSensorId) {
-    debug_prints("ALS: Set to input mode\r\n");
-
+void al_sensor_read_capacitor(uint8_t alSensorId) {
     // Ensure the sensor ID is valid
     if (ID_INVALID(alSensorId)) {
         return;
     }
 
-    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
-    alSensors[index].port->MODER &= ~(0x03 << (alSensors[index].pin * 2));
+    uint8_t si = alSensorId - AL_SENSOR_OFFSET;
+    SET_PIN_MODE_INPUT(alSensors[si].port, alSensors[si].pin);
+
+    HAL_Delay(1); // Wait 1ms for IDR to update
+
+    // Update count
+    if (PIN_IS_HIGH(alSensors[si].port, alSensors[si].pin)) {
+        if (count[si] < MAX_COUNT) {
+            count[si] = (count[si] == CUT_OFF_COUNT) ? MAX_COUNT : (count[si] + 1);
+        }
+    } else {
+        if (count[si] > 0) {
+            count[si] = (count[si] == CUT_OFF_COUNT) ? 0 : (count[si] - 1);
+        }
+    }
 }
 
 /**
  * @brief Setting the pin to analogue mode prevents the capacitor from dishcharging
  * too quickly allowing it to slowly charge based on the amount of ambient light
  */
-void al_sensor_start_new_cycle(uint8_t alSensorId) {
-    debug_prints("ALS: Starting new cycle\r\n");
+void al_sensor_record_ambient_light(uint8_t alSensorId) {
     // Ensure the sensor ID is valid
     if (ID_INVALID(alSensorId)) {
         return;
     }
 
-    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
-    alSensors[index].port->MODER |= (0x03 << (alSensors[index].pin * 2));
-
-    // Capacitor should be fully disharged. Confirm sensor is still connected by
-    // reading voltage on the data pin
-    for (uint8_t i = 0; i < 10; i++) {
-        if (adc_config_adc1_convert() > 50) {
-            // debug_prints("Could not detect sensor\r\n");
-            sensorStatus[index] = DISCONNECTED;
-            return;
-        }
-    }
-
-    sensorStatus[index] = CONNECTED;
-}
-
-/**
- * @brief Update the count that keeps track of how many times in a row
- * ambient light has either been found or not been found
- */
-void al_sensor_read(uint8_t alSensorId) {
-    debug_prints("ALS: Reading\r\n");
-    // Ensure the sensor ID is valid
-    if (ID_INVALID(alSensorId)) {
-        return;
-    }
-
-    // Calculate the index of the sensor from the ID
-    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
-
-    // Read sensor
-    uint8_t lightFound = (alSensors[index].port->IDR & (0x01 << (alSensors[index].pin * 2))) != 0;
-
-    // Update count
-    if (lightFound) {
-        count[index] = (count[index] == CUT_OFF_COUNT) ? MAX_COUNT : (count[index] + 1);
-    } else {
-        count[index] = (count[index] == CUT_OFF_COUNT) ? 0 : (count[index] - 1);
-    }
+    uint8_t si = alSensorId - AL_SENSOR_OFFSET;
+    SET_PIN_MODE_ANALOGUE(alSensors[si].port, alSensors[si].pin);
 }
 
 /**
  * @brief The sensor is reset by fully discharging the capacitor. This can be done by setting the
  * data pin low
  */
-void al_sensor_reset(uint8_t alSensorId) {
-    debug_prints("ALS: Resetting\r\n");
+void al_sensor_discharge_capacitor(uint8_t alSensorId) {
     // Ensure the sensor ID is valid
     if (ID_INVALID(alSensorId)) {
         return;
     }
 
-    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
-    alSensors[index].port->MODER &= ~(0x03 << (alSensors[index].pin * 2)); // Reset pin mode
-    alSensors[index].port->MODER |= (0x01 << (alSensors[index].pin * 2));  // Set pin mode to output
-    alSensors[index].port->BSRR |= (0x01 << (alSensors[index].pin + 16));  // Set output low to discharge capacitor
+    uint8_t si = alSensorId - AL_SENSOR_OFFSET;
+    SET_PIN_MODE_INPUT(alSensors[si].port, alSensors[si].pin);
+    SET_PIN_MODE_OUTPUT(alSensors[si].port, alSensors[si].pin);
+    SET_PIN_LOW(alSensors[si].port, alSensors[si].pin);
 }
 
 /**
@@ -133,42 +105,102 @@ void al_sensor_reset(uint8_t alSensorId) {
  *
  * @return uint8_t Returns 1 if ambient light sensor detects light else 0
  */
-uint8_t al_sensor_status(uint8_t alSensorId) {
-
+uint8_t al_sensor_read_status(uint8_t alSensorId) {
     // Ensure the sensor ID is valid
     if (ID_INVALID(alSensorId)) {
         return 255;
     }
 
     // Return whether light has been detected or not
-    uint8_t index = alSensorId - AL_SENSOR_OFFSET;
+    uint8_t si = alSensorId - AL_SENSOR_OFFSET;
 
-    if (sensorStatus[index] == DISCONNECTED) {
+    if (sensorStatus[si] == DISCONNECTED) {
         return 254;
     }
 
-    return (count[index] >= CUT_OFF_COUNT) ? 1 : 0;
+    return (count[si] >= CUT_OFF_COUNT) ? 1 : 0;
+}
+
+void al_sensor_charge_capacitor(uint8_t alSensorId) {
+    // Set data line to output and set line high
+    uint8_t si = alSensorId - AL_SENSOR_OFFSET;
+
+    SET_PIN_MODE_INPUT(alSensors[si].port, alSensors[si].pin);
+    SET_PIN_MODE_OUTPUT(alSensors[si].port, alSensors[si].pin);
+    SET_PIN_HIGH(alSensors[si].port, alSensors[si].pin);
+}
+
+void al_sensor_check_if_connected(uint8_t alSensorId) {
+
+    uint8_t si = alSensorId - AL_SENSOR_OFFSET;
+    // I think after you set the pin high, if you change to an input, the
+    // charge still remains on the pin so when you change to an input it
+    // will read high if nothing is connected. If you set the pin low for
+    // a short period of time (short enough for charge on pin to leave
+    // and charge on capacitor to stay) then the input will only read high
+    // if the sensor is connected
+    SET_PIN_LOW(alSensors[si].port, alSensors[si].pin);
+    HAL_Delay(1);
+
+    // Read pin to determine if the sensor is connected or not
+    SET_PIN_MODE_INPUT(alSensors[si].port, alSensors[si].pin);
+    HAL_Delay(1);
+    if (PIN_IS_HIGH(alSensors[si].port, alSensors[si].pin)) {
+        sensorStatus[si] = CONNECTED;
+    } else {
+        sensorStatus[si] = DISCONNECTED;
+    }
 }
 
 void al_sensor_process_flags(void) {
 
     if (ambientLightSensorFlag & (0x01 << 0)) {
-        al_sensor_reset(AL_SENSOR_1);
+        al_sensor_discharge_capacitor(AL_SENSOR_1);
         ambientLightSensorFlag &= ~(0x01 << 0);
     }
 
     if (ambientLightSensorFlag & (0x01 << 1)) {
-        al_sensor_start_new_cycle(AL_SENSOR_1);
+        al_sensor_record_ambient_light(AL_SENSOR_1);
         ambientLightSensorFlag &= ~(0x01 << 1);
     }
 
     if (ambientLightSensorFlag & (0x01 << 2)) {
-        al_sensor_set_mode_read(AL_SENSOR_1);
+        al_sensor_read_capacitor(AL_SENSOR_1);
         ambientLightSensorFlag &= ~(0x01 << 2);
     }
 
     if (ambientLightSensorFlag & (0x01 << 3)) {
-        al_sensor_read(AL_SENSOR_1);
+        al_sensor_charge_capacitor(AL_SENSOR_1);
         ambientLightSensorFlag &= ~(0x01 << 3);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 4)) {
+        al_sensor_check_if_connected(AL_SENSOR_1);
+        ambientLightSensorFlag &= ~(0x01 << 4);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 5)) {
+        al_sensor_discharge_capacitor(AL_SENSOR_2);
+        ambientLightSensorFlag &= ~(0x01 << 5);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 6)) {
+        al_sensor_record_ambient_light(AL_SENSOR_2);
+        ambientLightSensorFlag &= ~(0x01 << 6);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 7)) {
+        al_sensor_read_capacitor(AL_SENSOR_2);
+        ambientLightSensorFlag &= ~(0x01 << 7);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 8)) {
+        al_sensor_charge_capacitor(AL_SENSOR_2);
+        ambientLightSensorFlag &= ~(0x01 << 8);
+    }
+
+    if (ambientLightSensorFlag & (0x01 << 9)) {
+        al_sensor_check_if_connected(AL_SENSOR_2);
+        ambientLightSensorFlag &= ~(0x01 << 9);
     }
 }

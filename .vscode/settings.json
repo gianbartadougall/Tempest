@@ -10,7 +10,8 @@
         "task_scheduler.h": "c",
         "motor.h": "c",
         "utilities.h": "c",
-        "hardware_config.h": "c"
+        "hardware_config.h": "c",
+        "task_scheduler_1.h": "c"
     },
     //"editor.detectIndentation": false // Prevents VScode from defaulting to using 2 spaces instead of 4 for files because it tries to guess file types
 }

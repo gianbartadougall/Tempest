@@ -37,6 +37,9 @@
 #define PUPDR_PULL_UP              0x01
 #define PUPDR_PULL_DOWN            0x02
 
+#define EXTI_PORTA 0x00
+#define EXTI_PORTB 0x01
+
 #define TIMER_SETTINGS_NOT_VALID(frequency, maxCount) ((SystemCoreClock / frequency) > maxCount)
 
 /* Private Structures and Enumerations */
@@ -51,6 +54,7 @@ void hardware_config_serial_comms_init(void);
 void hardware_error_handler(void);
 void hardware_config_gpio_reset(void);
 void hardware_config_adc_init(void);
+void hardware_config_exti_interrupts(void);
 
 /* Public Functions */
 
@@ -59,8 +63,9 @@ void hardware_config_init(void) {
     // Initialise uart communication and debugging
     hardware_config_serial_comms_init();
 
-    // Initialise all GPIO ports
+    // Initialise all GPIO ports and EXTI interrupts
     hardware_config_gpio_init();
+    hardware_config_exti_interrupts();
 
     // Initialise all timers
     hardware_config_timer_init();
@@ -84,12 +89,8 @@ void hardware_config_gpio_init(void) {
 #ifdef BUTTON_MODULE_ENABLED
 
     // Set pins to input so they can be set to outputs afterwards
-    HC_BUTTON_0_PORT->MODER &= ~(MODER_ANALOGUE << (HC_BUTTON_0_PIN * 2));
     HC_BUTTON_1_PORT->MODER &= ~(MODER_ANALOGUE << (HC_BUTTON_1_PIN * 2));
-
-    // Configure both push button GPIO pins to be outputs
-    HC_BUTTON_0_PORT->MODER |= (MODER_OUTPUT << (HC_BUTTON_0_PIN * 2));
-    HC_BUTTON_1_PORT->MODER |= (MODER_OUTPUT << (HC_BUTTON_1_PIN * 2));
+    HC_BUTTON_2_PORT->MODER &= ~(MODER_ANALOGUE << (HC_BUTTON_2_PIN * 2));
 
 #endif
 
@@ -133,6 +134,36 @@ void hardware_config_gpio_init(void) {
     HC_LED_RED_PORT->BSRR |= (0x10000 << HC_LED_RED_PIN);
     HC_LED_GREEN_PORT->BSRR |= (0x10000 << HC_LED_GREEN_PIN);
     HC_LED_ORANGE_PORT->BSRR |= (0x10000 << HC_LED_ORANGE_PIN);
+#endif
+}
+
+void hardware_config_exti_interrupts(void) {
+
+#ifdef BUTTON_MODULE_ENABLED
+
+    // Connect GPIO pins to the EXTI lines
+    SYSCFG->EXTICR[0] |= (EXTI_PORTA << (4 * (HC_BUTTON_1_PIN % 4)));
+    SYSCFG->EXTICR[1] |= (EXTI_PORTB << (4 * (HC_BUTTON_2_PIN % 4)));
+
+    // Configure interrupts to occur on rising and falling edges
+    EXTI->RTSR1 |= (0x01 << HC_BUTTON_1_PIN);
+    EXTI->RTSR1 |= (0x01 << HC_BUTTON_2_PIN);
+
+    EXTI->FTSR1 |= (0x01 << HC_BUTTON_1_PIN);
+    EXTI->FTSR1 |= (0x01 << HC_BUTTON_2_PIN);
+
+    // Ensure interrupts are masked until buttons are enabled.
+    // If an interrupt is masked it will not run
+    EXTI->IMR1 |= (0x01 << HC_BUTTON_1_PIN);
+    EXTI->IMR1 |= (0x01 << HC_BUTTON_2_PIN);
+
+    // Configure priorities for each EXTI line
+    HAL_NVIC_SetPriority(HC_BUTTON_1_IQRn, HC_BUTTON_1_ISR_PRIORITY, HC_BUTTON_1_ISR_SUBPRIORITY);
+    HAL_NVIC_SetPriority(HC_BUTTON_2_IQRn, HC_BUTTON_2_ISR_PRIORITY, HC_BUTTON_2_ISR_SUBPRIORITY);
+
+    // Enable interrupts for the given EXTI lines
+    HAL_NVIC_EnableIRQ(HC_BUTTON_1_IQRn);
+    HAL_NVIC_EnableIRQ(HC_BUTTON_2_IQRn);
 #endif
 }
 

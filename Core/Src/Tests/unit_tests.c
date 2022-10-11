@@ -13,7 +13,7 @@
 /* Private Includes */
 #include "utilities.h"
 #include "unit_tests.h"
-#include "task_scheduler.h"
+// #include "task_scheduler.h"
 
 /* Private STM Includes */
 
@@ -32,7 +32,7 @@ void unit_tests_init(void) {
     debug_clear();
 
     /* Run unit tests for each module */
-    ts_run_unit_tests(); // Task scheduler
+    // ts_run_unit_tests(); // Task scheduler
 }
 
 /* Private Functions */

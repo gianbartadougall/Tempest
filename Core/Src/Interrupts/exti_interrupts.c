@@ -13,11 +13,8 @@
 #include "stm32l4xx_hal.h"
 
 /* Private Includes */
-#include "debug_log.h"
-#include "encoder.h"
-#include "tempest.h"
-#include "piezo_buzzer.h"
-#include "flag.h"
+#include "utilities.h"
+#include "button.h"
 
 /**
  * @brief Interrupt routine for EXTI1
@@ -36,9 +33,6 @@ void EXTI0_IRQHandler(void) {
 
         /* Call required functions */
 
-        // Call pb0 ISR
-        pb_isr(PUSH_BUTTON_0);
-
         // *************************
     }
 }
@@ -48,7 +42,7 @@ void EXTI0_IRQHandler(void) {
  *
  */
 void EXTI1_IRQHandler(void) {
-    debug_prints("EXTI 1\r\n");
+    // debug_prints("EXTI 1\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
 
@@ -59,6 +53,7 @@ void EXTI1_IRQHandler(void) {
         EXTI->PR1 = EXTI_PR1_PIF1;
 
         /* Call required functions */
+        button_isr(0);
 
         // *************************
     }
@@ -69,7 +64,7 @@ void EXTI1_IRQHandler(void) {
  *
  */
 void EXTI2_IRQHandler(void) {
-    debug_prints("EXTI 2\r\n");
+    // debug_prints("EXTI 2\r\n");
     //  // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI2_IRQn);
 
@@ -100,7 +95,6 @@ void EXTI3_IRQHandler(void) {
         EXTI->PR1 = EXTI_PR1_PIF3;
 
         /* Call required functions */
-        pb_isr(PUSH_BUTTON_1);
     }
 }
 
@@ -130,9 +124,7 @@ void EXTI4_IRQHandler(void) {
  *
  */
 void EXTI9_5_IRQHandler(void) {
-    // char m[40];
-    // sprintf(m, "EXTI 9 5 SR: %li\r\n", EXTI->PR1);
-    // debug_prints(m);
+    debug_prints("EXTI 9_5\r\n");
 
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
@@ -143,13 +135,8 @@ void EXTI9_5_IRQHandler(void) {
         // Clear the pending interrupt
         EXTI->PR1 = EXTI_PR1_PIF5;
 
-        // Check if the interrupt was a rising or falling edge
-        if (flag_state(MANUAL_OVERRIDE_FLAG) == 1) {
-            // debug_prints("Entered manual override\r\n");
-            tempest_set_mode_manual_override();
-        } else {
-            tempest_set_mode_automatic();
-        }
+        /* Call required functions */
+        // button_isr(1);
     }
 
     // // Confirm pending interrupt exists on EXTI line 6
@@ -275,7 +262,6 @@ void COMP_IRQHandler(void) {
         EXTI->PR1 = EXTI_PR1_PIF21;
 
         /* Call required functions */
-        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
     }
 
     // Check if comparator 2 triggered an interrupt

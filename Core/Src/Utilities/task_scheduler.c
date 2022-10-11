@@ -61,7 +61,6 @@ void ts_print_task(Task* task);
 void ts_reset_task(Task* task);
 void ts_enable_scheduler(void);
 void ts_disable_scheduler(void);
-void ts_reset_task(Task* task);
 void ts_update_capture_compare(void);
 uint8_t ts_remove_recipe(uint8_t recipeId);
 
@@ -94,22 +93,77 @@ void ts_disable_scheduler(void) {
     TS_TIMER->CR1 &= ~(TIM_CR1_CEN); // Disbable timer
 }
 
-void ts_add_recipe_to_queue(Recipe* recipe) {
+void copy_task_into_queue(uint8_t qi, Recipe* recipe, uint8_t ti) {
+    queue[qi].executionTime = ts_calculate_task_execution_time(recipe, ti);
+    queue[qi].recipieId     = recipe->id;
+    queue[qi].functionId    = recipe->functionIds[ti];
+    queue[qi].group         = recipe->group;
+    queue[qi].nextTask      = NULL;
+}
 
-    // Return if there is no room free room in task list
-    uint8_t emptyIndex = ts_search_queue_for_empty_index();
-    if (emptyIndex >= MAX_NUM_TASKS_IN_QUEUE) {
+/**
+ * @brief This code is ugly and needs to be updated
+ *
+ * @param qi
+ */
+void order_task_in_linked_list(uint8_t qi) {
+
+    // Place new task at front of linked list if it has the soonest execution time
+    if (headTask == NULL || queue[qi].executionTime < headTask->executionTime) {
+        queue[qi].nextTask = headTask;                // Set next task to be NULL or current first task in linked list
+        headTask           = &queue[qi];              // Set the first task in linked list to the new task
+        TS_TIMER->CCR1     = headTask->executionTime; // Update ISR execution time
         return;
     }
 
-    // Add each task in recipe to queue
-    for (uint8_t i = 0; i < recipe->numTasks; i++) {
-        ts_add_task_to_queue(recipe, i, emptyIndex + i);
-        ts_link_task_in_queue(emptyIndex + i);
+    // Save the current head
+    Task* currentHead;
+    currentHead = headTask;
+
+    while (headTask->nextTask != NULL) {
+        // Insert task into linked list when the new tasks execution time
+        // is less then the ith Tasks execution time
+        if (queue[qi].executionTime < headTask->nextTask->executionTime) {
+            queue[qi].nextTask = headTask->nextTask;
+            break;
+        }
+
+        // Increment to next task in linked list
+        headTask = headTask->nextTask;
     }
 
-    // Update the capture compare of timer
-    ts_update_capture_compare();
+    headTask->nextTask = &queue[qi];
+    headTask           = currentHead;
+}
+
+void update_isr_execution_time(void) {
+    TS_TIMER->CCR1 = headTask->executionTime;
+}
+
+void ts_add_recipe_to_queue(Recipe* recipe) {
+
+    uint8_t ti = 0;
+
+    // Copy tasks from new recipe into queue
+    for (uint8_t qi = 0; qi < MAX_NUM_TASKS_IN_QUEUE; qi++) {
+        if (queue[qi].functionId != TS_NONE) {
+            continue;
+        }
+
+        // Copy contents from task into queue
+        copy_task_into_queue(qi, recipe, ti);
+
+        // Order the new task in the linked list
+        order_task_in_linked_list(qi);
+
+        // Increment task
+        ti++;
+
+        // Break out of loop when all tasks have been copied across
+        if (ti == recipe->numTasks) {
+            break;
+        }
+    }
 
     // Turn on timer if required
     if ((TS_TIMER->CR1 & TIM_CR1_CEN) == 0) {
@@ -154,9 +208,9 @@ uint8_t ts_search_queue_for_recipe(Recipe* recipe) {
 void ts_update_capture_compare(void) {
     if (headTask->executionTime != TS_NONE) {
         TS_TIMER->CCR1 = headTask->executionTime;
-        char m[40];
-        sprintf(m, "cap compare = %li\r\n", TS_TIMER->CCR1);
-        debug_prints(m);
+        // char m[60];
+        // sprintf(m, "cap compare = %li\tCurrent CNT: %li\r\n", TS_TIMER->CCR1, TS_TIMER->CNT);
+        // debug_prints(m);
     }
 }
 
@@ -167,19 +221,19 @@ void ts_update_capture_compare(void) {
  * @return uint8_t The free index if one was found else a number
  * greater than the queue length
  */
-uint8_t ts_search_queue_for_empty_index(void) {
+// uint8_t ts_search_queue_for_empty_index(void) {
 
-    // Return first free index
-    for (uint8_t i = 0; i < MAX_NUM_TASKS_IN_QUEUE; i++) {
-        if (queue[i].functionId == TS_NONE) {
-            return i;
-        }
-    }
+//     // Return first free index
+//     for (uint8_t i = 0; i < MAX_NUM_TASKS_IN_QUEUE; i++) {
+//         if (queue[i].functionId == TS_NONE) {
+//             return i;
+//         }
+//     }
 
-    // Returing an invalid index tells caller that no free postions
-    // were available
-    return MAX_NUM_TASKS_IN_QUEUE + 1;
-}
+//     // Returing an invalid index tells caller that no free postions
+//     // were available
+//     return MAX_NUM_TASKS_IN_QUEUE + 1;
+// }
 
 /**
  * @brief Copies the values of a task in a recipe to an empty task in the queue
@@ -188,24 +242,23 @@ uint8_t ts_search_queue_for_empty_index(void) {
  * @param ri The index of the task in the recipe
  * @param qi The index of the empty task in the queue
  */
-void ts_add_task_to_queue(Recipe* recipe, uint8_t ri, uint8_t qi) {
+// void ts_add_task_to_queue(Recipe* recipe, uint8_t ri, uint8_t qi) {
 
-    // Ensure the empty task is empty
-    if (queue[qi].functionId != TS_NONE) {
-        debug_prints("returning\r\n");
-        return;
-    }
+//     // Ensure the empty task is empty
+//     if (queue[qi].functionId != TS_NONE) {
+//         return;
+//     }
 
-    queue[qi].executionTime = ts_calculate_task_execution_time(recipe, ri);
-    queue[qi].recipieId     = recipe->id;
-    queue[qi].functionId    = recipe->functionIds[ri];
-    queue[qi].group         = recipe->group;
-    queue[qi].nextTask      = NULL;
+//     queue[qi].executionTime = ts_calculate_task_execution_time(recipe, ri);
+//     queue[qi].recipieId     = recipe->id;
+//     queue[qi].functionId    = recipe->functionIds[ri];
+//     queue[qi].group         = recipe->group;
+//     queue[qi].nextTask      = NULL;
 
-    char m[50];
-    sprintf(m, "Execution time: %li\r\n", queue[qi].executionTime);
-    debug_prints(m);
-}
+//     // char m[50];
+//     // sprintf(m, "Execution time: %li\r\n", queue[qi].executionTime);
+//     // debug_prints(m);
+// }
 
 /**
  * @brief Returns the (current timer count + a given delay)
@@ -229,6 +282,9 @@ uint32_t ts_calculate_task_execution_time(Recipe* recipe, uint8_t index) {
  * @param task A pointer to the task in the queue to reset
  */
 void ts_reset_task(Task* task) {
+    // char m[50];
+    // sprintf(m, "%p reset\r\n", task);
+    // debug_prints(m);
     task->functionId    = TS_NONE;
     task->recipieId     = TS_NONE;
     task->group         = TS_NONE;
@@ -254,6 +310,9 @@ void ts_link_task_in_queue(uint8_t qi) {
     if (queue[qi].executionTime < headTask->executionTime) {
         queue[qi].nextTask = headTask;
         headTask           = &queue[qi];
+        // char m[50];
+        // sprintf(m, "qi: %i\tTask %p now front. Next task is %p\r\n", qi, &queue[qi], queue[qi].nextTask);
+        // debug_prints(m);
         return;
     }
 
@@ -281,8 +340,8 @@ void ts_link_task_in_queue(uint8_t qi) {
 
 void ts_isr(void) {
     char m[100];
-    sprintf(m, "ISR Run @t = %li\r\n", TIM15->CNT);
-    debug_prints(m);
+    // sprintf(m, "ISR Run @t = %li\r\n", TIM15->CNT);
+    // debug_prints(m);
     uint32_t executionTime = headTask->executionTime;
 
     // Set flags for all tasks that have the current execution time
@@ -297,12 +356,16 @@ void ts_isr(void) {
                 break;
             case AMBIENT_LIGHT_SENSOR_GROUP:
                 ambientLightSensorFlag |= (0x01 << headTask->functionId);
-                // sprintf(m, "Id: %i\tFlag: %li\r\n", headTask->functionId, ambientLightSensorFlag);
+                // sprintf(m, "Id: %i\tTIME: %li\r\n", headTask->functionId, ambientLightSensorFlag);
                 // debug_prints(m);
                 break;
             default:
                 break;
         }
+
+        sprintf(m, "Task %p with func id %i ISR finished. Next task: %p with func Id %i\r\n", headTask,
+                headTask->functionId, headTask->nextTask, headTask->nextTask->functionId);
+        debug_prints(m);
 
         uint8_t recipeId   = headTask->recipieId;
         uint8_t functionId = headTask->functionId;
@@ -316,6 +379,7 @@ void ts_isr(void) {
         for (uint8_t i = 0; i < NUM_REPEATED_RECIPES; i++) {
             uint8_t lastTaskFunctionId = repeatedRecipes[i].functionIds[repeatedRecipes[i].numTasks - 1];
             if ((recipeId == repeatedRecipes[i].id) && (functionId == lastTaskFunctionId)) {
+                debug_prints("Adding tasks to queue!\r\n");
                 ts_add_recipe_to_queue(&repeatedRecipes[i]);
             }
         }
@@ -324,6 +388,7 @@ void ts_isr(void) {
     // Disable and reset timer (for power consumption) if there are no more tasks
     // in queue
     if (headTask == NULL) {
+        debug_prints("Disabled\r\n");
         ts_disable_scheduler();
         return;
     }
@@ -334,7 +399,7 @@ void ts_isr(void) {
 }
 
 uint8_t ts_remove_recipe(uint8_t recipeId) {
-
+    // debug_prints("REMOVING RECIPE\r\n");
     Task* currentHead;
     currentHead         = headTask;
     uint8_t taskRemoved = FALSE;

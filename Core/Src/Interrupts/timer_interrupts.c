@@ -14,7 +14,7 @@
 // #include "tempest.h"
 #include "utilities.h"
 #include "timer_ms.h"
-#include "task_scheduler.h"
+#include "task_scheduler_1.h"
 
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -55,8 +55,6 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
         TIM15->SR = ~TIM_SR_CC2IF;
 
         /* Call required functions */
-
-        timer_ms_isr(TIMER_MS_CHANNEL_2);
     }
 }
 

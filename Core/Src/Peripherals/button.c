@@ -11,73 +11,68 @@
 /* Public Includes */
 
 /* Private Includes */
-#include "button.h"
 #include "utilities.h"
-#include <assert.h>
 
 /* Private Includes */
 #include "button_configuration.h"
 
 /* Private macros */
-#define PORT(button)                  (buttons[button].port)
-#define IDR(button)                   (PORT(button)->IDR)
-#define PIN(button)                   (buttons[button].pin)
-#define BUTTON_IS_RESET(button)       (buttons[button].reset == 1)
-#define ACTIVE_STATE(button)          (buttons[button].settings.activeState)
-#define TIME_RELEASED_1(button)       (buttons[button].t1Released)
-#define TIME_RELEASED_2(button)       (buttons[button].t2Released)
-#define CLICK_TIME_DIFFERENCE(button) (TIME_RELEASED_1(button) - TIME_RELEASED_2(button))
-#define DOUBLE_CLICK_TIME(button)     (buttons[button].settings.doubleClickMaxTimeDifference)
-#define BUTTON_PRESSED                0x29
-#define BUTTON_RELEASED               0x30
+#define PORT(index)                  (buttons[index].port)
+#define IDR(index)                   (PORT(index)->IDR)
+#define PIN(index)                   (buttons[index].pin)
+#define BUTTON_IS_RESET(index)       (buttons[index].reset == 1)
+#define ACTIVE_STATE(index)          (buttons[index].settings.activeState)
+#define TIME_RELEASED_1(index)       (buttons[index].t1Released)
+#define TIME_RELEASED_2(index)       (buttons[index].t2Released)
+#define CLICK_TIME_DIFFERENCE(index) (TIME_RELEASED_1(index) - TIME_RELEASED_2(index))
+#define DOUBLE_CLICK_TIME(index)     (buttons[index].settings.doubleClickMaxTimeDifference)
+#define BUTTON_PRESSED               0x29
+#define BUTTON_RELEASED              0x30
+
+#define BUTTON_ID_INVALID(id) (((id < BUTTON_ID_OFFSET) || (id > (NUM_BUTTONS - 1 + BUTTON_ID_OFFSET))) ? 1 : 0)
 
 /* Private Structures and Enumerations */
 
 /* Private Variable Declarations */
+extern uint32_t buttonTasksFlag;
 
 /* Private Function Prototypes */
-void buttons_on_action_pressed(uint8_t button);
-void buttons_on_action_released(uint8_t button);
+void button_on_action_pressed(uint8_t button);
+void button_on_action_released(uint8_t button);
 uint8_t button_state(uint8_t button);
+void button_enable_interrupt(uint8_t buttonId);
+void button_disable_interrupt(uint8_t buttonId);
 
 /* Public Functions */
 
 void button_init(void) {
 
-    // Add the debouncing tasks for each button to the button pressed list
-    buttonPressedDebouncingTimerTasks[0] = &buttonUpPressedTmsTask;
-    buttonPressedDebouncingTimerTasks[1] = &buttonDownPressedTmsTask;
-
-    // Add the debouncing tasks for each button to the button released list
-    buttonReleasedDebouncingTimerTasks[0] = &buttonUpReleasedTmsTask;
-    buttonReleasedDebouncingTimerTasks[1] = &buttonDownReleasedTmsTask;
-
-    // Enable the rising and falling interrupts on the EXTI interrupt lines
-    // for the GPIO pins connected to each button. Rising and falling edges
-    // on the button will now trigger an EXTI interrupt
+    // Enable button interrupts
     for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
-        button_enable(i);
+        button_enable_interrupt(i);
     }
 }
 
-void button_enable(uint8_t button) {
+void button_enable_interrupt(uint8_t button) {
 
     // Confirm a valid button index was given
-    assert(button < NUM_BUTTONS);
+    if (button >= NUM_BUTTONS) {
+        return;
+    }
 
-    // Enable rising and falling interrupts on the given button
-    EXTI->RTSR1 |= (0x01 << buttons[button].pin);
-    EXTI->FTSR1 |= (0x01 << buttons[button].pin);
+    // Enable interrupts by unmasking them
+    EXTI->IMR1 |= (0x01 << buttons[button].pin);
 }
 
-void button_disable(uint8_t button) {
+void button_disable_interrupt(uint8_t button) {
 
     // Confirm a valid button index was given
-    assert(button < NUM_BUTTONS);
+    if (button >= NUM_BUTTONS) {
+        return;
+    }
 
-    // Disable rising and falling interrupts on the given button
-    EXTI->RTSR1 &= ~(0x01 << buttons[button].pin);
-    EXTI->FTSR1 &= ~(0x01 << buttons[button].pin);
+    // Disable interrupts by masking them
+    EXTI->IMR1 &= ~(0x01 << buttons[button].pin);
 }
 
 /* Private Functions */
@@ -85,17 +80,27 @@ void button_disable(uint8_t button) {
 void button_isr(uint8_t button) {
 
     // Confirm a valid button index was given
-    assert(button < NUM_BUTTONS);
+    if (button >= NUM_BUTTONS) {
+        return;
+    }
 
     // Check whether if the button is currently being pressed or released
     if (button_state(button) == BUTTON_PRESSED) {
+        // uint32_t time1 = TIM15->CNT;
 
+        if (ts_task_is_running(&bPressedDebounceTasks[button])) {
+            // debug_prints("G  ");
+            return;
+        }
+        // debug_prints("1  ");
         // Cancel any button released timer tasks that are still active. If
         // the button released timer task has not finished by now then the
         // button must be bouncing => we don't know the final state of the
         // button => cancel button being released and assume button has been
         // pressed.
-        ts_cancel_recipe(buttonReleasedDebouncingTimerTasks[button]->id);
+        if (ts_cancel_running_task(&bReleasedDebounceTasks[button])) {
+            // debug_prints("2  ");
+        }
 
         // The button is automatically reset as soon as it has been released
         // for long enough time t1. If during a button press random oscillations
@@ -106,13 +111,27 @@ void button_isr(uint8_t button) {
         if (BUTTON_IS_RESET(button)) {
 
             // Add pressed timer task to timer.
-            ts_add_recipe_to_queue(buttonPressedDebouncingTimerTasks[button]);
+            // debug_prints("3  ");
+            ts_add_task_to_queue(&bPressedDebounceTasks[button]);
+        } else {
+            // debug_prints("9  ");
         }
+        // uint32_t time2 = TIM15->CNT;
+        // char m[60];
+        // sprintf(m, "T@ %li\tTime to add to queue: %li\r\n", time2, time2 - time1);
+        // debug_prints(m);
 
         // Returning to ensure the button released code is not run
         return;
     }
 
+    // Check if there is a button released task already running
+    if (ts_task_is_running(&bReleasedDebounceTasks[button])) {
+        // debug_prints("F  ");
+        return;
+    }
+
+    // debug_prints("4  ");
     /* The button has been released if the code reaches this line */
 
     // Cancel any button pressed timer tasks that are still active. If
@@ -120,23 +139,29 @@ void button_isr(uint8_t button) {
     // button must be bouncing => we don't know the final state of the
     // button => cancel button being pressed and assume button has been
     // released.
-    ts_cancel_recipe(buttonPressedDebouncingTimerTasks[button]->id);
+    if (ts_cancel_running_task(&bPressedDebounceTasks[button])) {
+        // debug_prints("5  ");
+    }
 
     // Add released timer task to timer. If the button goes high before
     // the timer task completes then the task will be cancelled (meant
     // the buton was bouncing). If the button stays released for long
     // enough, the released timer task will finish and automatically call
     // the appropriate 'button released' function for the given button
-    ts_add_recipe_to_queue(buttonReleasedDebouncingTimerTasks[button]);
+    // debug_prints("6  ");
+    ts_add_task_to_queue(&bReleasedDebounceTasks[button]);
 }
 
-void button_action_on_pressed(uint8_t button) {
-
+void button_action_on_pressed(uint8_t buttonId) {
+    debug_prints("  !!! PRESSED !!!\r\n\r\n");
     // Confirm a valid button index was given
-    assert(button < NUM_BUTTONS);
+    if (BUTTON_ID_INVALID(buttonId)) {
+        return;
+    }
 
+    uint8_t bi = buttonId - BUTTON_ID_OFFSET;
     // Button has been pressed => button is no longer reset
-    buttons[button].reset = FALSE;
+    buttons[bi].reset = FALSE;
 
     // If the previous button press happened < time t before
     // this button press occured then it is actually a 'double
@@ -147,7 +172,7 @@ void button_action_on_pressed(uint8_t button) {
     // and that timer task will have already finished and left
     // the timer queue thus it doesn't matter if we try cancel
     // it
-    ts_cancel_recipe(buttonSingleClickTimerTasks[button]->id);
+    ts_cancel_running_task(&bSingleClickTasks[bi]);
 
     // Any button press may be a 'press and hold' button press.
     // Given this, we need to start a timer task for press and
@@ -156,19 +181,25 @@ void button_action_on_pressed(uint8_t button) {
     // If the button is released before the press and hold timer
     // task can finish, it will be cancelled when the button is
     // released
-    ts_add_recipe_to_queue(buttonPressAndHoldTimerTasks[button]);
+    // debug_prints("Start press and hold\r\n");
+    ts_add_task_to_queue(&bPressAndHoldTasks[bi]);
 }
 
-void button_action_on_released(uint8_t button) {
+void button_on_action_released(uint8_t buttonId) {
 
+    if (BUTTON_ID_INVALID(buttonId)) {
+        return;
+    }
+
+    uint8_t bi = buttonId - BUTTON_ID_OFFSET;
     // Set the button to reset because it has been released
-    buttons[button].reset = TRUE;
+    buttons[bi].reset = TRUE;
 
     // Record the current time that the given button was released.
     // If the difference between time 1 and time 2 < maxDoubleClickTime
     // for the given button then we know a double click has just occured
-    TIME_RELEASED_2(button) = TIME_RELEASED_1(button);
-    TIME_RELEASED_1(button) = HAL_GetTick();
+    TIME_RELEASED_2(bi) = TIME_RELEASED_1(bi);
+    TIME_RELEASED_1(bi) = HAL_GetTick();
 
     // Anytime the button is pressed, a press and hold timer task is added
     // to the queue. If we try cancel the press and hold timer task and
@@ -178,16 +209,16 @@ void button_action_on_released(uint8_t button) {
     // 'press and hold' => either a double or a single click. If the function
     // returns 0 then the press and hold timer task must have finished and
     // been removed already which means it was a press and hold
-    if (ts_cancel_recipe(buttonPressAndHoldTimerTasks[button]->id) == TRUE) {
+    if (ts_cancel_running_task(&bPressAndHoldTasks[bi]) == TRUE) {
 
         // If the difference between this button release and the last button
         // release < (max time difference between releases for a double click)
         // then this release must be the second release from a double click
-        if (CLICK_TIME_DIFFERENCE(button) < DOUBLE_CLICK_TIME(button)) {
+        if (CLICK_TIME_DIFFERENCE(bi) < DOUBLE_CLICK_TIME(bi)) {
 
             // Call appropriate function for this button when a double click occurs
-            (*buttonDoubleClickFunctions[button])();
-
+            (*bDoubleClickFunctions[bi])();
+            debug_prints("Double click\r\n");
             // Return so only the double click function is called
             return;
         }
@@ -197,11 +228,13 @@ void button_action_on_released(uint8_t button) {
         // to timer. If another click doesn't happen quickly enough the timer task
         // will call the appropriate function. If another click does happen quickly
         // enough, this task will be cancelled
-        ts_add_recipe_to_queue(buttonSingleClickTimerTasks[button]);
-
+        ts_add_task_to_queue(&bSingleClickTasks[bi]);
+        debug_prints("Maybe single click\r\n");
         // Return so only the single click function is called
         return;
     }
+
+    debug_prints("Press and hold\r\n");
 
     /* If the code reaches here, the button press type was 'press and hold' */
 
@@ -211,12 +244,37 @@ void button_action_on_released(uint8_t button) {
 uint8_t button_state(uint8_t button) {
 
     // Confirm a valid button index was given
-    assert(button < NUM_BUTTONS);
+    if (button >= NUM_BUTTONS) {
+        return 255;
+    }
 
     // Return the current state of the button
-    if ((IDR(button) & (0x01 << PIN(button))) == ACTIVE_STATE(button)) {
+    uint8_t state = ((IDR(button) & (0x01 << PIN(button))) == 0) ? 0 : 1;
+    if (state == ACTIVE_STATE(button)) {
         return BUTTON_PRESSED;
     }
 
     return BUTTON_RELEASED;
+}
+
+void button_process_flags(void) {
+    if (buttonTasksFlag & (0x01 << 0)) {
+        button_action_on_pressed(BUTTON_UP);
+        buttonTasksFlag &= ~(0x01 << 0);
+    }
+
+    if (buttonTasksFlag & (0x01 << 1)) {
+        button_on_action_released(BUTTON_UP);
+        buttonTasksFlag &= ~(0x01 << 1);
+    }
+
+    if (buttonTasksFlag & (0x01 << 2)) {
+        debug_prints("Single click\r\n");
+        buttonTasksFlag &= ~(0x01 << 2);
+    }
+
+    if (buttonTasksFlag & (0x01 << 3)) {
+        debug_prints("Press and hold!\r\n");
+        buttonTasksFlag &= ~(0x01 << 3);
+    }
 }

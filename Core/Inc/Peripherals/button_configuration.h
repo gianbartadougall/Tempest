@@ -24,7 +24,8 @@
 #include "version_config.h"
 
 // Import timer structures and public functions to be used by the buttons
-#include "task_scheduler.h"
+#include "task_scheduler_1.h"
+#include "task_scheduler_1_id_config.h"
 
 // Import hardware configurations so the buttons GPIO port and pin for
 // each button is known so the button states can be checked when required
@@ -36,17 +37,19 @@
 /* Public STM Includes */
 #include "stm32l4xx.h"
 
-/* Public #defines */
+#include "button.h"
+
+/* Public Macros */
+#define BUTTON_ACTIVE_LOW  0
+#define BUTTON_ACTIVE_HIGH 1
 
 /* Public Structures and Enumerations */
 
-enum ButtonActiveState { ACTIVE_HIGH, ACTIVE_LOW };
-
 typedef struct ButtonSettingsTypeDef {
-    enum ButtonActiveState activeState;
+    const uint8_t activeState;
+    const uint16_t doubleClickMaxTimeDifference;
     uint32_t minTimeBeforeReleased;
     uint32_t minTimeBeforePressed;
-    uint16_t doubleClickMaxTimeDifference;
 } ButtonSettingsTypeDef;
 
 typedef struct ButtonTypeDef {
@@ -70,24 +73,14 @@ typedef struct ButtonTypeDef {
 #if (VERSION_MAJOR == 0)
 
 const struct ButtonSettingsTypeDef ButtonSettings = {
-    .activeState                  = ACTIVE_HIGH,
+    .activeState                  = BUTTON_ACTIVE_HIGH,
     .minTimeBeforeReleased        = 0,
     .minTimeBeforePressed         = 0,
-    .doubleClickMaxTimeDifference = 10,
+    .doubleClickMaxTimeDifference = 500,
 };
 
 // Declare a structure for button 1
 const struct ButtonTypeDef ButtonUp = {
-    .port       = HC_BUTTON_0_PORT,
-    .pin        = HC_BUTTON_0_PIN,
-    .reset      = TRUE,
-    .t1Released = 0,
-    .t2Released = 0,
-    .settings   = ButtonSettings,
-};
-
-// Declare a structure for button 2
-const struct ButtonTypeDef ButtonDown = {
     .port       = HC_BUTTON_1_PORT,
     .pin        = HC_BUTTON_1_PIN,
     .reset      = TRUE,
@@ -96,94 +89,73 @@ const struct ButtonTypeDef ButtonDown = {
     .settings   = ButtonSettings,
 };
 
+// Declare a structure for button 2
+const struct ButtonTypeDef ButtonDown = {
+    .port       = HC_BUTTON_2_PORT,
+    .pin        = HC_BUTTON_2_PIN,
+    .reset      = TRUE,
+    .t1Released = 0,
+    .t2Released = 0,
+    .settings   = ButtonSettings,
+};
+
     /* Configure generic macros based on the number of buttons being used */
-    #define NUM_BUTTONS 2
+    #define NUM_BUTTONS 1
 
 #endif
 
-/** Defining the functions to be called when button 1 is pressed and
- *  released
- */
-struct Recipe buttonUpPressedTmsTask = {
-    .id          = 0,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
+/******************** Button 1 Pressed Process ********************/
+const struct Task1 bUpPressed = {
+    .processId  = TS_ID_BUTTON_UP_PRESSED,
+    .delay      = 10,
+    .functionId = 0,
+    .group      = BUTTON_GROUP,
+    .nextTask   = NULL,
 };
+/******************************************************************/
 
-struct Recipe buttonUpReleasedTmsTask = {
-    .id          = 1,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
+/******************** Button 1 Released Process ********************/
+const struct Task1 bUpReleased = {
+    .processId  = TS_ID_BUTTON_UP_RELEASED,
+    .delay      = 10,
+    .functionId = 1,
+    .group      = BUTTON_GROUP,
+    .nextTask   = NULL,
 };
+/*******************************************************************/
 
-struct Recipe buttonUpSingleClickTmsTask = {
-    .id          = 2,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
+/******************** Button 1 Single Click Process ********************/
+const struct Task1 bUpSingleClick = {
+    .processId  = TS_ID_BUTTON_UP_SINGLE_CLICK,
+    .delay      = 150,
+    .functionId = 2,
+    .group      = BUTTON_GROUP,
+    .nextTask   = NULL,
 };
+/***********************************************************************/
 
-struct Recipe buttonUpDoubleClickTmsTask = {
-    .id          = 3,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
+/******************** Button 1 Press and Hold Process ********************/
+const struct Task1 bUpPressAndHold = {
+    .processId  = TS_ID_BUTTON_UP_PRESS_AND_HOLD,
+    .delay      = 2000,
+    .functionId = 3,
+    .group      = BUTTON_GROUP,
+    .nextTask   = NULL,
 };
+/*************************************************************************/
 
-struct Recipe buttonUpPressAndHoldTmsTask = {
-    .id          = 4,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
-};
+void nullFunction(void) {
+    // debug_prints("Double click\r\n");
+}
 
-struct Recipe buttonDownPressedTmsTask = {
-    .id          = 5,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
-};
+void (*bDoubleClickFunctions[NUM_BUTTONS])(void) = {&nullFunction};
 
-struct Recipe buttonDownReleasedTmsTask = {
-    .id          = 6,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
-};
+Task1 bPressedDebounceTasks[NUM_BUTTONS]  = {bUpPressed};
+Task1 bReleasedDebounceTasks[NUM_BUTTONS] = {bUpReleased};
+Task1 bSingleClickTasks[NUM_BUTTONS]      = {bUpSingleClick};
+Task1 bPressAndHoldTasks[NUM_BUTTONS]     = {bUpPressAndHold};
 
-struct Recipe buttonDownSingleClickTmsTask = {
-    .id          = 7,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
-};
-
-struct Recipe buttonDownDoubleClickTmsTask = {
-    .id          = 8,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
-};
-
-struct Recipe buttonDownPressAndHoldTmsTask = {
-    .id          = 9,
-    .functionIds = {},
-    .delays      = {},
-    .numTasks    = 0,
-};
-
-void nullFunction(void) {}
-
-void (*buttonDoubleClickFunctions[NUM_BUTTONS])(void) = {&nullFunction, &nullFunction};
-
-Recipe* buttonPressedDebouncingTimerTasks[NUM_BUTTONS];
-Recipe* buttonReleasedDebouncingTimerTasks[NUM_BUTTONS];
-Recipe* buttonSingleClickTimerTasks[NUM_BUTTONS];
-Recipe* buttonPressAndHoldTimerTasks[NUM_BUTTONS];
-
-ButtonTypeDef buttons[NUM_BUTTONS] = {ButtonUp, ButtonDown};
+ButtonTypeDef buttons[NUM_BUTTONS] = {ButtonUp};
 
 /* Preprocessor statments to check certain configuration settings to detect any mistakes */
 #ifndef NUM_BUTTONS
