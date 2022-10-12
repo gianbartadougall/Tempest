@@ -25,6 +25,9 @@
 
 #define MAX_TASKS_PER_RECIPE 10
 
+#define TASK_CANCELLED 1
+#define TASK_NOT_FOUND 0
+
 /* Public Structures and Enumerations */
 typedef struct Task1 {
     const uint8_t processId;

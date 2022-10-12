@@ -76,7 +76,7 @@ const struct ButtonSettingsTypeDef ButtonSettings = {
     .activeState                  = BUTTON_ACTIVE_HIGH,
     .minTimeBeforeReleased        = 0,
     .minTimeBeforePressed         = 0,
-    .doubleClickMaxTimeDifference = 500,
+    .doubleClickMaxTimeDifference = 220,
 };
 
 // Declare a structure for button 1
@@ -100,45 +100,105 @@ const struct ButtonTypeDef ButtonDown = {
 };
 
     /* Configure generic macros based on the number of buttons being used */
-    #define NUM_BUTTONS 1
+    #define NUM_BUTTONS 2
 
 #endif
 
-/******************** Button 1 Pressed Process ********************/
-const struct Task1 bUpPressed = {
-    .processId  = TS_ID_BUTTON_UP_PRESSED,
-    .delay      = 10,
-    .functionId = 0,
+enum ButtonFunctions {
+    BUTTON_UP_PROCESS_ISR,
+    BUTTON_UP_SINGLE_CLICK,
+    BUTTON_UP_PRESS_AND_HOLD,
+    BUTTON_DOWN_PROCESS_ISR,
+    BUTTON_DOWN_SINGLE_CLICK,
+    BUTTON_DOWN_PRESS_AND_HOLD,
+};
+
+/******************** Button 1 Process ISR ********************/
+/**
+ * @note Delay for short period of time before processing ISR. Processing ISR means
+ * determining whether the interrupt was a rising or falling edge and calling
+ * appropriate functions based on the rising/falling interrupt. Experimentally,
+ * 12ms delay worked quite well as it gave  enough time for the button to stop
+ * debouncing but not too long such that it would prevent ISR from occuring if
+ * the button was repeatedly click very quicky
+ */
+const struct Task1 bUpProcessISR = {
+    .processId  = TS_ID_BUTTON_UP_PROCESS_ISR,
+    .delay      = 12,
+    .functionId = BUTTON_UP_PROCESS_ISR,
     .group      = BUTTON_GROUP,
     .nextTask   = NULL,
 };
 /******************************************************************/
 
-/******************** Button 1 Released Process ********************/
-const struct Task1 bUpReleased = {
-    .processId  = TS_ID_BUTTON_UP_RELEASED,
-    .delay      = 10,
-    .functionId = 1,
-    .group      = BUTTON_GROUP,
-    .nextTask   = NULL,
-};
-/*******************************************************************/
-
 /******************** Button 1 Single Click Process ********************/
+/**
+ * @note Sets the flag signalling a single click occured after waiting a
+ * delay. The delay is one more than the maximum time difference between
+ * clicks for a double click to be deemed valid. If the delay was <=
+ * max time difference for a double click then a double click would
+ * trigger a single click as well as a double click
+ */
 const struct Task1 bUpSingleClick = {
     .processId  = TS_ID_BUTTON_UP_SINGLE_CLICK,
-    .delay      = 150,
-    .functionId = 2,
+    .delay      = ButtonUp.settings.doubleClickMaxTimeDifference + 1,
+    .functionId = BUTTON_UP_SINGLE_CLICK,
     .group      = BUTTON_GROUP,
     .nextTask   = NULL,
 };
 /***********************************************************************/
 
 /******************** Button 1 Press and Hold Process ********************/
+/**
+ * @note Sets the flag signalling a press and hold has occured after
+ * waiting the given delay. The delay must be larger than the double
+ * and single click delays. The larger this delay is in comparison
+ * to the single click delay, the longer you can hold the button and
+ * then release before it will register as a press and hold
+ */
 const struct Task1 bUpPressAndHold = {
     .processId  = TS_ID_BUTTON_UP_PRESS_AND_HOLD,
     .delay      = 2000,
-    .functionId = 3,
+    .functionId = BUTTON_UP_PRESS_AND_HOLD,
+    .group      = BUTTON_GROUP,
+    .nextTask   = NULL,
+};
+/*************************************************************************/
+
+/******************** Button 2 Process ISR ********************/
+/**
+ * @note Refer to Button 1 Process ISR task for a description
+ */
+const struct Task1 bDownProcessISR = {
+    .processId  = TS_ID_BUTTON_DOWN_PROCESS_ISR,
+    .delay      = 12,
+    .functionId = BUTTON_DOWN_PROCESS_ISR,
+    .group      = BUTTON_GROUP,
+    .nextTask   = NULL,
+};
+/******************************************************************/
+
+/******************** Button 2 Single Click Process ********************/
+/**
+ * @note Refer to Button 2 Single Click Process task for a description
+ */
+const struct Task1 bDownSingleClick = {
+    .processId  = TS_ID_BUTTON_DOWN_SINGLE_CLICK,
+    .delay      = ButtonDown.settings.doubleClickMaxTimeDifference + 1,
+    .functionId = BUTTON_DOWN_SINGLE_CLICK,
+    .group      = BUTTON_GROUP,
+    .nextTask   = NULL,
+};
+/***********************************************************************/
+
+/******************** Button 2 Press and Hold Process ********************/
+/**
+ * @note Refer to Button 2 Press and Hold Process task for a description
+ */
+const struct Task1 bDownPressAndHold = {
+    .processId  = TS_ID_BUTTON_DOWN_PRESS_AND_HOLD,
+    .delay      = 2000,
+    .functionId = BUTTON_DOWN_PRESS_AND_HOLD,
     .group      = BUTTON_GROUP,
     .nextTask   = NULL,
 };
@@ -148,14 +208,31 @@ void nullFunction(void) {
     // debug_prints("Double click\r\n");
 }
 
-void (*bDoubleClickFunctions[NUM_BUTTONS])(void) = {&nullFunction};
+void release1(void) {
+    debug_prints("B0 - Press and hold released\r\n");
+}
 
-Task1 bPressedDebounceTasks[NUM_BUTTONS]  = {bUpPressed};
-Task1 bReleasedDebounceTasks[NUM_BUTTONS] = {bUpReleased};
-Task1 bSingleClickTasks[NUM_BUTTONS]      = {bUpSingleClick};
-Task1 bPressAndHoldTasks[NUM_BUTTONS]     = {bUpPressAndHold};
+void release2(void) {
+    debug_prints("B1 - Press and hold released\r\n");
+}
+
+void (*bDoubleClickFunctions[NUM_BUTTONS])(void)          = {&nullFunction};
+void (*bPressAndHoldReleasedFunctions[NUM_BUTTONS])(void) = {&release1, &release2};
+
+Task1 bSingleClickTasks[NUM_BUTTONS]  = {bUpSingleClick, bDownSingleClick};
+Task1 bPressAndHoldTasks[NUM_BUTTONS] = {bUpPressAndHold, bDownPressAndHold};
+Task1 bProcessISRTasks[NUM_BUTTONS]   = {bUpProcessISR, bDownProcessISR};
 
 ButtonTypeDef buttons[NUM_BUTTONS] = {ButtonUp};
+
+/**
+ * @brief Make sure there are in the same order that the functions
+ * are placed into the above lists
+ */
+enum ButtonId {
+    BUTTON_UP   = 0,
+    BUTTON_DOWN = 1,
+};
 
 /* Preprocessor statments to check certain configuration settings to detect any mistakes */
 #ifndef NUM_BUTTONS

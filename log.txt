@@ -1,5 +1,0 @@
-STM32 ST-LINK CLI v3.6.0.0
-STM32 ST-LINK Command Line Interface
-
-Unexpected error
-Unable to connect to ST-LINK!

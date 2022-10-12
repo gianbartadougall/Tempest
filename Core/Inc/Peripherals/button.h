@@ -18,10 +18,6 @@
 
 /* Public #defines */
 
-#define BUTTON_ID_OFFSET 74
-#define BUTTON_UP        (0 + BUTTON_ID_OFFSET)
-#define BUTTON_DOWN      (1 + BUTTON_ID_OFFSET)
-
 /* Public Structures and Enumerations */
 
 /* Public Variable Declarations */

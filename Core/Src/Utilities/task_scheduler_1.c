@@ -75,7 +75,18 @@ void ts_init(void) {
 }
 
 void ts_add_task_to_queue(Task1* task) {
-    // debug_prints("Adding task\r\n");
+    // // debug_prints("Adding task\r\n");
+
+    // Confirm this task doesn't already exist in the queue
+    for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
+        if ((queue[i].task == task)) {
+            // debug_prints("SKIPPING ADD\r\n");
+            return;
+        } else {
+            break;
+        }
+    }
+
     for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
 
         if (queue[i].task != NULL) {
@@ -93,8 +104,8 @@ uint8_t ts_cancel_running_task(Task1* task) {
 
     for (uint8_t qi = 0; qi < QUEUE_SIZE; qi++) {
         if (queue[qi].task == task) {
-            // char m[60];
-            // sprintf(m, "Cancelling func id: %i  ", queue[qi].task->functionId);
+            char m[60];
+            sprintf(m, "Cancelling func id: %i  ", queue[qi].task->functionId);
             // debug_prints(m);
             queue[qi].executionTime = TS_NONE;
             queue[qi].finished      = TS_NONE;
@@ -107,16 +118,16 @@ uint8_t ts_cancel_running_task(Task1* task) {
     }
 
     if (num == 1) {
-        return TRUE;
+        return TASK_CANCELLED;
     } else if (num == 0) {
-        return FALSE;
+        return TASK_NOT_FOUND;
     }
 
-    char m[60];
-    sprintf(m, "More than one task of id %i found\r\n", task->functionId);
-    debug_prints(m);
+    // char m[60];
+    // sprintf(m, "More than one task of id %i found\r\n", task->functionId);
+    // debug_prints(m);
 
-    return TRUE;
+    return TASK_CANCELLED;
 }
 
 void ts_process_flags(void) {
@@ -128,37 +139,37 @@ void ts_process_flags(void) {
     for (uint8_t qi = 0; qi < QUEUE_SIZE; qi++) {
 
         if (queue[qi].finished != TASK_FINISHED) {
-            // debug_prints("CONTINUING\r\n");
+            // // debug_prints("CONTINUING\r\n");
             continue;
         }
 
         if (queue[qi].task->nextTask == NULL) {
             ts_remove_task(qi);
-            // debug_prints("removing task\r\n");
+            // // debug_prints("removing task\r\n");
         } else {
             // char m[40];
             // sprintf(m, "Moving to task %i\r\n", queue[qi].task->nextTask->functionId);
-            // debug_prints(m);
+            // // debug_prints(m);
             ts_move_to_next_task(qi);
         }
 
         finishedTasks--;
         // char m[40];
         // sprintf(m, "-- Finished tasks now = %i\r\n", finishedTasks);
-        // debug_prints(m);
+        // // debug_prints(m);
         if (finishedTasks == 0) {
             break;
         }
     }
 
     if (finishedTasks != 0) {
-        debug_prints("Error, not all tasks were dealt with!\r\n");
+        // debug_prints("Error, not all tasks were dealt with!\r\n");
 
         for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
             if (queue[i].finished == TASK_FINISHED) {
                 char m[60];
                 sprintf(m, "TASK NOT PROCESSED %i\r\n", queue[i].task->functionId);
-                debug_prints(m);
+                // debug_prints(m);
             }
         }
 
@@ -167,14 +178,14 @@ void ts_process_flags(void) {
 
     // char m[50];
     // sprintf(m, "FINISHED TASKS %i\r\n", finishedTasks);
-    // debug_prints(m);
+    // // debug_prints(m);
     ts_update_first_in_queue();
 }
 
 void ts_isr(void) {
     // char m[50];
     // sprintf(m, "ISR called @T=%li\r\n", TIM15->CNT);
-    // debug_prints(m);
+    // // debug_prints(m);
     uint8_t index = 0;
     TsTask* head  = queueHead[0];
 
@@ -186,13 +197,13 @@ void ts_isr(void) {
                 break;
             case BUTTON_GROUP:
                 buttonTasksFlag |= (0x01 << head->task->functionId);
-                // debug_prints("A  ");
+                char m[40];
+                sprintf(m, "ISR @ Id: %i\tTIME: %li\r\n", head->task->functionId, TS_TIMER->CNT);
+                // debug_prints(m);
+                // // debug_prints("A  ");
                 break;
             case AMBIENT_LIGHT_SENSOR_GROUP:
                 ambientLightSensorFlag |= (0x01 << head->task->functionId);
-                // char m[40];
-                // sprintf(m, "Id: %i\tTIME: %li\r\n", head->task->functionId, TS_TIMER->CNT);
-                // debug_prints(m);
                 break;
             default:
                 break;
@@ -201,7 +212,7 @@ void ts_isr(void) {
         finishedTasks++;
         // char m[60];
         // sprintf(m, "++ Func Id: %i now finished -> FTs = %i\r\n", head->task->functionId, finishedTasks);
-        // debug_prints(m);
+        // // debug_prints(m);
         head = queueHead[++index];
     }
 }
@@ -213,7 +224,7 @@ uint32_t ts_calculate_execution_time(uint32_t delayUntilExecution) {
 }
 
 void ts_copy_task_into_queue(uint8_t qi, Task1* task) {
-    // debug_prints("Copying to queue\r\n");
+    // // debug_prints("Copying to queue\r\n");
     queue[qi].task          = task;
     queue[qi].executionTime = ts_calculate_execution_time(task->delay);
     queue[qi].finished      = 0;
@@ -223,7 +234,7 @@ void ts_copy_task_into_queue(uint8_t qi, Task1* task) {
 void ts_remove_task(uint8_t qi) {
     // char m[60];
     // sprintf(m, "Removing func id: %i  ", queue[qi].task->functionId);
-    // debug_prints(m);
+    // // debug_prints(m);
 
     queue[qi].executionTime = TS_NONE;
     queue[qi].finished      = TS_NONE;
@@ -231,7 +242,7 @@ void ts_remove_task(uint8_t qi) {
     numTasksInQueue--;
 
     if (numTasksInQueue < 0) {
-        debug_prints("FATAL ERROR - TASKS IN QUEUE WAS NEGATIVE\r\n");
+        // debug_prints("FATAL ERROR - TASKS IN QUEUE WAS NEGATIVE\r\n");
     }
 }
 
@@ -284,7 +295,7 @@ void ts_update_first_in_queue(void) {
     }
 
     if (queueHeadFound == 0) {
-        // debug_prints("Disabled\r\n");
+        // // debug_prints("Disabled\r\n");
         // ts_disable();
         return;
     }
@@ -305,8 +316,8 @@ void ts_update_first_in_queue(void) {
     // Update capture compare
     TS_TIMER->CCR1 = queueHead[0]->executionTime;
 
-    // char m[50];
-    // sprintf(m, "Next ISR @T=%li\r\n", TS_TIMER->CCR1);
+    char m[50];
+    sprintf(m, "  Next ISR @T=%li\r\n", TS_TIMER->CCR1);
     // debug_prints(m);
     ts_enable();
 }

@@ -64,33 +64,12 @@ void button_test(void) {
     debug_clear();
     button_init();
 
+    // GPIOA->MODER &= ~(0x03 << 12);
+    // GPIOA->MODER |= (0x01 << 12);
+
     while (1) {
         ts_process_flags();
         button_process_flags();
-        // if ((buttonTasksFlag & (0x01 << 0)) != 0) {
-        //     task0();
-        //     buttonTasksFlag &= ~(0x01 << 0);
-        // }
-
-        // if ((buttonTasksFlag & (0x01 << 1)) != 0) {
-        //     task1();
-        //     buttonTasksFlag &= ~(0x01 << 1);
-        // }
-
-        // if ((buttonTasksFlag & (0x01 << 2)) != 0) {
-        //     task2();
-        //     buttonTasksFlag &= ~(0x01 << 2);
-        // }
-
-        // if ((buttonTasksFlag & (0x01 << 3)) != 0) {
-        //     task3();
-        //     buttonTasksFlag &= ~(0x01 << 3);
-        // }
-
-        // if (buttonTasksFlag & (0x01 << 4)) {
-        //     task4();
-        //     buttonTasksFlag &= ~(0x01 << 4);
-        // }
     }
 }
 

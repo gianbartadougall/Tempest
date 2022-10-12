@@ -124,7 +124,7 @@ void EXTI4_IRQHandler(void) {
  *
  */
 void EXTI9_5_IRQHandler(void) {
-    debug_prints("EXTI 9_5\r\n");
+    // debug_prints("EXTI 9_5\r\n");
 
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
@@ -136,7 +136,7 @@ void EXTI9_5_IRQHandler(void) {
         EXTI->PR1 = EXTI_PR1_PIF5;
 
         /* Call required functions */
-        // button_isr(1);
+        button_isr(1);
     }
 
     // // Confirm pending interrupt exists on EXTI line 6
