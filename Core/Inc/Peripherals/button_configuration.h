@@ -223,7 +223,7 @@ Task1 bSingleClickTasks[NUM_BUTTONS]  = {bUpSingleClick, bDownSingleClick};
 Task1 bPressAndHoldTasks[NUM_BUTTONS] = {bUpPressAndHold, bDownPressAndHold};
 Task1 bProcessISRTasks[NUM_BUTTONS]   = {bUpProcessISR, bDownProcessISR};
 
-ButtonTypeDef buttons[NUM_BUTTONS] = {ButtonUp};
+ButtonTypeDef buttons[NUM_BUTTONS] = {ButtonUp, ButtonDown};
 
 /**
  * @brief Make sure there are in the same order that the functions
