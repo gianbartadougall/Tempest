@@ -13,8 +13,9 @@
 /* Private Includes */
 // #include "tempest.h"
 #include "utilities.h"
-#include "timer_ms.h"
+// #include "timer_ms.h"
 #include "task_scheduler_1.h"
+#include "piezo_buzzer.h"
 
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -74,7 +75,7 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         TIM16->SR = ~TIM_SR_UIF;
 
         /* Call required functions */
-        // piezo_buzzer_isr();
+        piezo_buzzer_isr();
     }
 
     if ((TIM16->SR & TIM_SR_CC1IF) == TIM_SR_CC1IF) {

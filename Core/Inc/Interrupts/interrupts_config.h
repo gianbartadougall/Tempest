@@ -30,7 +30,7 @@
 
 // Timer 15 runs the task scheduler, important that this priority is higher
 // than any interrupt that could pass that task scheduler a task
-#define TIM15_ISR_PRIORITY PRIORITY_1
-#define TIM16_ISR_PRIORITY PRIORITY_5
+#define TIM15_ISR_PRIORITY         PRIORITY_1
+#define TIM1_UP_TIM16_ISR_PRIORITY PRIORITY_5
 
 #endif // INTERRUPTS_CONFIG_H

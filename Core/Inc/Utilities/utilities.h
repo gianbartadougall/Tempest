@@ -33,6 +33,10 @@
 
 #define PIN_IS_HIGH(port, pin) ((port->IDR & (0x01 << pin)) != 0)
 #define PIN_IS_LOW(port, pin)  ((port->IDR & (0x01 << pin)) == 0)
+
+#define FLAG_IS_SET(flag, bit) ((flag & (0x01 << bit)) != 0)
+#define CLEAR_FLAG(flag, bit)  (flag &= ~(0x01 << bit))
+
 /* Public Structures and Enumerations */
 
 /* Public Variable Declarations */

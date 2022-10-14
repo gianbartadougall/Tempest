@@ -20,6 +20,7 @@
 #include "hardware_config.h"
 #include "ambient_light_sensor.h"
 #include "button.h"
+#include "piezo_buzzer.h"
 
 /* Private STM Includes */
 
@@ -134,10 +135,24 @@ void als_test(void) {
     }
 }
 
+void piezo_buzzer_test(void) {
+
+    hardware_config_init();
+
+    while (1) {
+        piezo_buzzer_play_sound(SOUND);
+        // char m[60];
+        // sprintf(m, "CNT: %li\r\n", TIM16->CNT);
+        // debug_prints(m);
+
+        HAL_Delay(3000);
+    }
+}
+
 void testing_init(void) {
 
     // Initialise hardware for tests
-    button_test();
+    piezo_buzzer_test();
     // Set the GPIO pin to input and read
     while (1) {}
 }

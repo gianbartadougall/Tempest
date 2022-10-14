@@ -177,8 +177,8 @@ uint8_t button_state(uint8_t button) {
 
 void button_process_flags(void) {
 
-    if (buttonTasksFlag & (0x01 << BUTTON_UP_PROCESS_ISR)) {
-        buttonTasksFlag &= ~(0x01 << BUTTON_UP_PROCESS_ISR);
+    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_UP_PROCESS_ISR)) {
+        CLEAR_FLAG(buttonTasksFlag, BUTTON_UP_PROCESS_ISR);
 
         button_enable_interrupt(BUTTON_UP);
 
@@ -190,19 +190,18 @@ void button_process_flags(void) {
         }
     }
 
-    if (buttonTasksFlag & (0x01 << BUTTON_UP_SINGLE_CLICK)) {
-        buttonTasksFlag &= ~(0x01 << BUTTON_UP_SINGLE_CLICK);
+    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_UP_SINGLE_CLICK)) {
+        CLEAR_FLAG(buttonTasksFlag, BUTTON_UP_SINGLE_CLICK);
         debug_prints("0 - Single click\r\n");
     }
 
-    if (buttonTasksFlag & (0x01 << BUTTON_UP_PRESS_AND_HOLD)) {
-        buttonTasksFlag &= ~(0x01 << BUTTON_UP_PRESS_AND_HOLD);
+    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_UP_PRESS_AND_HOLD)) {
+        CLEAR_FLAG(buttonTasksFlag, BUTTON_UP_PRESS_AND_HOLD);
         debug_prints("0 - Press and hold\r\n");
     }
 
-    if (buttonTasksFlag & (0x01 << BUTTON_DOWN_PROCESS_ISR)) {
-        buttonTasksFlag &= ~(0x01 << BUTTON_DOWN_PROCESS_ISR);
-
+    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_DOWN_PROCESS_ISR)) {
+        CLEAR_FLAG(buttonTasksFlag, BUTTON_DOWN_PROCESS_ISR);
         button_enable_interrupt(BUTTON_DOWN);
 
         // Determine whether the ISR was a rising or falling edge
@@ -215,13 +214,13 @@ void button_process_flags(void) {
         }
     }
 
-    if (buttonTasksFlag & (0x01 << BUTTON_DOWN_SINGLE_CLICK)) {
-        buttonTasksFlag &= ~(0x01 << BUTTON_DOWN_SINGLE_CLICK);
+    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_DOWN_SINGLE_CLICK)) {
+        CLEAR_FLAG(buttonTasksFlag, BUTTON_DOWN_SINGLE_CLICK);
         debug_prints("1 - Single click\r\n");
     }
 
-    if (buttonTasksFlag & (0x01 << BUTTON_DOWN_PRESS_AND_HOLD)) {
-        buttonTasksFlag &= ~(0x01 << BUTTON_DOWN_PRESS_AND_HOLD);
+    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_DOWN_PRESS_AND_HOLD)) {
+        CLEAR_FLAG(buttonTasksFlag, BUTTON_DOWN_PRESS_AND_HOLD);
         debug_prints("1 - Press and hold\r\n");
     }
 }

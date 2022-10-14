@@ -75,8 +75,8 @@ Core/Src/Sensors/encoder.c
 PERIPHERAL_SOURCES = \
 Core/Src/Peripherals/button.c \
 Core/Src/Peripherals/motor.c \
-Core/Src/Peripherals/led.c 
-# Core/Src/Peripherals/piezo_buzzer.c 
+Core/Src/Peripherals/led.c \
+Core/Src/Peripherals/piezo_buzzer.c 
 # Core/Src/Peripherals/motor_driver.c
 
 # Include Interrupt files

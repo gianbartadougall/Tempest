@@ -69,8 +69,8 @@ void ts_init(void) {
 
 #ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
     // Add repeated tasks to scheduler
-    ts_add_task_to_queue(&alSensor1DischargeCapacitor);
-    ts_add_task_to_queue(&alSensor2DischargeCapacitor);
+    // ts_add_task_to_queue(&alSensor1DischargeCapacitor);
+    // ts_add_task_to_queue(&alSensor2DischargeCapacitor);
 #endif
 }
 

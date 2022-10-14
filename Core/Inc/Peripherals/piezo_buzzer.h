@@ -4,18 +4,17 @@
 #include "stm32l4xx_hal.h"
 #include "stm32l4xx.h"
 
-typedef struct PiezoSound {
-    uint8_t numMaxPlays;
-    uint8_t index;
-    uint16_t frequencies[5];
-    uint8_t dutyCycles[5]; 
-} PiezoSound;
+#define SOUND 0
 
-extern PiezoSound sound1;
-extern PiezoSound sound2;
+enum PiezoSoundModes { UNLIMITED, ONE_TIME, TWO_TIMES, THREE_TIMES, FOUR_TIMES, FIVE_TIMES };
+
+typedef struct PiezoNote {
+    const uint16_t frequency;
+    const uint8_t dutyCycle;
+} PiezoNote;
 
 void piezo_buzzer_init(void);
 void piezo_buzzer_isr(void);
-void piezo_buzzer_play_sound(PiezoSound sound);
+void piezo_buzzer_play_sound(uint8_t sound);
 
 #endif // PIEZO_BUZER_H

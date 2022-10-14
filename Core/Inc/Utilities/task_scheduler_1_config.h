@@ -22,91 +22,91 @@
  */
 
 /******************** Ambient Light Sensor 1 Process ********************/
-struct Task1 alSensor1DischargeCapacitor;
+// struct Task1 alSensor1DischargeCapacitor;
 
-struct Task1 alSensor1ConfirmSensorIsConnected = {
-    .processId  = TS_ID_READ_AL_SENSOR_1,
-    .delay      = 300,
-    .functionId = 4,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor1DischargeCapacitor,
-};
+// struct Task1 alSensor1ConfirmSensorIsConnected = {
+//     .processId  = TS_ID_READ_AL_SENSOR_1,
+//     .delay      = 300,
+//     .functionId = 4,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor1DischargeCapacitor,
+// };
 
-struct Task1 alSensor1chargeCapacitor = {
-    .processId  = TS_ID_READ_AL_SENSOR_1,
-    .delay      = 20,
-    .functionId = 3,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor1ConfirmSensorIsConnected,
-};
+// struct Task1 alSensor1chargeCapacitor = {
+//     .processId  = TS_ID_READ_AL_SENSOR_1,
+//     .delay      = 20,
+//     .functionId = 3,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor1ConfirmSensorIsConnected,
+// };
 
-struct Task1 alSensor1ReadCapacitorCharge = {
-    .processId  = TS_ID_READ_AL_SENSOR_1,
-    .delay      = 58000,
-    .functionId = 2,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor1chargeCapacitor,
-};
+// struct Task1 alSensor1ReadCapacitorCharge = {
+//     .processId  = TS_ID_READ_AL_SENSOR_1,
+//     .delay      = 58000,
+//     .functionId = 2,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor1chargeCapacitor,
+// };
 
-struct Task1 alSensor1SetModeAnalogue = {
-    .processId  = TS_ID_READ_AL_SENSOR_1,
-    .delay      = 300,
-    .functionId = 1,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor1ReadCapacitorCharge,
-};
+// struct Task1 alSensor1SetModeAnalogue = {
+//     .processId  = TS_ID_READ_AL_SENSOR_1,
+//     .delay      = 300,
+//     .functionId = 1,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor1ReadCapacitorCharge,
+// };
 
-struct Task1 alSensor1DischargeCapacitor = {
-    .processId  = TS_ID_READ_AL_SENSOR_1,
-    .delay      = 50,
-    .functionId = 0,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor1SetModeAnalogue,
-};
+// struct Task1 alSensor1DischargeCapacitor = {
+//     .processId  = TS_ID_READ_AL_SENSOR_1,
+//     .delay      = 50,
+//     .functionId = 0,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor1SetModeAnalogue,
+// };
 /************************************************************************/
 
 /******************** Ambient Light Sensor 2 Process ********************/
-struct Task1 alSensor2DischargeCapacitor;
+// struct Task1 alSensor2DischargeCapacitor;
 
-struct Task1 alSensor2ConfirmSensorIsConnected = {
-    .processId  = TS_ID_READ_AL_SENSOR_2,
-    .delay      = 300,
-    .functionId = 9,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor2DischargeCapacitor,
-};
+// struct Task1 alSensor2ConfirmSensorIsConnected = {
+//     .processId  = TS_ID_READ_AL_SENSOR_2,
+//     .delay      = 300,
+//     .functionId = 9,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor2DischargeCapacitor,
+// };
 
-struct Task1 alSensor2chargeCapacitor = {
-    .processId  = TS_ID_READ_AL_SENSOR_2,
-    .delay      = 20,
-    .functionId = 8,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor2ConfirmSensorIsConnected,
-};
+// struct Task1 alSensor2chargeCapacitor = {
+//     .processId  = TS_ID_READ_AL_SENSOR_2,
+//     .delay      = 20,
+//     .functionId = 8,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor2ConfirmSensorIsConnected,
+// };
 
-struct Task1 alSensor2ReadCapacitorCharge = {
-    .processId  = TS_ID_READ_AL_SENSOR_2,
-    .delay      = 58000,
-    .functionId = 7,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor2chargeCapacitor,
-};
+// struct Task1 alSensor2ReadCapacitorCharge = {
+//     .processId  = TS_ID_READ_AL_SENSOR_2,
+//     .delay      = 58000,
+//     .functionId = 7,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor2chargeCapacitor,
+// };
 
-struct Task1 alSensor2SetModeAnalogue = {
-    .processId  = TS_ID_READ_AL_SENSOR_2,
-    .delay      = 300,
-    .functionId = 6,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor2ReadCapacitorCharge,
-};
+// struct Task1 alSensor2SetModeAnalogue = {
+//     .processId  = TS_ID_READ_AL_SENSOR_2,
+//     .delay      = 300,
+//     .functionId = 6,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor2ReadCapacitorCharge,
+// };
 
-struct Task1 alSensor2DischargeCapacitor = {
-    .processId  = TS_ID_READ_AL_SENSOR_2,
-    .delay      = 50,
-    .functionId = 5,
-    .group      = AMBIENT_LIGHT_SENSOR_GROUP,
-    .nextTask   = &alSensor2SetModeAnalogue,
-};
+// struct Task1 alSensor2DischargeCapacitor = {
+//     .processId  = TS_ID_READ_AL_SENSOR_2,
+//     .delay      = 50,
+//     .functionId = 5,
+//     .group      = AMBIENT_LIGHT_SENSOR_GROUP,
+//     .nextTask   = &alSensor2SetModeAnalogue,
+// };
 /************************************************************************/
 
 #endif // TASK_SCHEDULER_1_CONFIG_H

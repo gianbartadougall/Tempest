@@ -92,7 +92,7 @@ void timer_ms_init(void) {
     TIMER_MS->CCMR1 &= ~(TIM_CCMR1_OC1M | TIM_CCMR1_OC2M); // Set output compare mode to Frozen
 
     // Enable interrupt handler
-    HAL_NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, TIM16_ISR_PRIORITY, 0);
+    HAL_NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, TIM1_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
 
     // Reset both channels
@@ -427,28 +427,28 @@ void timer_ms_priority_cancel_current_task(uint8_t chnl) {
     }
 
     switch (CH_QUEUE(chnl, 0)->actionOnPriorityCancel) {
-    case TIMER_MS_TASK_CANCEL:
-        debug_prints("Priority cancel\r\n");
-        timer_ms_remove_task(chnl, 0);
-        break;
+        case TIMER_MS_TASK_CANCEL:
+            debug_prints("Priority cancel\r\n");
+            timer_ms_remove_task(chnl, 0);
+            break;
 
-    case TIMER_MS_TASK_RESET:
-        timer_ms_reset_first_task(chnl);
-        break;
+        case TIMER_MS_TASK_RESET:
+            timer_ms_reset_first_task(chnl);
+            break;
 
-    case TIMER_MS_TASK_PAUSE:
+        case TIMER_MS_TASK_PAUSE:
 
-        if (TIMER_MS->CCR1 < TIMER_MS->CNT) {
-            CH_QUEUE(chnl, 0)->delayRemaining = (TIMER_MS->ARR - TIMER_MS->CNT) + TIMER_MS->CCR1;
-        } else {
-            CH_QUEUE(chnl, 0)->delayRemaining = TIMER_MS->CCR1 - TIMER_MS->CNT;
-        }
+            if (TIMER_MS->CCR1 < TIMER_MS->CNT) {
+                CH_QUEUE(chnl, 0)->delayRemaining = (TIMER_MS->ARR - TIMER_MS->CNT) + TIMER_MS->CCR1;
+            } else {
+                CH_QUEUE(chnl, 0)->delayRemaining = TIMER_MS->CCR1 - TIMER_MS->CNT;
+            }
 
-        // Set paused flag on this task
-        CH_QUEUE(chnl, 0)->status = TMS_TASK_STATUS_PAUSED;
-        break;
-    default:
-        break;
+            // Set paused flag on this task
+            CH_QUEUE(chnl, 0)->status = TMS_TASK_STATUS_PAUSED;
+            break;
+        default:
+            break;
     }
 }
 

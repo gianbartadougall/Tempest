@@ -135,6 +135,18 @@ void hardware_config_gpio_init(void) {
     HC_LED_GREEN_PORT->BSRR |= (0x10000 << HC_LED_GREEN_PIN);
     HC_LED_ORANGE_PORT->BSRR |= (0x10000 << HC_LED_ORANGE_PIN);
 #endif
+
+#ifdef PIEZO_BUZZER_MODULE_ENABLED
+
+    // Connect GPIO pin to output of pizeo buzzer timer
+    HC_PIEZO_BUZZER_PORT->MODER &= ~(MODER_ANALOGUE << (HC_PIEZO_BUZZER_PIN * 2));
+    HC_PIEZO_BUZZER_PORT->MODER |= (MODER_ALTERNATE_FUNCTION << (HC_PIEZO_BUZZER_PIN * 2));
+    HC_PIEZO_BUZZER_PORT->OSPEEDR |= (OSPEER_HIGH_SPEED << (HC_PIEZO_BUZZER_PIN * 2));
+
+    HC_PIEZO_BUZZER_PORT->AFR[0] &= ~(0x0F << (HC_PIEZO_BUZZER_PIN * 4)); // Reset alternate function
+    HC_PIEZO_BUZZER_PORT->AFR[0] |= (0x0E << (HC_PIEZO_BUZZER_PIN * 4));  // Set alternate function to AF14
+
+#endif
 }
 
 void hardware_config_exti_interrupts(void) {
@@ -169,7 +181,7 @@ void hardware_config_exti_interrupts(void) {
 
 void hardware_config_timer_init(void) {
 
-#ifdef TASK_SCHEDULER_ENABLED
+#ifdef TASK_SCHEDULER_MODULE_ENABLED
 
     /* If the system clock is too high, this timer will count too quickly and the timer
         will reach its maximum count and reset before the timer count reaches the number
@@ -193,6 +205,56 @@ void hardware_config_timer_init(void) {
     /* Enable interrupt handler */
     HAL_NVIC_SetPriority(HC_TS_TIMER_IRQn, HC_TS_TIMER_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(HC_TS_TIMER_IRQn);
+
+#endif
+
+#ifdef SYNCHRONOUS_TIMER_MODULE_ENABLED
+
+    #if ((SYSTEM_CLOCK_CORE / HC_SYNCH_TIMER_FREQUENCY) > HC_SYNCH_TIMER_MAX_COUNT)
+        #error System clock frequency is too high to generate the required timer frequnecy
+    #endif
+
+    /* Configure timer for task scheduler*/
+    HC_SYNCH_TIMER_CLK_ENABLE();                                            // Enable the clock
+    HC_SYNCH_TIMER->CR1 &= ~(TIM_CR1_CEN);                                  // Disable counter
+    HC_SYNCH_TIMER->PSC = (SystemCoreClock / HC_SYNCH_TIMER_FREQUENCY) - 1; // Set timer frequency
+    HC_SYNCH_TIMER->ARR = HC_SYNCH_TIMER_MAX_COUNT;                         // Set maximum count for timer
+    HC_SYNCH_TIMER->CNT = 0;                                                // Reset count to 0
+    HC_SYNCH_TIMER->DIER &= 0x00;                                           // Disable all interrupts by default
+    HC_SYNCH_TIMER->CCMR1 &= ~(TIM_CCMR1_CC1S | TIM_CCMR1_OC1M);            // Set CH1 capture compare to mode to frozen
+
+    /* Enable interrupt handler */
+    HAL_NVIC_SetPriority(HC_SYNCH_TIMER_IRQn, HC_SYNCH_TIMER_ISR_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(HC_SYNCH_TIMER_IRQn);
+
+#endif
+
+#ifdef PIEZO_BUZZER_MODULE_ENABLED
+
+    #if ((SYSTEM_CLOCK_CORE / HC_PIEZO_BUZZER_TIMER_FREQUENCY) > HC_PIEZO_BUZZER_TIMER_MAX_COUNT)
+        #error System clock frequency is too high to generate the required timer frequnecy
+    #endif
+
+    /* Configure timer for piezo buzzer */
+    HC_PIEZO_BUZZER_TIMER_CLK_ENABLE();                                                   // Enable the clock
+    HC_PIEZO_BUZZER_TIMER->CR1 &= ~(TIM_CR1_CEN);                                         // Disable counter
+    HC_PIEZO_BUZZER_TIMER->PSC = (SystemCoreClock / HC_PIEZO_BUZZER_TIMER_FREQUENCY) - 1; // Set timer frequency
+    HC_PIEZO_BUZZER_TIMER->ARR = HC_PIEZO_BUZZER_TIMER_MAX_COUNT;                         // Set maximum count for timer
+    HC_PIEZO_BUZZER_TIMER->CNT = 0;                                                       // Reset count to 0
+    HC_PIEZO_BUZZER_TIMER->DIER &= 0x00; // Disable all interrupts by default
+
+    /**/
+    HC_PIEZO_BUZZER_TIMER->CCER |= TIM_CCER_CC1E;                          // Enable capture compare output
+    HC_PIEZO_BUZZER_TIMER->CCMR1 &= ~(TIM_CCMR1_CC1S);                     // Configure channel 1 to be output
+    HC_PIEZO_BUZZER_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);                     // Reset output compare mode
+    HC_PIEZO_BUZZER_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2); // Set output compare mode to PWM mode 1
+
+    /**/
+    HC_PIEZO_BUZZER_TIMER->BDTR |= TIM_BDTR_MOE; // Enable OC and OCN output
+
+    /* Enable interrupt handler */
+    HAL_NVIC_SetPriority(HC_PIEZO_BUZZER_TIMER_IRQn, HC_PIEZO_BUZZER_TIMER_ISR_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(HC_PIEZO_BUZZER_TIMER_IRQn);
 
 #endif
 }
