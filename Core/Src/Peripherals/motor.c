@@ -39,21 +39,22 @@ void motor_forward(uint8_t motorId) {
     if (ID_INVALID(motorId)) {
         return;
     }
-
-    uint8_t motorIndex = motorId - MOTOR_ID_OFFSET;
-    SET_PORT_HIGH(motorIndex, PORT_A);
-    SET_PORT_LOW(motorIndex, PORT_B);
+    uint8_t index = motorId - MOTOR_ID_OFFSET;
+    SET_PIN_HIGH(motors[index].ports[0], motors[index].pins[0]);
+    SET_PIN_LOW(motors[index].ports[1], motors[index].pins[1]);
 }
 
 void motor_reverse(uint8_t motorId) {
 
     if (ID_INVALID(motorId)) {
+        debug_prints("returning\r\n");
         return;
     }
 
-    uint8_t motorIndex = motorId - MOTOR_ID_OFFSET;
-    SET_PORT_LOW(motorIndex, PORT_A);
-    SET_PORT_HIGH(motorIndex, PORT_B);
+    debug_prints("Setting motor reverse\r\n");
+    uint8_t index = motorId - MOTOR_ID_OFFSET;
+    SET_PIN_LOW(motors[index].ports[0], motors[index].pins[0]);
+    SET_PIN_HIGH(motors[index].ports[1], motors[index].pins[1]);
 }
 
 void motor_brake(uint8_t motorId) {
@@ -62,9 +63,9 @@ void motor_brake(uint8_t motorId) {
         return;
     }
 
-    uint8_t motorIndex = motorId - MOTOR_ID_OFFSET;
-    SET_PORT_HIGH(motorIndex, PORT_A);
-    SET_PORT_HIGH(motorIndex, PORT_B);
+    uint8_t index = motorId - MOTOR_ID_OFFSET;
+    SET_PIN_HIGH(motors[index].ports[0], motors[index].pins[0]);
+    SET_PIN_HIGH(motors[index].ports[1], motors[index].pins[1]);
 }
 
 void motor_stop(uint8_t motorId) {
@@ -73,9 +74,9 @@ void motor_stop(uint8_t motorId) {
         return;
     }
 
-    uint8_t motorIndex = motorId - MOTOR_ID_OFFSET;
-    SET_PORT_LOW(motorIndex, PORT_A);
-    SET_PORT_LOW(motorIndex, PORT_B);
+    uint8_t index = motorId - MOTOR_ID_OFFSET;
+    SET_PIN_LOW(motors[index].ports[0], motors[index].pins[0]);
+    SET_PIN_LOW(motors[index].ports[1], motors[index].pins[1]);
 }
 
 /* Private Functions */

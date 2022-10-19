@@ -170,10 +170,31 @@ void encoder_test(void) {
     }
 }
 
+void motor_test(void) {
+
+    hardware_config_init();
+    debug_clear();
+
+    SET_PIN_MODE_INPUT(GPIOA, 9);
+    SET_PIN_MODE_INPUT(GPIOA, 10);
+    SET_PIN_MODE_OUTPUT(GPIOA, 9);
+    SET_PIN_MODE_OUTPUT(GPIOA, 10);
+
+    while (1) {
+        debug_prints("setting motor\r\n");
+        SET_PIN_HIGH(GPIOA, 9);
+        SET_PIN_LOW(GPIOA, 10);
+        HAL_Delay(3000);
+        SET_PIN_HIGH(GPIOA, 10);
+        SET_PIN_LOW(GPIOA, 9);
+        HAL_Delay(3000);
+    }
+}
+
 void testing_init(void) {
 
     // Initialise hardware for tests
-    encoder_test();
+    motor_test();
     // Set the GPIO pin to input and read
     while (1) {}
 }

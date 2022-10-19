@@ -1,7 +1,7 @@
 ## Tempest
 Software to run automated blinds
 
-Current bugs
-
-task_scheduler.c
-- The timer will skip an isr if it is close to end i.e if an isr is supposed to run at 65017 and the max count is 65535, the isr will be skipped 
+Features to add
+- If you double click into reset mode, you can't get out unless you update the min and max points. Make it so you only
+    have to update min and max points if you move the blind outside it's current min max and don't set anything
+- 

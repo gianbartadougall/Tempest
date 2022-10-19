@@ -18,6 +18,14 @@ enum TempestFunctions {
     FUNC_ID_BLINK_RED_LED,
     FUNC_ID_BLINK_ORANGE_LED,
     FUNC_ID_PLAY_CONFIG_SETTINGS_SOUND,
+    FUNC_ID_PRINT_TIMER_COUNT,
+};
+
+struct Task1 printTimerCount = {
+    .delay      = 500,
+    .functionId = FUNC_ID_PRINT_TIMER_COUNT,
+    .group      = TEMPEST_GROUP,
+    .nextTask   = &printTimerCount,
 };
 
 const struct Task1 switchBlind1ToDayLightModeTask = {

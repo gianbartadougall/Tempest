@@ -58,9 +58,7 @@ int main(void) {
     }
 
     // Initialise hardware
-    hardware_config_init();
     tempest_init();
-    debug_clear();
 
     while (1) {
         tempest_update();

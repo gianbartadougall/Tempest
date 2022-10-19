@@ -183,7 +183,7 @@ void TIM1_CC_IRQHandler(void) {
 
         // Call encoder isr to turn motor off
         debug_prints("REACHED MAXIMUM VALUE\r\n");
-        // tempest_isr_encoder_at_max_value();
+        encoder_limit_reached_isr(ENCODER_1_ID);
     }
 }
 

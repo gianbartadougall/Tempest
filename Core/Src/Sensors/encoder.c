@@ -51,7 +51,7 @@
 #define ZERO_COUNT 1000
 
 /* Variable Declarations */
-uint16_t maximumCount     = 90;
+uint16_t maximumCount     = 10;
 uint32_t encoderTaskFlags = 0;
 
 /* Function prototypes */
@@ -147,6 +147,7 @@ void encoder_enable(uint8_t encoderId) {
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
     encoders[index].timer->EGR |= (TIM_EGR_UG);
+    encoders[index].timer->DIER |= (TIM_DIER_CC2IE | TIM_DIER_CC3IE);
     encoders[index].timer->CR1 |= (TIM_CR1_CEN);
 }
 
@@ -158,6 +159,7 @@ void encoder_disable(uint8_t encoderId) {
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
     encoders[index].timer->CR1 &= ~(TIM_CR1_CEN);
+    encoders[index].timer->DIER &= ~(TIM_DIER_CC2IE | TIM_DIER_CC3IE);
 }
 
 void encoder_set_direction_up(uint8_t encoderId) {
@@ -167,7 +169,9 @@ void encoder_set_direction_up(uint8_t encoderId) {
     }
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
-    SET_TIMER_DIRECTION_COUNT_UP(encoders[index].timer);
+    // The maximum height of the blind is the 0 point. So to go upwards, the timer counter
+    // needs to count down
+    SET_TIMER_DIRECTION_COUNT_DOWN(encoders[index].timer);
 }
 
 void encoder_set_direction_down(uint8_t encoderId) {
@@ -177,7 +181,10 @@ void encoder_set_direction_down(uint8_t encoderId) {
     }
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
-    SET_TIMER_DIRECTION_COUNT_DOWN(encoders[index].timer);
+
+    // The maximum height of the blind is the 0 point. So to go downwards, the timer counter
+    // needs to count up
+    SET_TIMER_DIRECTION_COUNT_UP(encoders[index].timer);
 }
 
 uint32_t encoder_get_count(uint8_t encoderId) {
@@ -190,7 +197,7 @@ uint32_t encoder_get_count(uint8_t encoderId) {
     return encoders[index].timer->CNT;
 }
 
-uint8_t encoder_at_min_height(uint8_t encoderId) {
+uint8_t encoder_at_max_height(uint8_t encoderId) {
 
     if (ENCODER_ID_INVALID(encoderId)) {
         return TRUE;
@@ -200,7 +207,7 @@ uint8_t encoder_at_min_height(uint8_t encoderId) {
     return encoders[index].timer->CNT == 0 ? TRUE : FALSE;
 }
 
-uint8_t encoder_at_max_height(uint8_t encoderId) {
+uint8_t encoder_at_min_height(uint8_t encoderId) {
 
     if (ENCODER_ID_INVALID(encoderId)) {
         return TRUE;
@@ -219,8 +226,11 @@ void encoder_set_max_height(uint8_t encoderId) {
     // CCR2 is always mapped to 0. Thus only need to set counter to 0 to reset
     // minimum value
     uint8_t index              = ENCODER_ID_TO_INDEX(encoderId);
-    encoders->minCount         = ZERO_COUNT;
+    encoders[index].minCount   = ZERO_COUNT;
     encoders[index].timer->CNT = ZERO_COUNT;
+    char m[60];
+    sprintf(m, "max height CNT: %li\r\n", encoders[index].timer->CNT);
+    debug_prints(m);
 }
 
 void encoder_set_min_height(uint8_t encoderId) {
@@ -230,16 +240,19 @@ void encoder_set_min_height(uint8_t encoderId) {
     }
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    char m[60];
+    sprintf(m, "min height CNT: %li\r\n", encoders[index].timer->CNT);
+    debug_prints(m);
 
     // The minimum height of the blind must be lower than the maximum height of
     // the blind. Because the count increases as the height of the blind lowers,
     // the timer count must be larger than the zero count when setting the min
     // height
-    if (encoders[index].timer->CNT <= ZERO_COUNT) {
+    if (encoders[index].timer->CNT <= encoders[index].minCount) {
         return;
     }
 
-    maximumCount                = encoders[index].timer->CNT;
+    encoders[index].maxCount    = encoders[index].timer->CNT;
     encoders[index].timer->CCR3 = maximumCount;
 }
 
@@ -275,6 +288,7 @@ void encoder_limit_reached_isr(uint8_t encoderId) {
         return;
     }
 
+    debug_prints("Limit reached\r\n");
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
     if ((encoders[index].minCount == UNSET) || (encoders[index].maxCount == UNSET)) {
         return;

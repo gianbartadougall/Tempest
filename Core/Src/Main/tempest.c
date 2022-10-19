@@ -12,6 +12,7 @@
 
 /* Private Includes */
 #include "tempest_config.h"
+#include "hardware_config.h"
 #include "button.h"
 
 /* Private STM Includes */
@@ -32,6 +33,13 @@ extern uint32_t tempestTasksFlag;
 /* Public Functions */
 
 void tempest_init(void) {
+
+    hardware_config_init();
+    debug_clear();
+
+#ifdef ENCODER_MODULE_ENABLED
+    encoder_init();
+#endif
 
     // Initialise all the required peripherals
     ts_init();
@@ -115,6 +123,13 @@ void tempest_update_flags(void) {
     if (FLAG_IS_SET(tempestTasksFlag, FUNC_ID_PLAY_CONFIG_SETTINGS_SOUND)) {
         FLAG_CLEAR(tempestTasksFlag, FUNC_ID_PLAY_CONFIG_SETTINGS_SOUND);
         piezo_buzzer_play_sound(SOUND);
+    }
+
+    if (FLAG_IS_SET(tempestTasksFlag, FUNC_ID_PRINT_TIMER_COUNT)) {
+        FLAG_CLEAR(tempestTasksFlag, FUNC_ID_PRINT_TIMER_COUNT);
+        char m[60];
+        sprintf(m, "TIM: %li\r\n", TIM1->CNT);
+        debug_prints(m);
     }
 }
 
@@ -368,10 +383,13 @@ void tempest_set_new_mode(Blind* blind, uint8_t mode) {
 
 void tempest_move_blind_up(Blind* blind) {
 
-    if (encoder_at_max_height(blind->encoderId) == TRUE) {
-        return;
+    if (blind->mode != CONFIGURE_SETINGS) {
+        if (encoder_at_max_height(blind->encoderId) == TRUE) {
+            return;
+        }
     }
 
+    ts_add_task_to_queue(&printTimerCount);
     // Update the direction and move blind up
     encoder_set_direction_up(blind->encoderId);
     motor_forward(blind->motorId);
@@ -379,10 +397,15 @@ void tempest_move_blind_up(Blind* blind) {
 
 void tempest_move_blind_down(Blind* blind) {
 
-    if (encoder_at_min_height(blind->encoderId) == TRUE) {
-        return;
+    if (blind->mode != CONFIGURE_SETINGS) {
+        if (encoder_at_min_height(blind->encoderId) == TRUE) {
+            debug_prints("return\r\n");
+            return;
+        }
     }
 
+    debug_prints("Direction down\r\n");
+    ts_add_task_to_queue(&printTimerCount);
     // Update the direction and move blind up
     encoder_set_direction_down(blind->encoderId);
     motor_reverse(blind->motorId);
@@ -390,4 +413,5 @@ void tempest_move_blind_down(Blind* blind) {
 
 void tempest_stop_blind_moving(Blind* blind) {
     motor_brake(blind->motorId);
+    ts_cancel_running_task(&printTimerCount);
 }
