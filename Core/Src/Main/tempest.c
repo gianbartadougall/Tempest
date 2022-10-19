@@ -373,8 +373,8 @@ void tempest_move_blind_up(Blind* blind) {
     }
 
     // Update the direction and move blind up
-    // encoder_set_direction_up(blind->encoderId);
-    // motor_forward(blind->motorId);
+    encoder_set_direction_up(blind->encoderId);
+    motor_forward(blind->motorId);
 }
 
 void tempest_move_blind_down(Blind* blind) {
@@ -384,10 +384,10 @@ void tempest_move_blind_down(Blind* blind) {
     }
 
     // Update the direction and move blind up
-    // encoder_set_direction_down(blind->encoderId);
-    // motor_reverse(blind->motorId);
+    encoder_set_direction_down(blind->encoderId);
+    motor_reverse(blind->motorId);
 }
 
 void tempest_stop_blind_moving(Blind* blind) {
-    // motor_brake(blind->motorId);
+    motor_brake(blind->motorId);
 }
