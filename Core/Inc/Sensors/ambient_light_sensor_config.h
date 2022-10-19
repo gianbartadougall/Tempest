@@ -18,13 +18,13 @@ typedef struct AmbientLightSensor {
 #if (VERSION_MAJOR == 0)
 
 const AmbientLightSensor alSensor1 = {
-    .id   = AL_SENSOR_1,
+    .id   = AL_SENSOR_1_ID,
     .port = HC_ALS_PORT_1,
     .pin  = HC_ALS_PIN_1,
 };
 
 const AmbientLightSensor alSensor2 = {
-    .id   = AL_SENSOR_2,
+    .id   = AL_SENSOR_2_ID,
     .port = HC_ALS_PORT_2,
     .pin  = HC_ALS_PIN_2,
 };

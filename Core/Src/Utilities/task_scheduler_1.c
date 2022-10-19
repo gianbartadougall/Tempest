@@ -18,7 +18,7 @@
 /* Private STM Includes */
 
 /* Private #defines */
-#define QUEUE_SIZE 4
+#define QUEUE_SIZE 6
 // Plus 1 to ensure that the last item can always be NULL as this allows the isr function to know when
 // to stop executing tasks from the queue head list
 #define QUEUE_HEAD_SIZE    (QUEUE_SIZE + 1)
@@ -33,7 +33,7 @@
 // as many items across when adding something into the queue thus can
 // run faster
 typedef struct TsTask {
-    Task1* task;
+    const Task1* task;
     uint32_t executionTime;
     uint8_t finished;
 } TsTask;
@@ -52,7 +52,7 @@ uint8_t k             = 0;
 
 /* Private Function Prototypes */
 uint32_t ts_calculate_execution_time(uint32_t delayUntilExecution);
-void ts_copy_task_into_queue(uint8_t qi, Task1* task);
+void ts_copy_task_into_queue(uint8_t qi, const Task1* task);
 void ts_remove_task(uint8_t qi);
 void ts_move_to_next_task(uint8_t qi);
 void ts_update_first_in_queue(void);
@@ -66,16 +66,10 @@ void ts_init(void) {
     for (uint8_t qi = 0; qi < QUEUE_HEAD_SIZE; qi++) {
         queueHead[qi] = NULL;
     }
-
-#ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
-    // Add repeated tasks to scheduler
-    // ts_add_task_to_queue(&alSensor1DischargeCapacitor);
-    // ts_add_task_to_queue(&alSensor2DischargeCapacitor);
-#endif
 }
 
-void ts_add_task_to_queue(Task1* task) {
-    // // debug_prints("Adding task\r\n");
+void ts_add_task_to_queue(const Task1* task) {
+    // debug_prints("Adding task\r\n");
 
     // Confirm this task doesn't already exist in the queue
     for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
@@ -99,38 +93,36 @@ void ts_add_task_to_queue(Task1* task) {
     }
 }
 
-uint8_t ts_cancel_running_task(Task1* task) {
+uint8_t ts_cancel_running_task(const Task1* task) {
     uint8_t num = 0;
 
     for (uint8_t qi = 0; qi < QUEUE_SIZE; qi++) {
+        // char m[60];
+        // sprintf(m, "Test: %p == %p\r\n", queue[qi].task, task);
+        // debug_prints(m);
+
         if (queue[qi].task == task) {
-            char m[60];
-            sprintf(m, "Cancelling func id: %i  ", queue[qi].task->functionId);
-            // debug_prints(m);
-            queue[qi].executionTime = TS_NONE;
-            queue[qi].finished      = TS_NONE;
-            queue[qi].task          = NULL;
-            numTasksInQueue--;
-            // ts_remove_task(qi);
+            ts_remove_task(qi);
             ts_update_first_in_queue();
             num++;
         }
     }
 
     if (num == 1) {
-        return TASK_CANCELLED;
+        return TS_TASK_CANCELLED;
     } else if (num == 0) {
-        return TASK_NOT_FOUND;
+        // debug_prints("task could not be found\r\n");
+        return TS_TASK_NOT_FOUND;
     }
 
     // char m[60];
     // sprintf(m, "More than one task of id %i found\r\n", task->functionId);
     // debug_prints(m);
 
-    return TASK_CANCELLED;
+    return TS_TASK_CANCELLED;
 }
 
-void ts_process_flags(void) {
+void ts_process_internal_flags(void) {
 
     if (finishedTasks == 0) {
         return;
@@ -168,8 +160,8 @@ void ts_process_flags(void) {
         for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
             if (queue[i].finished == TASK_FINISHED) {
                 char m[60];
-                sprintf(m, "TASK NOT PROCESSED %i\r\n", queue[i].task->functionId);
-                // debug_prints(m);
+                sprintf(m, "TASK NOT PROCESSED %p\r\n", queue[i].task);
+                debug_prints(m);
             }
         }
 
@@ -196,9 +188,9 @@ void ts_isr(void) {
                 tempestTasksFlag |= (0x01 << head->task->functionId);
                 break;
             case BUTTON_GROUP:
-                buttonTasksFlag |= (0x01 << head->task->functionId);
-                char m[40];
-                sprintf(m, "ISR @ Id: %i\tTIME: %li\r\n", head->task->functionId, TS_TIMER->CNT);
+                FLAG_SET(buttonTasksFlag, head->task->functionId);
+                // char m[40];
+                // sprintf(m, "ISR @ Flag: %li\tTIME: %li\r\n", buttonTasksFlag, TS_TIMER->CNT);
                 // debug_prints(m);
                 // // debug_prints("A  ");
                 break;
@@ -223,7 +215,7 @@ uint32_t ts_calculate_execution_time(uint32_t delayUntilExecution) {
     return (TS_TIMER->CNT + delayUntilExecution) % TS_TIMER_MAX_COUNT;
 }
 
-void ts_copy_task_into_queue(uint8_t qi, Task1* task) {
+void ts_copy_task_into_queue(uint8_t qi, const Task1* task) {
     // // debug_prints("Copying to queue\r\n");
     queue[qi].task          = task;
     queue[qi].executionTime = ts_calculate_execution_time(task->delay);
@@ -233,8 +225,8 @@ void ts_copy_task_into_queue(uint8_t qi, Task1* task) {
 
 void ts_remove_task(uint8_t qi) {
     // char m[60];
-    // sprintf(m, "Removing func id: %i  ", queue[qi].task->functionId);
-    // // debug_prints(m);
+    // sprintf(m, "REMOVING TASK %p\r\n", queue[qi].task);
+    // debug_prints(m);
 
     queue[qi].executionTime = TS_NONE;
     queue[qi].finished      = TS_NONE;
@@ -246,7 +238,7 @@ void ts_remove_task(uint8_t qi) {
     }
 }
 
-uint8_t ts_task_is_running(Task1* task) {
+uint8_t ts_task_is_running(const Task1* task) {
     for (uint8_t qi = 0; qi < QUEUE_SIZE; qi++) {
         if (queue[qi].task == task) {
             return TRUE;
@@ -257,6 +249,10 @@ uint8_t ts_task_is_running(Task1* task) {
 }
 
 void ts_move_to_next_task(uint8_t qi) {
+    // char m[60];
+    // sprintf(m, "MOVING ONTO NEXT TASK %p\r\n", queue[qi].task);
+    // debug_prints(m);
+
     queue[qi].task          = queue[qi].task->nextTask;
     queue[qi].executionTime = ts_calculate_execution_time(queue[qi].task->delay);
     queue[qi].finished      = 0;

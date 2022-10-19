@@ -107,12 +107,12 @@
  * The synchronous timer generates an interrupt every t time units. In the
  * interrupt, synchronous tasks that need to happen can be run
  */
-#define HC_SYNCH_TIMER              TIM3
-#define HC_SYNCH_TIMER_CLK_ENABLE() __HAL_RCC_TIM3_CLK_ENABLE()
+#define HC_SYNCH_TIMER              TIM6
+#define HC_SYNCH_TIMER_CLK_ENABLE() __HAL_RCC_TIM6_CLK_ENABLE()
 #define HC_SYNCH_TIMER_FREQUENCY    TIMER_FREQUENCY_1MHz
-#define HC_SYNCH_TIMER_MAX_COUNT    1000 // Frequency of 1Mhz will give a 1ms timer if max count is 1000
-#define HC_SYNCH_TIMER_IRQn
-#define HC_SYNCH_TIMER_ISR_PRIORITY TIM3_ISR_PRIORITY
+#define HC_SYNCH_TIMER_MAX_COUNT    10000 // Frequency of 1Mhz will give a 10ms timer if max count is 10000
+#define HC_SYNCH_TIMER_IRQn         TIM6_IRQn
+#define HC_SYNCH_TIMER_ISR_PRIORITY TIM6_ISR_PRIORITY
 /***********************************************************************/
 
 /********** Marcos for hardware related to the Piezo Buzzer **********/
@@ -129,6 +129,23 @@
 #define HC_PIEZO_BUZZER_TIMER_MAX_COUNT    __16_BIT_MAX_COUNT
 #define HC_PIEZO_BUZZER_TIMER_IRQn         TIM1_UP_TIM16_IRQn
 #define HC_PIEZO_BUZZER_TIMER_ISR_PRIORITY TIM1_UP_TIM16_ISR_PRIORITY
+/***********************************************************************/
+
+/********** Marcos for hardware related to the Encoders **********/
+/**
+ *
+ */
+#define HC_ENCODER_1_PORT    GPIOA
+#define HC_ENCODER_1_PIN     8
+#define ENCODER_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
+#define ENCODER_IRQn         EXTI9_5_IRQn
+
+#define HC_ENCODER_1_TIMER              TIM1
+#define HC_ENCODER_1_TIMER_CLK_ENABLE() __HAL_RCC_TIM1_CLK_ENABLE()
+#define HC_ENCODER_1_TIMER_FREQUENCY    TIMER_FREQUENCY_1KHz
+#define HC_ENCODER_1_TIMER_MAX_COUNT    __32_BIT_MAX_COUNT
+#define HC_ENCODER_1_TIMER_IRQn         TIM1_CC_IRQn
+#define HC_ENCODER_1_TIMER_ISR_PRIORITY TIM1_ISR_PRIORITY
 /***********************************************************************/
 
 /* Public Structures and Enumerations */

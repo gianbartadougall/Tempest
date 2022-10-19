@@ -4,176 +4,291 @@
  * @brief Peripheral driver for a rotary encoder
  * @version 0.1
  * @date 2022-06-19
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 
 /* Public Includes */
 
 /* Private Includes */
-#include "encoder.h"
-#include "debug_log.h"
-#include "comparator.h"
+#include "encoder_config.h"
+#include "utilities.h"
 
 /* STM32 Includes */
 
 /* Private #defines */
-#define ENCODER_PIN_RAW 8
-#define ENCODER_PIN (ENCODER_PIN_RAW * 2)
-#define ENCODER_PORT GPIOA
-#define ENCODER_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
-#define ENCODER_IRQn EXTI9_5_IRQn
+// #define ENCODER_PIN_RAW      8
+// #define ENCODER_PIN          (ENCODER_PIN_RAW * 2)
+// #define ENCODER_PORT         GPIOA
+// #define ENCODER_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
+// #define ENCODER_IRQn         EXTI9_5_IRQn
 
-#define ENCODER_CIRCUMFERENCE 75398 // micrometers
-#define ENCODER_NUM_GEAR_TEETH 8
-#define ENCODER_DISTANCE_PER_TOOTH ((uint32_t) (ENCODER_CIRCUMFERENCE / ENCODER_NUM_GEAR_TEETH))
+// #define ENCODER_CIRCUMFERENCE      75398 // micrometers
+// #define ENCODER_NUM_GEAR_TEETH     8
+// #define ENCODER_DISTANCE_PER_TOOTH ((uint32_t)(ENCODER_CIRCUMFERENCE / ENCODER_NUM_GEAR_TEETH))
 
-#define ENCODER_TIMER TIM1
+// #define ENCODER_TIMER TIM1
 
-// The maximum distance the object needs to travel in micrometers
-#define ENOCDER_OBJECT_DISTANCE 1450000 // (1.45m) // 867054 - 46 ISR
-#define ENCODER_MINIMUM_DISTANCE 0
-#define ENCODER_MAXIMUM_DISTANCE (((uint32_t) (ENOCDER_OBJECT_DISTANCE / ENCODER_CIRCUMFERENCE)) * ENCODER_DISTANCE_PER_TOOTH * ENCODER_NUM_GEAR_TEETH)
+// // The maximum distance the object needs to travel in micrometers
+// #define ENOCDER_OBJECT_DISTANCE  1450000 // (1.45m) // 867054 - 46 ISR
+// #define ENCODER_MINIMUM_DISTANCE 0
+// #define ENCODER_MAXIMUM_DISTANCE (((uint32_t)(ENOCDER_OBJECT_DISTANCE / ENCODER_CIRCUMFERENCE)) *
+// ENCODER_DISTANCE_PER_TOOTH * ENCODER_NUM_GEAR_TEETH)
+#define ASSERT_VALID_ENCODER_ID(id)                                                      \
+    do {                                                                                 \
+        if ((id < ENCODER_ID_OFFSET) || (id > (NUM_ENCODERS - 1 + ENCODER_ID_OFFSET))) { \
+            while (1) {}                                                                 \
+        }                                                                                \
+    } while (0)
+
+#define ENCODER_ID_INVALID(id)  ((id < ENCODER_ID_OFFSET) || (id > (NUM_ENCODERS - 1 + ENCODER_ID_OFFSET)))
+#define ENCODER_ID_TO_INDEX(id) (id - ENCODER_ID_OFFSET)
+
+// This number is arbitrary however setting it a number > 0 prevents
+// wrapping around to really large numbers if the encoder for some
+// reason goes slightly below the minimum count
+#define ZERO_COUNT 1000
 
 /* Variable Declarations */
-uint16_t maximumCount = 90;
+uint16_t maximumCount     = 90;
+uint32_t encoderTaskFlags = 0;
 
 /* Function prototypes */
 void encoder_timer_init(void);
 
-void encoder_hardware_init(void) {
-
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-
-    // Set encoder pin to alternate function connected to the input of TIM1
-    ENCODER_PORT->MODER  &= ~(0x03 << ENCODER_PIN); // Reset mode
-    ENCODER_PORT->MODER  |= (0x02 << ENCODER_PIN); // Set mode to alternate function
-    
-    ENCODER_PORT->OSPEEDR &= ~(0x03 << ENCODER_PIN); // Set pin to low speed
-    
-    ENCODER_PORT->PUPDR  &= ~(0x03 << ENCODER_PIN); // Clear PUPDR for no pull up/down
-    
-    ENCODER_PORT->OTYPER &= ~(0x01 << ENCODER_PIN);
-    
-    ENCODER_PORT->AFR[1] &= ~(0x0F); // Reset alternate function
-    ENCODER_PORT->AFR[1] |= (0x01); // Set alternate function to AF1
-}
-
 void encoder_init(void) {
 
-    // Initialise input pin
-    encoder_hardware_init();
+    // Reset all the timer counts
+    for (uint8_t i = 0; i < NUM_ENCODERS; i++) {
+        // Set counter values for the interrupts to be triggered on for each channel
+        HC_ENCODER_1_TIMER->CCR2 = 0;            // Set the minimum count
+        HC_ENCODER_1_TIMER->CCR3 = maximumCount; // Set the maximum count
 
-    // Initialise timer such that it will count on the rising edge of the input pin
-    encoder_timer_init();
+        // Enable the timer
+        encoder_enable(encoders[i].id);
+    }
 }
 
-void encoder_timer_init(void) {
+uint8_t encoder_probe_connection(uint8_t encoderId) {
 
-    // Configure channel 1 to be input capture 
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return DISCONNECTED;
+    }
 
-    // Enable the clock for the timer
-    __HAL_RCC_TIM1_CLK_ENABLE();    
+    // The encoder connects to the micrcontroller through a comparator with a series resistor
+    // To probe whether the encoder is connected to the microcontroller, a high or low voltage
+    // will be output and then that voltage will be read back by changing the pin to an input.
+    // If the encoder is not connected, the input read will be the same as the output written.
+    // If the encoder is connected, the input read will not be the same as the output written
+    // for either high or low
+    uint8_t index  = ENCODER_ID_TO_INDEX(encoderId);
+    uint8_t status = DISCONNECTED;
 
-    // Set the sampling rate. (I'm not 100% sure if this is required. I
-    // tested changing it and it didn't seem to affect the output)
-    ENCODER_TIMER->PSC = ((SystemCoreClock / 1000000) - 1); // Set sampling rate
+    for (uint8_t i = 0; i < 1; i++) {
 
-    // Set the maximum limit for the counter
-    ENCODER_TIMER->ARR = 10000;
+        // Description: Check if writing a high also returns a high when reading
 
-    // Set counter to count upwards
-    ENCODER_TIMER->CR1 &= ~(0x01 << 4);
+        // Set pin mode to output and set pin high
+        SET_PIN_MODE_INPUT(encoders[index].port, encoders[index].pin);
+        SET_PIN_MODE_OUTPUT(encoders[index].port, encoders[index].pin);
+        SET_PIN_TYPE_PUSH_PULL(encoders[index].port, encoders[index].pin);
 
-    ENCODER_TIMER->CR2 &= ~(0x01 << 7); // Set CH1 to timer input 1
+        // Check high voltage first loop and low voltage on second loop
+        if (i == 0) {
+            SET_PIN_HIGH(encoders[index].port, encoders[index].pin);
+        } else {
+            SET_PIN_LOW(encoders[index].port, encoders[index].pin);
+        }
 
-    // Set TIM1 to input and map TIM_CH1 GPIO pin to trigger input 1 (TI1)
-    ENCODER_TIMER->CCMR1 &= ~(0x03 << 0); // Reset capture compare
-    ENCODER_TIMER->CCMR1 |= (0x01 << 0); // Set capture compare to input (IC1 mapped to TI1)
-    
-    // Configure slave mode control
-    ENCODER_TIMER->SMCR &= ~(0x07 << 4); // Reset trigger selection
-    ENCODER_TIMER->SMCR |= (0x05 << 4); // Set trigger to Filtered Timer Input 1 (TI1FP1)
-    ENCODER_TIMER->SMCR &= ~((0x01 << 16) | 0x07); // Reset slave mode selection
-    ENCODER_TIMER->SMCR |= 0x07; // Set rising edge of selected trigger to clock the counter
-    
-    /* Configure channel 2 and 3 to trigger interrupts on capture compare values */
-    ENCODER_TIMER->DIER = 0x00; // Clear all interrupts
+        HAL_Delay(5); // Delay for 5ms so capacitor can fully charge
 
-    // Enable capture compare on CH2, CH3 and UIE
-    ENCODER_TIMER->DIER |= ((0x01 << 0) | (0x01 << 2) | (0x01 << 3));
+        // Set pin to high impedence
+        SET_PIN_MODE_ANALOGUE(encoders[index].port, encoders[index].pin);
 
-    ENCODER_TIMER->CCMR2 &= ~(0x03 << 0); // Reset capture compare 3 to output
-    ENCODER_TIMER->CCMR2 &= ~((0x01 << 16) | (0x07 << 4)); // Reset output compare mode 3 to frozen
-    
-    ENCODER_TIMER->CCMR1 &= ~(0x03 << 8); // Reset capture compare 2 to output
-    ENCODER_TIMER->CCMR1 &= ~((0x01 << 24) | (0x07 << 12)); // Reset output compare mode 2 to frozen
+        // Delay for 5ms so if encoder is connected, it has time to fully discharge the charge
+        // that was just output on the pin
+        HAL_Delay(5);
 
-    // Set counter values for the interrupts to be triggered on for each channel 
-    ENCODER_TIMER->CCR2 = 0;
-    ENCODER_TIMER->CCR3 = maximumCount;
+        // Need to set the pin low to discharge any charge that has accumated on the wire
+        // on the outside of the GPIO pin. If you don't do this and the encoder is not
+        // connected, it will somtimes read high even when there is no capacitor connected.
+        // Assuming it's because charge has accumulated on the actual pin. Setting the output
+        // low for a short period fixes this
+        SET_PIN_LOW(encoders[index].port, encoders[index].pin);
+        HAL_Delay(1);
 
-    // Disables UEV generation. This ensures that on counter underflow/overflow, the counter continues
-    // count correctly as the shadow registers retain all their values
-    ENCODER_TIMER->CR1 |= TIM_CR1_UDIS;
-    
-    // Enable counter
-    ENCODER_TIMER->CR1 |= TIM_CR1_CEN;
+        // Set the mode to input and read if the charge on the pin
+        SET_PIN_MODE_INPUT(encoders[index].port, encoders[index].pin);
+        HAL_Delay(1); // Delay for 1ms so IDR can update
 
-    // Enable the interrupts
-    HAL_NVIC_SetPriority(TIM1_CC_IRQn, 9, 0);
-	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
+        // Check for pin being low on first loop and pin being high on second loop
+        if (i == 0 && PIN_IS_LOW(encoders[index].port, encoders[index].pin)) {
+            status = CONNECTED;
+        }
+
+        // if (i == 1 && PIN_IS_HIGH(encoders[index].port, encoders[index].pin)) {
+        //     status = CONNECTED;
+        // }
+    }
+
+    // Revert pins back to original function
+    // SET_PIN_MODE_INPUT(encoders[index].port, encoders[index].pin);
+    // SET_PIN_MODE_ALTERNATE_FUNCTION(encoders[index].port, encoders[index].pin);
+
+    return status;
 }
 
-void encoder_disable(void) {
-    ENCODER_TIMER->CR1 &= ~(TIM_CR1_CEN);
+void encoder_enable(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].timer->EGR |= (TIM_EGR_UG);
+    encoders[index].timer->CR1 |= (TIM_CR1_CEN);
 }
 
-void encoder_set_direction_positive(void) {
-    // Set counter direction to up counting
-    TIM1->CR1 &= ~(0x01 << 4);
+void encoder_disable(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].timer->CR1 &= ~(TIM_CR1_CEN);
 }
 
-void encoder_set_direction_negative(void) {
-    // Set counter direction to down counting
-    TIM1->CR1 |= (0x01 << 4);
+void encoder_set_direction_up(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    SET_TIMER_DIRECTION_COUNT_UP(encoders[index].timer);
 }
 
-uint32_t encoder_get_count(void) {
-    return TIM1->CNT;
+void encoder_set_direction_down(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    SET_TIMER_DIRECTION_COUNT_DOWN(encoders[index].timer);
 }
 
-uint8_t encoder_at_minimum_distance(void) {
-    return ENCODER_TIMER->CNT == 0;
+uint32_t encoder_get_count(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return UINT_32_BIT_MAX_VALUE;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    return encoders[index].timer->CNT;
 }
 
-uint8_t encoder_at_maximum_distance(void) {
-    return ENCODER_TIMER->CNT == maximumCount;
+uint8_t encoder_at_min_height(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return TRUE;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    return encoders[index].timer->CNT == 0 ? TRUE : FALSE;
 }
 
-void encoder_isr_reset_min_value(void) {
+uint8_t encoder_at_max_height(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return TRUE;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    return (encoders[index].timer->CNT == maximumCount) ? TRUE : FALSE;
+}
+
+void encoder_set_max_height(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
     // CCR2 is always mapped to 0. Thus only need to set counter to 0 to reset
     // minimum value
-    ENCODER_TIMER->CNT = 0;
-    encoder_set_direction_positive();
-    debug_prints("Min Pos reset. CNT = 0\r\n");
+    uint8_t index              = ENCODER_ID_TO_INDEX(encoderId);
+    encoders->minCount         = ZERO_COUNT;
+    encoders[index].timer->CNT = ZERO_COUNT;
 }
 
-void encoder_isr_reset_max_value(void) {
+void encoder_set_min_height(uint8_t encoderId) {
 
-    maximumCount = ENCODER_TIMER->CNT;
-    ENCODER_TIMER->CCR3 = maximumCount;
-    encoder_set_direction_negative();
-    char m[40];
-    sprintf(m, "Max pos set to %i. Current CNT: %lu\r\n", maximumCount, ENCODER_TIMER->CNT);
-    debug_prints(m);
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+
+    // The minimum height of the blind must be lower than the maximum height of
+    // the blind. Because the count increases as the height of the blind lowers,
+    // the timer count must be larger than the zero count when setting the min
+    // height
+    if (encoders[index].timer->CNT <= ZERO_COUNT) {
+        return;
+    }
+
+    maximumCount                = encoders[index].timer->CNT;
+    encoders[index].timer->CCR3 = maximumCount;
 }
 
-void encoder_print_state(void) {
+void encoder_disable_limits(uint8_t encoderId) {
 
-    char msg[70];
-    // sprintf(msg, "isrCount: %i\r\n", isrCount);
-    sprintf(msg, "Count: %lu\r\n", ENCODER_TIMER->CNT);
-    debug_prints(msg);
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
+    uint8_t index            = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].minCount = UNSET;
+    encoders[index].maxCount = UNSET;
+}
+
+uint8_t encoder_limits_are_valid(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return FALSE;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+
+    if (encoders[index].minCount == UNSET || encoders[index].maxCount == UNSET) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+void encoder_limit_reached_isr(uint8_t encoderId) {
+
+    if (ENCODER_ID_INVALID(encoderId)) {
+        return;
+    }
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    if ((encoders[index].minCount == UNSET) || (encoders[index].maxCount == UNSET)) {
+        return;
+    }
+
+    switch (index) {
+        case 0:
+            encoderTaskFlags |= ENCODER_1_LIMIT_REACHED;
+            break;
+        case 1:
+            encoderTaskFlags |= ENCODER_1_LIMIT_REACHED;
+            break;
+
+        default:
+            break;
+    }
 }

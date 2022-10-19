@@ -18,26 +18,11 @@
 /* STM32 Includes */
 
 /* Private #defines */
-
-// #define PIEZO_PIN_RAW 6
-// #define PIEZO_PIN (PIEZO_PIN_RAW * 2)
-// #define PIEZO_PORT GPIOA
-// #define PIEZO_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
-// #define PIEZO_IRQn EXTI9_5_IRQn
-
-// #define PIEZO_TIMER TIM16
-// #define PIEZO_TIMER_IRQ_NUMBER TIM16_IRQn // Interrupt handler for Timer 2
-// #define PIEZO_TIMER_CLK_ENABLE() __HAL_RCC_TIM16_CLK_ENABLE() // Clock enable function for Timer 2
-// #define PIEZO_TIMER_FREQUENCY ((uint32_t) 100000) // Timer Frequency set to 100 khz
-// #define PIEZO_TIMER_PRESCALER ((uint16_t) (SystemCoreClock / PIEZO_TIMER_FREQUENCY) - 1) // Set prescaler for Timer
-// to run at desired frequency #define PIEZO_TIMER_MAX_COUNT ((uint16_t) 65535)// Max count for 16 bit timer #define
-// #define PIEZO_TIMER_IRQn
-// // TIM1_UP_TIM16_IRQn
 #define PIEZO_TIMER                              HC_PIEZO_BUZZER_TIMER
 #define PIEZO_TIMER_ARR_VALUE(frequency)         ((HC_PIEZO_BUZZER_TIMER_FREQUENCY / frequency) - 1)
 #define PIEZO_TIMER_DUTY_CYCLE(dutyCyclePercent) ((HC_PIEZO_BUZZER_TIMER->ARR * dutyCyclePercent) / 100)
 
-#define NUM_SOUNDS 6
+#define NUM_SOUNDS 52
 /* Defines for sounds */
 
 const PiezoNote endNote = {
@@ -46,16 +31,25 @@ const PiezoNote endNote = {
 };
 
 const PiezoNote aMajor = {
-    .frequency = 200,
-    .dutyCycle = 50,
+    .frequency = 600,
+    .dutyCycle = 90,
 };
 
 const PiezoNote aMinor = {
-    .frequency = 500,
-    .dutyCycle = 50,
+    .frequency = 1500,
+    .dutyCycle = 90,
 };
 
-PiezoNote sounds[NUM_SOUNDS] = {aMajor, aMinor, aMajor, aMinor, aMajor, endNote};
+const PiezoNote bMinor = {
+    .frequency = 200,
+    .dutyCycle = 90,
+};
+
+PiezoNote sounds[NUM_SOUNDS] = {aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor,  aMinor, aMinor,
+                                aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor,  aMinor, aMinor,
+                                aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor, aMinor,  aMinor, aMinor,
+                                aMinor, aMinor, aMinor, aMajor, aMajor, aMajor, aMajor, aMajor, endNote, bMinor, bMinor,
+                                bMinor, bMinor, bMinor, bMinor, bMinor, bMinor, bMinor, endNote};
 
 /* Variable Declarations */
 uint8_t pbIndex = 0;

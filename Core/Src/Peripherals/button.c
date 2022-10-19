@@ -26,8 +26,6 @@
 #define TIME_RELEASED_2(index)           (buttons[index].t2Released)
 #define CLICK_TIME_DIFFERENCE(index)     (TIME_RELEASED_1(index) - TIME_RELEASED_2(index))
 #define MAX_TIME_FOR_DOUBLE_CLICK(index) (buttons[index].settings.doubleClickMaxTimeDifference)
-#define BUTTON_PRESSED                   0x29
-#define BUTTON_RELEASED                  0x30
 
 // #define BUTTON_ID_INVALID(id) (((id < BUTTON_ID_OFFSET) || (id > (NUM_BUTTONS - 1 + BUTTON_ID_OFFSET))) ? 1 : 0)
 
@@ -43,7 +41,6 @@ uint8_t edge                        = 0;
 /* Private Function Prototypes */
 void button_on_action_pressed(uint8_t button);
 void button_on_action_released(uint8_t button);
-uint8_t button_state(uint8_t button);
 void button_enable_interrupt(uint8_t buttonId);
 void button_disable_interrupt(uint8_t buttonId);
 
@@ -57,17 +54,25 @@ void button_init(void) {
     }
 }
 
-void button_enable_interrupt(uint8_t button) {
+void button_enable_interrupt(uint8_t bIndex) {
     // Enable interrupts by unmasking them
-    EXTI->PR1 = (0x01 << buttons[button].pin); // Clear any pending interrupts
-    EXTI->IMR1 |= (0x01 << buttons[button].pin);
-    // GPIOA->BSRR |= (0x10000 << 6);
+    EXTI->PR1 = (0x01 << buttons[bIndex].pin); // Clear any pending interrupts
+    EXTI->IMR1 |= (0x01 << buttons[bIndex].pin);
 }
 
-void button_disable_interrupt(uint8_t button) {
+void button_disable_interrupt(uint8_t bIndex) {
     // Disable interrupts by masking them
-    EXTI->IMR1 &= ~(0x01 << buttons[button].pin);
-    // GPIOA->BSRR |= (0x01 << 6);
+    EXTI->IMR1 &= ~(0x01 << buttons[bIndex].pin);
+}
+
+uint8_t button_get_state(uint8_t index) {
+
+    // Return the current state of the button
+    if (PIN_IDR(buttons[index].port, buttons[index].pin) == ACTIVE_STATE(index)) {
+        return BUTTON_PRESSED;
+    }
+
+    return BUTTON_RELEASED;
 }
 
 /* Private Functions */
@@ -130,7 +135,7 @@ void button_on_action_released(uint8_t index) {
     // 'press and hold' => either a double or a single click. If the function
     // returns 0 then the press and hold timer task must have finished and
     // been removed already which means it was a press and hold
-    if (ts_cancel_running_task(&bPressAndHoldTasks[index]) == TRUE) {
+    if (ts_cancel_running_task(&bPressAndHoldTasks[index]) == TS_TASK_CANCELLED) {
 
         // If the difference between this button release and the last button
         // release < (max time difference between releases for a double click)
@@ -138,9 +143,15 @@ void button_on_action_released(uint8_t index) {
         if (CLICK_TIME_DIFFERENCE(index) <= MAX_TIME_FOR_DOUBLE_CLICK(index)) {
 
             // Call appropriate function for this button when a double click occurs
-            char m[60];
-            sprintf(m, "B%i - Double Click\r\n", index);
-            debug_prints(m);
+            if (index == BUTTON_UP_INDEX) {
+                FLAG_SET(buttonTasksFlag, FUNC_ID_BUTTON_UP_DOUBLE_CLICK);
+            } else if (index == BUTTON_DOWN_INDEX) {
+                FLAG_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK);
+            }
+            // debug_prints("Double Click\r\n");
+            // char m[60];
+            // sprintf(m, "B%i - Double Click\r\n", index);
+            // debug_prints(m);
             // (*bDoubleClickFunctions[bi])();
             // Return so only the double click function is called
             return;
@@ -152,6 +163,7 @@ void button_on_action_released(uint8_t index) {
         // will call the appropriate function. If another click does happen quickly
         // enough, this task will be cancelled
         ts_add_task_to_queue(&bSingleClickTasks[index]);
+
         // debug_prints(("Maybe single click\r\n");
         // Return so only the single click function is called
         return;
@@ -160,67 +172,40 @@ void button_on_action_released(uint8_t index) {
     // debug_prints(("Press and hold\r\n");
 
     /* If the code reaches here, the button press type was 'press and hold' */
-    (*bPressAndHoldReleasedFunctions[index])();
+    if (index == BUTTON_UP_INDEX) {
+        FLAG_SET(buttonTasksFlag, FUNC_ID_BUTTON_UP_PRESS_AND_HOLD_RELEASED);
+    } else if (index == BUTTON_DOWN_INDEX) {
+        FLAG_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PRESS_AND_HOLD_RELEASED);
+    }
+
     // Call appropriate function for this button when a 'press and hold' has finished
 }
 
-uint8_t button_state(uint8_t button) {
+void button_process_internal_flags(void) {
 
-    // Return the current state of the button
-    uint8_t state = ((IDR(button) & (0x01 << PIN(button))) == 0) ? 0 : 1;
-    if (state == ACTIVE_STATE(button)) {
-        return BUTTON_PRESSED;
-    }
+    if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_UP_PROCESS_ISR)) {
+        FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_UP_PROCESS_ISR);
 
-    return BUTTON_RELEASED;
-}
-
-void button_process_flags(void) {
-
-    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_UP_PROCESS_ISR)) {
-        CLEAR_FLAG(buttonTasksFlag, BUTTON_UP_PROCESS_ISR);
-
-        button_enable_interrupt(BUTTON_UP);
+        button_enable_interrupt(BUTTON_UP_INDEX);
 
         // Determine whether the ISR was a rising or falling edge
-        if (PIN_IS_HIGH(buttons[BUTTON_UP].port, buttons[BUTTON_UP].pin)) {
-            button_action_on_pressed(BUTTON_UP);
+        if (button_get_state(BUTTON_UP_INDEX) == BUTTON_PRESSED) {
+            button_action_on_pressed(BUTTON_UP_INDEX);
         } else {
-            button_on_action_released(BUTTON_UP);
+            button_on_action_released(BUTTON_UP_INDEX);
         }
     }
 
-    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_UP_SINGLE_CLICK)) {
-        CLEAR_FLAG(buttonTasksFlag, BUTTON_UP_SINGLE_CLICK);
-        debug_prints("0 - Single click\r\n");
-    }
+    if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PROCESS_ISR)) {
+        FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PROCESS_ISR);
 
-    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_UP_PRESS_AND_HOLD)) {
-        CLEAR_FLAG(buttonTasksFlag, BUTTON_UP_PRESS_AND_HOLD);
-        debug_prints("0 - Press and hold\r\n");
-    }
-
-    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_DOWN_PROCESS_ISR)) {
-        CLEAR_FLAG(buttonTasksFlag, BUTTON_DOWN_PROCESS_ISR);
-        button_enable_interrupt(BUTTON_DOWN);
+        button_enable_interrupt(BUTTON_DOWN_INDEX);
 
         // Determine whether the ISR was a rising or falling edge
-        if (PIN_IS_HIGH(buttons[BUTTON_DOWN].port, buttons[BUTTON_DOWN].pin)) {
-            debug_prints("B1 pressed\r\n");
-            button_action_on_pressed(BUTTON_DOWN);
+        if (button_get_state(BUTTON_DOWN_INDEX) == BUTTON_PRESSED) {
+            button_action_on_pressed(BUTTON_DOWN_INDEX);
         } else {
-            debug_prints("B1 released\r\n");
-            button_on_action_released(BUTTON_DOWN);
+            button_on_action_released(BUTTON_DOWN_INDEX);
         }
-    }
-
-    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_DOWN_SINGLE_CLICK)) {
-        CLEAR_FLAG(buttonTasksFlag, BUTTON_DOWN_SINGLE_CLICK);
-        debug_prints("1 - Single click\r\n");
-    }
-
-    if (FLAG_IS_SET(buttonTasksFlag, BUTTON_DOWN_PRESS_AND_HOLD)) {
-        CLEAR_FLAG(buttonTasksFlag, BUTTON_DOWN_PRESS_AND_HOLD);
-        debug_prints("1 - Press and hold\r\n");
     }
 }

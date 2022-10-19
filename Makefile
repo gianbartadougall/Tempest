@@ -76,8 +76,7 @@ PERIPHERAL_SOURCES = \
 Core/Src/Peripherals/button.c \
 Core/Src/Peripherals/motor.c \
 Core/Src/Peripherals/led.c \
-Core/Src/Peripherals/piezo_buzzer.c 
-# Core/Src/Peripherals/motor_driver.c
+Core/Src/Peripherals/piezo_buzzer.c
 
 # Include Interrupt files
 INTERRUPT_SOURCES = \
@@ -93,13 +92,15 @@ Core/Src/Utilities/task_scheduler_1.c
 
 # Include random files
 RANDOM_SOURCES = \
-Core/Src/main.c \
 Core/Src/stm32l4xx_hal_msp.c \
 Core/Src/timer_ms.c \
 Core/Src/pushbutton.c \
 Core/Src/comparator.c \
-Core/Src/board.c
-# Core/Src/tempest.c \
+Core/Src/board.c \
+
+MAIN_SOURCES = \
+Core/Src/Main/main.c \
+Core/Src/Main/tempest.c
 
 TEST_SOURCES = \
 Core/Src/Tests/testing.c \
@@ -119,6 +120,7 @@ C_SOURCES += $(UTILITIY_SOURCES)
 C_SOURCES += $(RANDOM_SOURCES)
 C_SOURCES += $(TEST_SOURCES)
 C_SOURCES += $(BETA_SOURCES)
+C_SOURCES += $(MAIN_SOURCES)
 
 #######################################
 # binaries
@@ -176,6 +178,7 @@ C_INCLUDES =  \
 -ICore/Inc/Interrupts \
 -ICore/Inc/Peripherals \
 -ICore/Inc/Sensors \
+-ICore/Inc/Main \
 -ICore/Inc/Utilities \
 -ICore/Inc/Tests \
 -IDrivers/STM32L4xx_HAL_Driver/Inc \

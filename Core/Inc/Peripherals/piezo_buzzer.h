@@ -4,7 +4,8 @@
 #include "stm32l4xx_hal.h"
 #include "stm32l4xx.h"
 
-#define SOUND 0
+#define SOUND             0
+#define PIEZO_ERROR_SOUND 42
 
 enum PiezoSoundModes { UNLIMITED, ONE_TIME, TWO_TIMES, THREE_TIMES, FOUR_TIMES, FIVE_TIMES };
 

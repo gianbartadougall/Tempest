@@ -25,16 +25,16 @@
 
 #define MAX_TASKS_PER_RECIPE 10
 
-#define TASK_CANCELLED 1
-#define TASK_NOT_FOUND 0
+#define TS_TASK_CANCELLED 1
+#define TS_TASK_NOT_FOUND 0
 
 /* Public Structures and Enumerations */
 typedef struct Task1 {
-    const uint8_t processId;
+    // const uint8_t taskSchedulerId;
     const uint16_t delay;
     const uint8_t functionId;
     const uint8_t group;
-    struct Task1* nextTask;
+    const struct Task1* nextTask;
 } Task1;
 
 /* Public Variable Declarations */
@@ -43,10 +43,10 @@ typedef struct Task1 {
 
 void ts_init(void);
 void ts_isr(void);
-void ts_add_task_to_queue(Task1* task);
-uint8_t ts_cancel_running_task(Task1* task);
-void ts_process_flags(void);
-uint8_t ts_task_is_running(Task1* task);
+void ts_process_internal_flags(void);
+void ts_add_task_to_queue(const Task1* task);
+uint8_t ts_cancel_running_task(const Task1* task);
+uint8_t ts_task_is_running(const Task1* task);
 
 /**
  * @brief Initialise the system library.

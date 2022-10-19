@@ -352,7 +352,7 @@ void ts_isr(void) {
                 tempestTasksFlag |= (0x01 << headTask->functionId);
                 break;
             case BUTTON_GROUP:
-                buttonTasksFlag |= (0x01 << headTask->functionId);
+                // buttonTasksFlag |= (0x01 << headTask->functionId);
                 break;
             case AMBIENT_LIGHT_SENSOR_GROUP:
                 ambientLightSensorFlag |= (0x01 << headTask->functionId);

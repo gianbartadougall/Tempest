@@ -38,7 +38,6 @@ extern uint32_t ambientLightSensorFlag;
 uint8_t count[NUM_AL_SENSORS] = {0};
 
 // List keeps track of the state of each sensor
-enum ALSensorState { DISCONNECTED, CONNECTED };
 uint8_t sensorStatus[NUM_AL_SENSORS] = {DISCONNECTED};
 
 /* Function prototypes */
@@ -105,7 +104,7 @@ void al_sensor_discharge_capacitor(uint8_t alSensorId) {
  *
  * @return uint8_t Returns 1 if ambient light sensor detects light else 0
  */
-uint8_t al_sensor_read_status(uint8_t alSensorId) {
+uint8_t al_sensor_light_found(uint8_t alSensorId) {
     // Ensure the sensor ID is valid
     if (ID_INVALID(alSensorId)) {
         return 255;
@@ -115,7 +114,7 @@ uint8_t al_sensor_read_status(uint8_t alSensorId) {
     uint8_t si = alSensorId - AL_SENSOR_OFFSET;
 
     if (sensorStatus[si] == DISCONNECTED) {
-        return 254;
+        return DISCONNECTED;
     }
 
     return (count[si] >= CUT_OFF_COUNT) ? 1 : 0;
@@ -152,55 +151,55 @@ void al_sensor_check_if_connected(uint8_t alSensorId) {
     }
 }
 
-void al_sensor_process_flags(void) {
+void al_sensor_process_internal_flags(void) {
 
     if (ambientLightSensorFlag & (0x01 << 0)) {
-        al_sensor_discharge_capacitor(AL_SENSOR_1);
+        al_sensor_discharge_capacitor(AL_SENSOR_1_ID);
         ambientLightSensorFlag &= ~(0x01 << 0);
     }
 
     if (ambientLightSensorFlag & (0x01 << 1)) {
-        al_sensor_record_ambient_light(AL_SENSOR_1);
+        al_sensor_record_ambient_light(AL_SENSOR_1_ID);
         ambientLightSensorFlag &= ~(0x01 << 1);
     }
 
     if (ambientLightSensorFlag & (0x01 << 2)) {
-        al_sensor_read_capacitor(AL_SENSOR_1);
+        al_sensor_read_capacitor(AL_SENSOR_1_ID);
         ambientLightSensorFlag &= ~(0x01 << 2);
     }
 
     if (ambientLightSensorFlag & (0x01 << 3)) {
-        al_sensor_charge_capacitor(AL_SENSOR_1);
+        al_sensor_charge_capacitor(AL_SENSOR_1_ID);
         ambientLightSensorFlag &= ~(0x01 << 3);
     }
 
     if (ambientLightSensorFlag & (0x01 << 4)) {
-        al_sensor_check_if_connected(AL_SENSOR_1);
+        al_sensor_check_if_connected(AL_SENSOR_1_ID);
         ambientLightSensorFlag &= ~(0x01 << 4);
     }
 
     if (ambientLightSensorFlag & (0x01 << 5)) {
-        al_sensor_discharge_capacitor(AL_SENSOR_2);
+        al_sensor_discharge_capacitor(AL_SENSOR_2_ID);
         ambientLightSensorFlag &= ~(0x01 << 5);
     }
 
     if (ambientLightSensorFlag & (0x01 << 6)) {
-        al_sensor_record_ambient_light(AL_SENSOR_2);
+        al_sensor_record_ambient_light(AL_SENSOR_2_ID);
         ambientLightSensorFlag &= ~(0x01 << 6);
     }
 
     if (ambientLightSensorFlag & (0x01 << 7)) {
-        al_sensor_read_capacitor(AL_SENSOR_2);
+        al_sensor_read_capacitor(AL_SENSOR_2_ID);
         ambientLightSensorFlag &= ~(0x01 << 7);
     }
 
     if (ambientLightSensorFlag & (0x01 << 8)) {
-        al_sensor_charge_capacitor(AL_SENSOR_2);
+        al_sensor_charge_capacitor(AL_SENSOR_2_ID);
         ambientLightSensorFlag &= ~(0x01 << 8);
     }
 
     if (ambientLightSensorFlag & (0x01 << 9)) {
-        al_sensor_check_if_connected(AL_SENSOR_2);
+        al_sensor_check_if_connected(AL_SENSOR_2_ID);
         ambientLightSensorFlag &= ~(0x01 << 9);
     }
 }

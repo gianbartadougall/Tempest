@@ -16,14 +16,14 @@ typedef struct Motor {
 
 #if (VERSION_MAJOR == 0)
 
-const Motor rollerBlindMotor1 = {
-    .id    = ROLLER_BLIND_MOTOR_1,
+const Motor Motor1 = {
+    .id    = MOTOR_1_ID,
     .ports = {HC_MOTOR_PORT_1, HC_MOTOR_PORT_2},
     .pins  = {HC_MOTOR_PIN_1, HC_MOTOR_PIN_2},
 };
 
-const Motor rollerBlindMotor2 = {
-    .id    = ROLLER_BLIND_MOTOR_2,
+const Motor Motor2 = {
+    .id    = MOTOR_2_ID,
     .ports = {HC_MOTOR_PORT_3, HC_MOTOR_PORT_4},
     .pins  = {HC_MOTOR_PIN_3, HC_MOTOR_PIN_4},
 };
@@ -31,6 +31,7 @@ const Motor rollerBlindMotor2 = {
 #endif
 
 #define NUM_MOTORS 2
-Motor motors[NUM_MOTORS] = {rollerBlindMotor1, rollerBlindMotor2};
+
+Motor motors[NUM_MOTORS] = {Motor1, Motor2};
 
 #endif // MOTOR_CONFIG_H

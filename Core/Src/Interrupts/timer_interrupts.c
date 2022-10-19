@@ -16,6 +16,7 @@
 // #include "timer_ms.h"
 #include "task_scheduler_1.h"
 #include "piezo_buzzer.h"
+#include "encoder.h"
 
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -168,6 +169,7 @@ void TIM1_CC_IRQHandler(void) {
 
         // Call encoder isr to turn motor off
         debug_prints("REACHED MINIMUM VALUE\r\n");
+        encoder_limit_reached_isr(ENCODER_1_ID);
         // tempest_isr_encoder_at_min_value();
     }
 

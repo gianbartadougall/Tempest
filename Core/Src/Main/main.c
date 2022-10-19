@@ -18,9 +18,11 @@
 #include "hardware_config.h"
 #include "unit_tests.h"
 #include "testing.h"
+#include "tempest.h"
+#include "debug_log.h"
 
 enum { NORMAL, UNIT_TESTS, TESTING };
-#define PROJECT_STATUS TESTING
+#define PROJECT_STATUS NORMAL
 
 /* STM32 Includes */
 
@@ -57,11 +59,11 @@ int main(void) {
 
     // Initialise hardware
     hardware_config_init();
+    tempest_init();
+    debug_clear();
 
     while (1) {
-        brd_led_toggle();
-        debug_prints("This is a test\r\n");
-        HAL_Delay(1000);
+        tempest_update();
     }
 
     return 0;

@@ -2,7 +2,6 @@
 #define TASK_SCHEDULER_1_CONFIG_H
 
 #include "task_scheduler_1.h"
-#include "task_scheduler_1_id_config.h"
 
 /* Includes for function pointers used by recipes that repeat */
 

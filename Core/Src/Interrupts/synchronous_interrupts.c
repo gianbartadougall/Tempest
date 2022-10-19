@@ -29,37 +29,38 @@ extern uint32_t ambientLightSensorFlags;
 /* Public Functions */
 
 /**
- * @brief Global interrupt for timer 3
+ * @brief Global interrupt for timer 6. Note that timer 6 is a 10ms
+ * timer and will call an interrupt every 10ms
  *
  */
-void TIM3_IRQHandler(void) {
+void TIM6_IRQHandler(void) {
 
     switch (count) {
-        case 50:
+        case 5:
 #ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
             ambientLightSensorFlags |= ALS1_DISCHARGE_CAPACITOR;
             ambientLightSensorFlags |= ALS2_DISCHARGE_CAPACITOR;
 #endif
             break;
-        case 350:
+        case 35:
 #ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
             ambientLightSensorFlags |= ALS1_RECORD_AMBIENT_LIGHT;
             ambientLightSensorFlags |= ALS2_RECORD_AMBIENT_LIGHT;
 #endif
             break;
-        case 58000:
+        case 5800:
 #ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
             ambientLightSensorFlags |= ALS1_READ_AMBIENT_LIGHT;
             ambientLightSensorFlags |= ALS2_READ_AMBIENT_LIGHT;
 #endif
             break;
-        case 59000:
+        case 5900:
 #ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
             ambientLightSensorFlags |= ALS1_CHARGE_CAPACITOR;
             ambientLightSensorFlags |= ALS2_CHARGE_CAPACITOR;
 #endif
             break;
-        case 60000:
+        case 6000:
 #ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
             ambientLightSensorFlags |= ALS1_CONFIRM_CONNECTION;
             ambientLightSensorFlags |= ALS2_CONFIRM_CONNECTION;

@@ -13,6 +13,7 @@
 #include "debug_log.h"
 #include "board.h"
 // #include "stm32l4xx_hal_msp.h"
+#include "utilities.h"
 
 /* Private Includes */
 #include "adc_config.h"
@@ -21,21 +22,6 @@
 #include "stm32l4xx_hal.h"
 
 /* Private Macros */
-
-// Defines for the different configuration modes for the GPIO pins
-#define MODER_INPUT                0x00
-#define MODER_OUTPUT               0x01
-#define MODER_ALTERNATE_FUNCTION   0x02
-#define MODER_ANALOGUE             0x03
-#define OTYPER_PUSH_PULL           0x00
-#define OTYPER_OPEN_DRAIN          0x01
-#define OSPEER_LOW_SPEED           0x00
-#define OSPEER_MEDIUM_SPEED        0x01
-#define OSPEER_HIGH_SPEED          0x02
-#define OSPEER_VERY_HIGH_SPEED     0x03
-#define PUPDR_NO_PULL_UP_PULL_DOWN 0x00
-#define PUPDR_PULL_UP              0x01
-#define PUPDR_PULL_DOWN            0x02
 
 #define EXTI_PORTA 0x00
 #define EXTI_PORTB 0x01
@@ -89,63 +75,76 @@ void hardware_config_gpio_init(void) {
 #ifdef BUTTON_MODULE_ENABLED
 
     // Set pins to input so they can be set to outputs afterwards
-    HC_BUTTON_1_PORT->MODER &= ~(MODER_ANALOGUE << (HC_BUTTON_1_PIN * 2));
-    HC_BUTTON_2_PORT->MODER &= ~(MODER_ANALOGUE << (HC_BUTTON_2_PIN * 2));
+    SET_PIN_MODE_INPUT(HC_BUTTON_1_PORT, HC_BUTTON_1_PIN);
+    SET_PIN_MODE_INPUT(HC_BUTTON_2_PORT, HC_BUTTON_2_PIN);
 
 #endif
 
 #ifdef MOTOR_MODULE_ENABLED
 
     // Set pins to inputs so they can be set to outputs afterwards
-    HC_MOTOR_PORT_1->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_1 * 2));
-    HC_MOTOR_PORT_2->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_2 * 2));
-    HC_MOTOR_PORT_3->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_3 * 2));
-    HC_MOTOR_PORT_4->MODER &= ~(MODER_ANALOGUE << (HC_MOTOR_PIN_4 * 2));
+    SET_PIN_MODE_INPUT(HC_MOTOR_PORT_1, HC_MOTOR_PIN_1);
+    SET_PIN_MODE_INPUT(HC_MOTOR_PORT_2, HC_MOTOR_PIN_2);
+    SET_PIN_MODE_INPUT(HC_MOTOR_PORT_3, HC_MOTOR_PIN_3);
+    SET_PIN_MODE_INPUT(HC_MOTOR_PORT_4, HC_MOTOR_PIN_4);
 
     // Set motor pins to be outputs
-    HC_MOTOR_PORT_1->MODER |= (MODER_OUTPUT << (HC_MOTOR_PIN_1 * 2));
-    HC_MOTOR_PORT_2->MODER |= (MODER_OUTPUT << (HC_MOTOR_PIN_2 * 2));
-    HC_MOTOR_PORT_3->MODER |= (MODER_OUTPUT << (HC_MOTOR_PIN_3 * 2));
-    HC_MOTOR_PORT_4->MODER |= (MODER_OUTPUT << (HC_MOTOR_PIN_4 * 2));
+    SET_PIN_MODE_OUTPUT(HC_MOTOR_PORT_1, HC_MOTOR_PIN_1);
+    SET_PIN_MODE_OUTPUT(HC_MOTOR_PORT_2, HC_MOTOR_PIN_2);
+    SET_PIN_MODE_OUTPUT(HC_MOTOR_PORT_3, HC_MOTOR_PIN_3);
+    SET_PIN_MODE_OUTPUT(HC_MOTOR_PORT_4, HC_MOTOR_PIN_4);
 
 #endif
 
 #ifdef AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
 
     // Set the pin to analogue mode (High Z)
-    HC_ALS_PORT_1->MODER |= (MODER_ANALOGUE << (HC_ALS_PIN_1 * 2));
-    HC_ALS_PORT_2->MODER |= (MODER_ANALOGUE << (HC_ALS_PIN_2 * 2));
+    SET_PIN_MODE_ANALOGUE(HC_ALS_PORT_1, HC_ALS_PIN_1);
+    SET_PIN_MODE_ANALOGUE(HC_ALS_PORT_2, HC_ALS_PIN_2);
 
 #endif
 
 #ifdef LED_MODULE_ENABLED
 
     // Set pins to inputs so they can be set to outputs afterwards
-    HC_LED_RED_PORT->MODER &= ~(MODER_ANALOGUE << (HC_LED_RED_PIN * 2));
-    HC_LED_GREEN_PORT->MODER &= ~(MODER_ANALOGUE << (HC_LED_GREEN_PIN * 2));
-    HC_LED_ORANGE_PORT->MODER &= ~(MODER_ANALOGUE << (HC_LED_ORANGE_PIN * 2));
+    SET_PIN_MODE_INPUT(HC_LED_RED_PORT, HC_LED_RED_PIN);
+    SET_PIN_MODE_INPUT(HC_LED_GREEN_PORT, HC_LED_GREEN_PIN);
+    SET_PIN_MODE_INPUT(HC_LED_ORANGE_PORT, HC_LED_ORANGE_PIN);
 
     // Set pins to outputs
-    HC_LED_RED_PORT->MODER |= (MODER_OUTPUT << (HC_LED_RED_PIN * 2));
-    HC_LED_GREEN_PORT->MODER |= (MODER_OUTPUT << (HC_LED_GREEN_PIN * 2));
-    HC_LED_ORANGE_PORT->MODER |= (MODER_OUTPUT << (HC_LED_ORANGE_PIN * 2));
+    SET_PIN_MODE_OUTPUT(HC_LED_RED_PORT, HC_LED_RED_PIN);
+    SET_PIN_MODE_OUTPUT(HC_LED_GREEN_PORT, HC_LED_GREEN_PIN);
+    SET_PIN_MODE_OUTPUT(HC_LED_ORANGE_PORT, HC_LED_ORANGE_PIN);
 
     // Set all LEDs off
-    HC_LED_RED_PORT->BSRR |= (0x10000 << HC_LED_RED_PIN);
-    HC_LED_GREEN_PORT->BSRR |= (0x10000 << HC_LED_GREEN_PIN);
-    HC_LED_ORANGE_PORT->BSRR |= (0x10000 << HC_LED_ORANGE_PIN);
+    SET_PIN_LOW(HC_LED_RED_PORT, HC_LED_RED_PIN);
+    SET_PIN_LOW(HC_LED_GREEN_PORT, HC_LED_GREEN_PIN);
+    SET_PIN_LOW(HC_LED_ORANGE_PORT, HC_LED_ORANGE_PIN);
 #endif
 
 #ifdef PIEZO_BUZZER_MODULE_ENABLED
 
-    // Connect GPIO pin to output of pizeo buzzer timer
-    HC_PIEZO_BUZZER_PORT->MODER &= ~(MODER_ANALOGUE << (HC_PIEZO_BUZZER_PIN * 2));
-    HC_PIEZO_BUZZER_PORT->MODER |= (MODER_ALTERNATE_FUNCTION << (HC_PIEZO_BUZZER_PIN * 2));
-    HC_PIEZO_BUZZER_PORT->OSPEEDR |= (OSPEER_HIGH_SPEED << (HC_PIEZO_BUZZER_PIN * 2));
+    // Set piezo buzzer pin to output
+    SET_PIN_MODE_INPUT(HC_PIEZO_BUZZER_PORT, HC_PIEZO_BUZZER_PIN);
+    SET_PIN_MODE_ALTERNATE_FUNCTION(HC_PIEZO_BUZZER_PORT, HC_PIEZO_BUZZER_PIN);
+    SET_PIN_SPEED_MEDIUM(HC_PIEZO_BUZZER_PORT, HC_PIEZO_BUZZER_PIN);
 
     HC_PIEZO_BUZZER_PORT->AFR[0] &= ~(0x0F << (HC_PIEZO_BUZZER_PIN * 4)); // Reset alternate function
     HC_PIEZO_BUZZER_PORT->AFR[0] |= (0x0E << (HC_PIEZO_BUZZER_PIN * 4));  // Set alternate function to AF14
 
+#endif
+
+#ifdef ENCODER_MODULE_ENABLED
+
+    // Set encoder pin to alternate function connected to the input of TIM1
+    SET_PIN_MODE_INPUT(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_MODE_ALTERNATE_FUNCTION(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_SPEED_LOW(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_TYPE_PUSH_PULL(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_PULL_AS_NONE(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+
+    HC_ENCODER_1_PORT->AFR[1] &= ~(0x0F); // Reset alternate function
+    HC_ENCODER_1_PORT->AFR[1] |= (0x01);  // Set alternate function to AF1
 #endif
 }
 
@@ -232,7 +231,7 @@ void hardware_config_timer_init(void) {
 #ifdef PIEZO_BUZZER_MODULE_ENABLED
 
     #if ((SYSTEM_CLOCK_CORE / HC_PIEZO_BUZZER_TIMER_FREQUENCY) > HC_PIEZO_BUZZER_TIMER_MAX_COUNT)
-        #error System clock frequency is too high to generate the required timer frequnecy
+        #error System clock frequency is too high to generate the required timer frequnecy for the piezo buzzer
     #endif
 
     /* Configure timer for piezo buzzer */
@@ -255,6 +254,56 @@ void hardware_config_timer_init(void) {
     /* Enable interrupt handler */
     HAL_NVIC_SetPriority(HC_PIEZO_BUZZER_TIMER_IRQn, HC_PIEZO_BUZZER_TIMER_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(HC_PIEZO_BUZZER_TIMER_IRQn);
+
+#endif
+
+#ifdef ENCODER_MODULE_ENABLED
+
+    #if ((SYSTEM_CLOCK_CORE / HC_ENCODER_1_TIMER_FREQUENCY) > HC_ENCODER_1_TIMER_MAX_COUNT)
+        #error System clock frequency is too high to generate the required timer frequency for the encoder
+    #endif
+
+    // Enable the clock for the timer
+    HC_ENCODER_1_TIMER_CLK_ENABLE();
+
+    // Set the sampling rate. (I'm not 100% sure if this is required. I
+    // tested changing it and it didn't seem to affect the output)
+    HC_ENCODER_1_TIMER->PSC = ((SystemCoreClock / HC_ENCODER_1_TIMER_FREQUENCY) - 1);
+
+    // Set the maximum count for the timer
+    HC_ENCODER_1_TIMER->ARR = HC_ENCODER_1_TIMER_MAX_COUNT; // Set the maximum count
+    HC_ENCODER_1_TIMER->CR1 &= ~(0x01 << 4);                // Set the timer to count upwards
+    HC_ENCODER_1_TIMER->CR2 &= ~(0x01 << 7);                // Set CH1 to timer input 1
+
+    // Set TIM1 to input and map TIM_CH1 GPIO pin to trigger input 1 (TI1)
+    HC_ENCODER_1_TIMER->CCMR1 &= ~(0x03 << 0); // Reset capture compare
+    HC_ENCODER_1_TIMER->CCMR1 |= (0x01 << 0);  // Set capture compare to input (IC1 mapped to TI1)
+
+    // Configure slave mode control
+    HC_ENCODER_1_TIMER->SMCR &= ~(0x07 << 4);           // Reset trigger selection
+    HC_ENCODER_1_TIMER->SMCR |= (0x05 << 4);            // Set trigger to Filtered Timer Input 1 (TI1FP1)
+    HC_ENCODER_1_TIMER->SMCR &= ~((0x01 << 16) | 0x07); // Reset slave mode selection
+    HC_ENCODER_1_TIMER->SMCR |= 0x07;                   // Set rising edge of selected trigger to clock the counter
+
+    /* Configure channel 2 and 3 to trigger interrupts on capture compare values */
+    HC_ENCODER_1_TIMER->DIER = 0x00; // Clear all interrupts
+
+    // Enable capture compare on CH2, CH3 and UIE
+    HC_ENCODER_1_TIMER->DIER |= ((0x01 << 0) | (0x01 << 2) | (0x01 << 3));
+
+    HC_ENCODER_1_TIMER->CCMR2 &= ~(0x03 << 0);                  // Reset capture compare 3 to output
+    HC_ENCODER_1_TIMER->CCMR2 &= ~((0x01 << 16) | (0x07 << 4)); // Reset output compare mode 3 to frozen
+
+    HC_ENCODER_1_TIMER->CCMR1 &= ~(0x03 << 8);                   // Reset capture compare 2 to output
+    HC_ENCODER_1_TIMER->CCMR1 &= ~((0x01 << 24) | (0x07 << 12)); // Reset output compare mode 2 to frozen
+
+    // Disables UEV generation. This ensures that on counter underflow/overflow, the counter continues
+    // count correctly as the shadow registers retain all their values
+    HC_ENCODER_1_TIMER->CR1 |= TIM_CR1_UDIS;
+
+    // Enable the interrupts
+    HAL_NVIC_SetPriority(HC_ENCODER_1_TIMER_IRQn, HC_ENCODER_1_TIMER_ISR_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(HC_ENCODER_1_TIMER_IRQn);
 
 #endif
 }

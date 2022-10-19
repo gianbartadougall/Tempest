@@ -19,10 +19,25 @@ enum AmbientLightSensorFunctions {
 };
 
 #define AL_SENSOR_OFFSET 43
-#define AL_SENSOR_1      (0 + AL_SENSOR_OFFSET)
-#define AL_SENSOR_2      (1 + AL_SENSOR_OFFSET)
+#define AL_SENSOR_1_ID   (0 + AL_SENSOR_OFFSET)
+#define AL_SENSOR_2_ID   (1 + AL_SENSOR_OFFSET)
 
-void al_sensor_process_flags(void);
-uint8_t al_sensor_read_status(uint8_t alSensorId);
+/**
+ * @brief Processes internal flags that call private functions
+ * within the al sensor .c file which update the status of the
+ * sensor and check whether the sensor is connected
+ */
+void al_sensor_process_internal_flags(void);
+
+/**
+ * @brief Reads the current status of a given AL sensor sensor
+ *
+ * @param alSensorId The id of the ambient light sensor to read
+ * the status of
+ * @return uint8_t True if ambient light was detected, False if
+ * no light was detected and DISCONNECTED if the sensor could not
+ * be read from
+ */
+uint8_t al_sensor_light_found(uint8_t alSensorId);
 
 #endif // AMBIENT_LIGHT_SENSOR_H

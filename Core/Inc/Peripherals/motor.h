@@ -20,9 +20,9 @@
 
 // Add an offset to each ID supplied. This makes it harder to accidently parse an incorrect
 // ID that
-#define MOTOR_ID_OFFSET      113
-#define ROLLER_BLIND_MOTOR_1 (0 + MOTOR_ID_OFFSET)
-#define ROLLER_BLIND_MOTOR_2 (1 + MOTOR_ID_OFFSET)
+#define MOTOR_ID_OFFSET 113
+#define MOTOR_1_ID      (0 + MOTOR_ID_OFFSET)
+#define MOTOR_2_ID      (1 + MOTOR_ID_OFFSET)
 
 /* Public Structures and Enumerations */
 

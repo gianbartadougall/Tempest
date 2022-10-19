@@ -20,6 +20,7 @@
 #include "hardware_config.h"
 #include "ambient_light_sensor.h"
 #include "button.h"
+#include "encoder.h"
 #include "piezo_buzzer.h"
 
 /* Private STM Includes */
@@ -69,8 +70,8 @@ void button_test(void) {
     // GPIOA->MODER |= (0x01 << 12);
 
     while (1) {
-        ts_process_flags();
-        button_process_flags();
+        ts_process_internal_flags();
+        button_process_internal_flags();
     }
 }
 
@@ -100,12 +101,12 @@ void als_test(void) {
 
     while (1) {
 
-        al_sensor_process_flags();
-        ts_process_flags();
+        al_sensor_process_internal_flags();
+        ts_process_internal_flags();
 
-        if (status1 != al_sensor_read_status(AL_SENSOR_1)) {
-            status1 = al_sensor_read_status(AL_SENSOR_1);
-            switch (al_sensor_read_status(AL_SENSOR_1)) {
+        if (status1 != al_sensor_light_found(AL_SENSOR_1_ID)) {
+            status1 = al_sensor_light_found(AL_SENSOR_1_ID);
+            switch (al_sensor_light_found(AL_SENSOR_1_ID)) {
                 case 0:
                     debug_prints("SENSOR 1 = DARK\r\n");
                     break;
@@ -118,9 +119,9 @@ void als_test(void) {
             }
         }
 
-        if (status2 != al_sensor_read_status(AL_SENSOR_2)) {
-            status2 = al_sensor_read_status(AL_SENSOR_2);
-            switch (al_sensor_read_status(AL_SENSOR_2)) {
+        if (status2 != al_sensor_light_found(AL_SENSOR_2_ID)) {
+            status2 = al_sensor_light_found(AL_SENSOR_2_ID);
+            switch (al_sensor_light_found(AL_SENSOR_2_ID)) {
                 case 0:
                     debug_prints("SENSOR 2 = DARK\r\n");
                     break;
@@ -149,10 +150,30 @@ void piezo_buzzer_test(void) {
     }
 }
 
+void encoder_test(void) {
+
+    hardware_config_init();
+    uint32_t currentCount = 0;
+    debug_clear();
+    debug_prints("Ready.\r\n");
+    encoder_init();
+
+    while (1) {
+
+        // Print the encoder count if it changes
+        if (currentCount != encoder_get_count(ENCODER_1_ID)) {
+            char m[60];
+            sprintf(m, "Enocder Count: %li\r\n", encoder_get_count(ENCODER_1_ID));
+            debug_prints(m);
+            currentCount = encoder_get_count(ENCODER_1_ID);
+        }
+    }
+}
+
 void testing_init(void) {
 
     // Initialise hardware for tests
-    piezo_buzzer_test();
+    encoder_test();
     // Set the GPIO pin to input and read
     while (1) {}
 }
