@@ -68,7 +68,7 @@ void button_disable_interrupt(uint8_t bIndex) {
 uint8_t button_get_state(uint8_t index) {
 
     // Return the current state of the button
-    if (PIN_IDR(buttons[index].port, buttons[index].pin) == ACTIVE_STATE(index)) {
+    if (PIN_IDR_STATE(buttons[index].port, buttons[index].pin) == ACTIVE_STATE(index)) {
         return BUTTON_PRESSED;
     }
 

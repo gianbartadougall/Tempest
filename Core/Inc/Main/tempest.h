@@ -30,5 +30,7 @@
 void tempest_init(void);
 
 void tempest_update(void);
+void tempest_stop_blind_1_moving(void);
+void tempest_stop_blind_2_moving(void);
 
 #endif // TEMPEST_H

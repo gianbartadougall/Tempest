@@ -11,12 +11,13 @@
 /* Public Includes */
 
 /* Private Includes */
-// #include "tempest.h"
+#include "tempest.h"
+#include "blind.h"
 #include "utilities.h"
-// #include "timer_ms.h"
 #include "task_scheduler_1.h"
 #include "piezo_buzzer.h"
 #include "encoder.h"
+#include "blind_motor.h"
 
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -159,6 +160,9 @@ void TIM1_CC_IRQHandler(void) {
         // Clear update event flag
         TIM1->SR = ~TIM_SR_UIF;
     }
+    char m[60];
+    sprintf(m, "TIM1 flags: %li\r\n", TIM1->SR);
+    debug_prints(m);
 
     if ((TIM1->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
 
@@ -168,9 +172,14 @@ void TIM1_CC_IRQHandler(void) {
         /* Call required functions */
 
         // Call encoder isr to turn motor off
-        debug_prints("REACHED MINIMUM VALUE\r\n");
-        encoder_limit_reached_isr(ENCODER_1_ID);
-        // tempest_isr_encoder_at_min_value();
+        debug_prints("REACHED MAX HEIGHT\r\n");
+
+        // Stopping blind from ISR ensures the blind stops whilst the
+        // encoder still reads high. This means the system can always
+        // assume if it reads the encoder pin whilst the motor is not
+        // moving and the encoder is not high then the encoder is not
+        // connected
+        bm_stop_blind_moving(BLIND_1_ID);
     }
 
     // Check if interrupt for CC3 was triggered
@@ -182,8 +191,14 @@ void TIM1_CC_IRQHandler(void) {
         /* Call required functions */
 
         // Call encoder isr to turn motor off
-        debug_prints("REACHED MAXIMUM VALUE\r\n");
-        encoder_limit_reached_isr(ENCODER_1_ID);
+        debug_prints("REACHED MIN HEIGHT\r\n");
+
+        // Stopping blind from ISR ensures the blind stops whilst the
+        // encoder still reads high. This means the system can always
+        // assume if it reads the encoder pin whilst the motor is not
+        // moving and the encoder is not high then the encoder is not
+        // connected
+        bm_stop_blind_moving(BLIND_1_ID);
     }
 }
 

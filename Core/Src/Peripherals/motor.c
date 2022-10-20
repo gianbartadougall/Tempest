@@ -47,11 +47,9 @@ void motor_forward(uint8_t motorId) {
 void motor_reverse(uint8_t motorId) {
 
     if (ID_INVALID(motorId)) {
-        debug_prints("returning\r\n");
         return;
     }
 
-    debug_prints("Setting motor reverse\r\n");
     uint8_t index = motorId - MOTOR_ID_OFFSET;
     SET_PIN_LOW(motors[index].ports[0], motors[index].pins[0]);
     SET_PIN_HIGH(motors[index].ports[1], motors[index].pins[1]);
@@ -77,6 +75,33 @@ void motor_stop(uint8_t motorId) {
     uint8_t index = motorId - MOTOR_ID_OFFSET;
     SET_PIN_LOW(motors[index].ports[0], motors[index].pins[0]);
     SET_PIN_LOW(motors[index].ports[1], motors[index].pins[1]);
+}
+
+uint8_t motor_get_state(uint8_t motorId) {
+
+    if (ID_INVALID(motorId)) {
+        return INVALID_ID;
+    }
+
+    uint8_t index = motorId - MOTOR_ID_OFFSET;
+
+    if (PIN_ODR_IS_LOW(motors[index].ports[0], motors[index].pins[0]) &&
+        PIN_ODR_IS_LOW(motors[index].ports[1], motors[index].pins[1])) {
+        return MOTOR_STOP;
+    }
+
+    if (PIN_ODR_IS_HIGH(motors[index].ports[0], motors[index].pins[0]) &&
+        PIN_ODR_IS_LOW(motors[index].ports[1], motors[index].pins[1])) {
+        return MOTOR_FORWARD;
+    }
+
+    if (PIN_ODR_IS_LOW(motors[index].ports[0], motors[index].pins[0]) &&
+        PIN_ODR_IS_HIGH(motors[index].ports[1], motors[index].pins[1])) {
+        return MOTOR_REVERSE;
+    }
+
+    // Only other option is motor is in brake mode
+    return MOTOR_BRAKE;
 }
 
 /* Private Functions */

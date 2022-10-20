@@ -100,7 +100,9 @@ Core/Src/board.c \
 
 MAIN_SOURCES = \
 Core/Src/Main/main.c \
-Core/Src/Main/tempest.c
+Core/Src/Main/tempest.c \
+Core/Src/Main/blind.c \
+Core/Src/Main/blind_motor.c
 
 TEST_SOURCES = \
 Core/Src/Tests/testing.c \

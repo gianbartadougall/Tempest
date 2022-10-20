@@ -138,13 +138,26 @@ void hardware_config_gpio_init(void) {
 
     // Set encoder pin to alternate function connected to the input of TIM1
     SET_PIN_MODE_INPUT(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
-    SET_PIN_MODE_ALTERNATE_FUNCTION(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
-    SET_PIN_SPEED_LOW(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
-    SET_PIN_TYPE_PUSH_PULL(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
-    SET_PIN_PULL_AS_NONE(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_MODE_INPUT(HC_ENCODER_2_PORT, HC_ENCODER_2_PIN);
 
-    HC_ENCODER_1_PORT->AFR[1] &= ~(0x0F); // Reset alternate function
-    HC_ENCODER_1_PORT->AFR[1] |= (0x01);  // Set alternate function to AF1
+    SET_PIN_MODE_ALTERNATE_FUNCTION(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_MODE_ALTERNATE_FUNCTION(HC_ENCODER_2_PORT, HC_ENCODER_2_PIN);
+
+    SET_PIN_SPEED_LOW(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_SPEED_LOW(HC_ENCODER_2_PORT, HC_ENCODER_2_PIN);
+
+    SET_PIN_TYPE_PUSH_PULL(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_TYPE_PUSH_PULL(HC_ENCODER_2_PORT, HC_ENCODER_2_PIN);
+
+    SET_PIN_PULL_AS_NONE(HC_ENCODER_1_PORT, HC_ENCODER_1_PIN);
+    SET_PIN_PULL_AS_NONE(HC_ENCODER_2_PORT, HC_ENCODER_2_PIN);
+
+    HC_ENCODER_1_PORT->AFR[1] &= ~(0x0F); // Reset AF register AF8
+    HC_ENCODER_2_PORT->AFR[0] &= ~(0x0F); // Reset AF register AF0
+
+    HC_ENCODER_1_PORT->AFR[1] |= (0x01); // Set AF register AF8 to TIM1 CH1
+    HC_ENCODER_2_PORT->AFR[0] |= (0x01); // Set AF register AF0 to TIM2 CH1
+
 #endif
 }
 
@@ -304,6 +317,57 @@ void hardware_config_timer_init(void) {
     // Enable the interrupts
     HAL_NVIC_SetPriority(HC_ENCODER_1_TIMER_IRQn, HC_ENCODER_1_TIMER_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ(HC_ENCODER_1_TIMER_IRQn);
+
+    /****** START CODE BLOCK ******/
+    // Description: Configuration for the second encoder
+
+    #if ((SYSTEM_CLOCK_CORE / HC_ENCODER_2_TIMER_FREQUENCY) > HC_ENCODER_2_TIMER_MAX_COUNT)
+        #error System clock frequency is too high to generate the required timer frequency for the encoder
+    #endif
+
+    // Enable the clock for the timer
+    HC_ENCODER_2_TIMER_CLK_ENABLE();
+
+    // Set the sampling rate. (I'm not 100% sure if this is required. I
+    // tested changing it and it didn't seem to affect the output)
+    HC_ENCODER_2_TIMER->PSC = ((SystemCoreClock / HC_ENCODER_1_TIMER_FREQUENCY) - 1);
+
+    // Set the maximum count for the timer
+    HC_ENCODER_2_TIMER->ARR = HC_ENCODER_1_TIMER_MAX_COUNT; // Set the maximum count
+    HC_ENCODER_2_TIMER->CR1 &= ~(0x01 << 4);                // Set the timer to count upwards
+    HC_ENCODER_2_TIMER->CR2 &= ~(0x01 << 7);                // Set CH1 to timer input 1
+
+    // Set TIM2 to input and map TIM_CH1 GPIO pin to trigger input 1 (TI1)
+    HC_ENCODER_2_TIMER->CCMR1 &= ~(0x03 << 0); // Reset capture compare
+    HC_ENCODER_2_TIMER->CCMR1 |= (0x01 << 0);  // Set capture compare to input (IC1 mapped to TI1)
+
+    // Configure slave mode control
+    HC_ENCODER_2_TIMER->SMCR &= ~(0x07 << 4);           // Reset trigger selection
+    HC_ENCODER_2_TIMER->SMCR |= (0x05 << 4);            // Set trigger to Filtered Timer Input 1 (TI1FP1)
+    HC_ENCODER_2_TIMER->SMCR &= ~((0x01 << 16) | 0x07); // Reset slave mode selection
+    HC_ENCODER_2_TIMER->SMCR |= 0x07;                   // Set rising edge of selected trigger to clock the counter
+
+    /* Configure channel 2 and 3 to trigger interrupts on capture compare values */
+    HC_ENCODER_2_TIMER->DIER = 0x00; // Clear all interrupts
+
+    // Enable capture compare on CH2, CH3 and UIE
+    HC_ENCODER_2_TIMER->DIER |= ((0x01 << 0) | (0x01 << 2) | (0x01 << 3));
+
+    HC_ENCODER_2_TIMER->CCMR2 &= ~(0x03 << 0);                  // Reset capture compare 3 to output
+    HC_ENCODER_2_TIMER->CCMR2 &= ~((0x01 << 16) | (0x07 << 4)); // Reset output compare mode 3 to frozen
+
+    HC_ENCODER_2_TIMER->CCMR1 &= ~(0x03 << 8);                   // Reset capture compare 2 to output
+    HC_ENCODER_2_TIMER->CCMR1 &= ~((0x01 << 24) | (0x07 << 12)); // Reset output compare mode 2 to frozen
+
+    // Disables UEV generation. This ensures that on counter underflow/overflow, the counter continues
+    // count correctly as the shadow registers retain all their values
+    HC_ENCODER_2_TIMER->CR1 |= TIM_CR1_UDIS;
+
+    // Enable the interrupts
+    HAL_NVIC_SetPriority(HC_ENCODER_2_TIMER_IRQn, HC_ENCODER_2_TIMER_ISR_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(HC_ENCODER_2_TIMER_IRQn);
+
+    /****** END CODE BLOCK ******/
 
 #endif
 }

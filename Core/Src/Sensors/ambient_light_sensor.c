@@ -58,7 +58,7 @@ void al_sensor_read_capacitor(uint8_t alSensorId) {
     HAL_Delay(1); // Wait 1ms for IDR to update
 
     // Update count
-    if (PIN_IS_HIGH(alSensors[si].port, alSensors[si].pin)) {
+    if (PIN_IDR_IS_HIGH(alSensors[si].port, alSensors[si].pin)) {
         if (count[si] < MAX_COUNT) {
             count[si] = (count[si] == CUT_OFF_COUNT) ? MAX_COUNT : (count[si] + 1);
         }
@@ -144,7 +144,7 @@ void al_sensor_check_if_connected(uint8_t alSensorId) {
     // Read pin to determine if the sensor is connected or not
     SET_PIN_MODE_INPUT(alSensors[si].port, alSensors[si].pin);
     HAL_Delay(1);
-    if (PIN_IS_HIGH(alSensors[si].port, alSensors[si].pin)) {
+    if (PIN_IDR_IS_HIGH(alSensors[si].port, alSensors[si].pin)) {
         sensorStatus[si] = CONNECTED;
     } else {
         sensorStatus[si] = DISCONNECTED;
@@ -153,53 +153,53 @@ void al_sensor_check_if_connected(uint8_t alSensorId) {
 
 void al_sensor_process_internal_flags(void) {
 
-    if (ambientLightSensorFlag & (0x01 << 0)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS1_DISCHARGE_CAPACITOR)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS1_DISCHARGE_CAPACITOR);
         al_sensor_discharge_capacitor(AL_SENSOR_1_ID);
-        ambientLightSensorFlag &= ~(0x01 << 0);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 1)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS1_RECORD_AMBIENT_LIGHT)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS1_RECORD_AMBIENT_LIGHT);
         al_sensor_record_ambient_light(AL_SENSOR_1_ID);
-        ambientLightSensorFlag &= ~(0x01 << 1);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 2)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS1_READ_AMBIENT_LIGHT)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS1_READ_AMBIENT_LIGHT);
         al_sensor_read_capacitor(AL_SENSOR_1_ID);
-        ambientLightSensorFlag &= ~(0x01 << 2);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 3)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS1_CHARGE_CAPACITOR)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS1_CHARGE_CAPACITOR);
         al_sensor_charge_capacitor(AL_SENSOR_1_ID);
-        ambientLightSensorFlag &= ~(0x01 << 3);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 4)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS1_CONFIRM_CONNECTION)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS1_CONFIRM_CONNECTION);
         al_sensor_check_if_connected(AL_SENSOR_1_ID);
-        ambientLightSensorFlag &= ~(0x01 << 4);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 5)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS2_DISCHARGE_CAPACITOR)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS2_DISCHARGE_CAPACITOR);
         al_sensor_discharge_capacitor(AL_SENSOR_2_ID);
-        ambientLightSensorFlag &= ~(0x01 << 5);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 6)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS2_RECORD_AMBIENT_LIGHT)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS2_RECORD_AMBIENT_LIGHT);
         al_sensor_record_ambient_light(AL_SENSOR_2_ID);
-        ambientLightSensorFlag &= ~(0x01 << 6);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 7)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS2_READ_AMBIENT_LIGHT)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS2_READ_AMBIENT_LIGHT);
         al_sensor_read_capacitor(AL_SENSOR_2_ID);
-        ambientLightSensorFlag &= ~(0x01 << 7);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 8)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS2_CHARGE_CAPACITOR)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS2_CHARGE_CAPACITOR);
         al_sensor_charge_capacitor(AL_SENSOR_2_ID);
-        ambientLightSensorFlag &= ~(0x01 << 8);
     }
 
-    if (ambientLightSensorFlag & (0x01 << 9)) {
+    if (FLAG_IS_SET(ambientLightSensorFlag, ALS2_CONFIRM_CONNECTION)) {
+        FLAG_CLEAR(ambientLightSensorFlag, ALS2_CONFIRM_CONNECTION);
         al_sensor_check_if_connected(AL_SENSOR_2_ID);
-        ambientLightSensorFlag &= ~(0x01 << 9);
     }
 }

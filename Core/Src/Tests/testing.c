@@ -28,8 +28,16 @@
 /* Private #defines */
 
 /* Private Structures and Enumerations */
+struct Task1 printTimerCount1 = {
+    .delay      = 500,
+    .functionId = 0,
+    .group      = TEMPEST_GROUP,
+    .nextTask   = &printTimerCount1,
+};
 
 /* Private Variable Declarations */
+
+extern uint32_t tempestTasksFlag;
 
 /* Private Function Prototypes */
 void testing_hardware_init(void);
@@ -174,6 +182,9 @@ void motor_test(void) {
 
     hardware_config_init();
     debug_clear();
+    encoder_init();
+    ts_init();
+    ts_add_task_to_queue(&printTimerCount1);
 
     SET_PIN_MODE_INPUT(GPIOA, 9);
     SET_PIN_MODE_INPUT(GPIOA, 10);
@@ -181,13 +192,12 @@ void motor_test(void) {
     SET_PIN_MODE_OUTPUT(GPIOA, 10);
 
     while (1) {
-        debug_prints("setting motor\r\n");
-        SET_PIN_HIGH(GPIOA, 9);
-        SET_PIN_LOW(GPIOA, 10);
-        HAL_Delay(3000);
-        SET_PIN_HIGH(GPIOA, 10);
-        SET_PIN_LOW(GPIOA, 9);
-        HAL_Delay(3000);
+
+        if (FLAG_IS_SET(tempestTasksFlag, 0)) {
+            char m[60];
+            sprintf(m, "CNT: %li\r\n", TIM1->CNT);
+            debug_prints(m);
+        }
     }
 }
 

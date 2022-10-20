@@ -24,6 +24,12 @@
 #define MOTOR_1_ID      (0 + MOTOR_ID_OFFSET)
 #define MOTOR_2_ID      (1 + MOTOR_ID_OFFSET)
 
+#define MOTOR_STATUS_OFFSET 7
+#define MOTOR_STOP          (0 + MOTOR_STATUS_OFFSET)
+#define MOTOR_FORWARD       (1 + MOTOR_STATUS_OFFSET)
+#define MOTOR_REVERSE       (2 + MOTOR_STATUS_OFFSET)
+#define MOTOR_BRAKE         (3 + MOTOR_STATUS_OFFSET)
+
 /* Public Structures and Enumerations */
 
 /* Public Variable Declarations */
@@ -39,5 +45,6 @@ void motor_forward(uint8_t motorId);
 void motor_reverse(uint8_t motorId);
 void motor_brake(uint8_t motorId);
 void motor_stop(uint8_t motorId);
+uint8_t motor_get_state(uint8_t motorId);
 
 #endif // MOTOR_H

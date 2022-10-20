@@ -32,5 +32,6 @@ void encoder_enable(uint8_t encoderId);
 void encoder_disable(uint8_t encoderId);
 
 uint8_t encoder_probe_connection(uint8_t encoderId);
+uint8_t encoder_get_state(uint8_t encoderId);
 
 #endif // ENCODER_H

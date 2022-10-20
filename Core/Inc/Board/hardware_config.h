@@ -135,10 +135,10 @@
 /**
  *
  */
-#define HC_ENCODER_1_PORT    GPIOA
-#define HC_ENCODER_1_PIN     8
-#define ENCODER_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
-#define ENCODER_IRQn         EXTI9_5_IRQn
+#define HC_ENCODER_1_PORT         GPIOA
+#define HC_ENCODER_1_PIN          8
+#define HC_ENCODER_1_PORT_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
+#define HC_ENCODER_1_IRQn         EXTI9_5_IRQn
 
 #define HC_ENCODER_1_TIMER              TIM1
 #define HC_ENCODER_1_TIMER_CLK_ENABLE() __HAL_RCC_TIM1_CLK_ENABLE()
@@ -146,6 +146,18 @@
 #define HC_ENCODER_1_TIMER_MAX_COUNT    __32_BIT_MAX_COUNT
 #define HC_ENCODER_1_TIMER_IRQn         TIM1_CC_IRQn
 #define HC_ENCODER_1_TIMER_ISR_PRIORITY TIM1_ISR_PRIORITY
+
+#define HC_ENCODER_2_PORT         GPIOA
+#define HC_ENCODER_2_PIN          0
+#define HC_ENCODER_PORT_2_CLK_POS (0x01 << RCC_AHB2ENR_GPIOAEN)
+#define HC_ENCODER_2_IRQn         EXTI0_IRQn
+
+#define HC_ENCODER_2_TIMER              TIM2
+#define HC_ENCODER_2_TIMER_CLK_ENABLE() __HAL_RCC_TIM2_CLK_ENABLE()
+#define HC_ENCODER_2_TIMER_FREQUENCY    TIMER_FREQUENCY_1KHz
+#define HC_ENCODER_2_TIMER_MAX_COUNT    __32_BIT_MAX_COUNT
+#define HC_ENCODER_2_TIMER_IRQn         TIM2_IRQn
+#define HC_ENCODER_2_TIMER_ISR_PRIORITY TIM2_ISR_PRIORITY
 /***********************************************************************/
 
 /* Public Structures and Enumerations */
