@@ -42,6 +42,7 @@ typedef struct TsTask {
 uint32_t buttonTasksFlag        = 0;
 uint32_t tempestTasksFlag       = 0;
 uint32_t ambientLightSensorFlag = 0;
+uint32_t blindMotorFlag         = 0;
 
 TsTask queue[QUEUE_SIZE];
 TsTask* queueHead[QUEUE_HEAD_SIZE];
@@ -196,6 +197,9 @@ void ts_isr(void) {
                 break;
             case AMBIENT_LIGHT_SENSOR_GROUP:
                 ambientLightSensorFlag |= (0x01 << head->task->functionId);
+                break;
+            case BLIND_MOTOR_GROUP:
+                FLAG_SET(blindMotorFlag, head->task->functionId);
                 break;
             default:
                 break;

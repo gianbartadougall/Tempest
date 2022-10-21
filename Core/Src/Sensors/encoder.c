@@ -20,6 +20,16 @@
 #define ENCODER_ID_INVALID(id)  ((id < ENCODER_ID_OFFSET) || (id > (NUM_ENCODERS - 1 + ENCODER_ID_OFFSET)))
 #define ENCODER_ID_TO_INDEX(id) (id - ENCODER_ID_OFFSET)
 
+#define ASSERT_VALID_ENCODER_ID(id)                                                      \
+    do {                                                                                 \
+        if ((id < ENCODER_ID_OFFSET) || (id > (NUM_ENCODERS - 1 + ENCODER_ID_OFFSET))) { \
+            char msg[100];                                                               \
+            sprintf(msg, "Invalid ID: File %s line number %d\r\n", __FILE__, __LINE__);  \
+            debug_prints(msg);                                                           \
+            return;                                                                      \
+        }                                                                                \
+    } while (0)
+
 /* Variable Declarations */
 uint32_t encoderTaskFlags = 0;
 
@@ -30,12 +40,7 @@ void encoder_init(void) {
 
     // Reset all the timer counts
     for (uint8_t i = 0; i < NUM_ENCODERS; i++) {
-        // Enable the timer
         encoder_enable(encoders[i].id);
-        // Set counter values for the interrupts to be triggered on for each channel
-        HC_ENCODER_1_TIMER->CCR2 = encoders[i].minCount; // Set the minimum count
-        HC_ENCODER_1_TIMER->CCR3 = encoders[i].maxCount; // Set the maximum count
-        encoders[i].timer->CNT   = encoders[i].minCount;
     }
 }
 
@@ -110,21 +115,33 @@ uint8_t encoder_probe_connection(uint8_t encoderId) {
 
 void encoder_enable(uint8_t encoderId) {
 
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return;
-    }
+    ASSERT_VALID_ENCODER_ID(encoderId);
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+
+    // Reset all the registers in the timer and set the count to 0
     encoders[index].timer->EGR |= (TIM_EGR_UG);
+
+    // Set the interrupt values to default values. Reset timer count
+    // to zero point
+    HC_ENCODER_1_TIMER->CCR2   = ZERO_COUNT;
+    HC_ENCODER_1_TIMER->CCR3   = ZERO_COUNT + 10;
+    encoders[index].timer->CNT = ZERO_COUNT;
+
+    // Clear pending interrupts
+    encoders[index].timer->SR = ~TIM_SR_CC2IF;
+    encoders[index].timer->SR = ~TIM_SR_CC3IF;
+
+    // Enable interrupts
     encoders[index].timer->DIER |= (TIM_DIER_CC2IE | TIM_DIER_CC3IE);
+
+    // Start the timer
     encoders[index].timer->CR1 |= (TIM_CR1_CEN);
 }
 
 void encoder_disable(uint8_t encoderId) {
 
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return;
-    }
+    ASSERT_VALID_ENCODER_ID(encoderId);
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
     encoders[index].timer->CR1 &= ~(TIM_CR1_CEN);
@@ -133,9 +150,7 @@ void encoder_disable(uint8_t encoderId) {
 
 void encoder_set_direction_up(uint8_t encoderId) {
 
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return;
-    }
+    ASSERT_VALID_ENCODER_ID(encoderId);
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
     // The maximum height of the blind is the 0 point. So to go upwards, the timer counter
@@ -145,9 +160,7 @@ void encoder_set_direction_up(uint8_t encoderId) {
 
 void encoder_set_direction_down(uint8_t encoderId) {
 
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return;
-    }
+    ASSERT_VALID_ENCODER_ID(encoderId);
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
 
@@ -174,7 +187,7 @@ uint8_t encoder_at_max_height(uint8_t encoderId) {
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
     char m[60];
-    sprintf(m, "CNT: %li\tMax Height: %i\r\n", encoders[index].timer->CNT, ZERO_COUNT);
+    sprintf(m, "CNT: %li\tMax Height: %li\r\n", encoders[index].timer->CNT, encoders[index].minCount);
     debug_prints(m);
 
     return encoders[index].timer->CNT == encoders[index].minCount ? TRUE : FALSE;
@@ -187,9 +200,11 @@ uint8_t encoder_at_min_height(uint8_t encoderId) {
     }
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+
     char m[60];
-    sprintf(m, "CNT: %li\tMin Height: %li\r\n", encoders[index].timer->CNT, encoders[index].minCount);
+    sprintf(m, "CNT: %li\tMin Height: %li\r\n", encoders[index].timer->CNT, encoders[index].maxCount);
     debug_prints(m);
+
     return (encoders[index].timer->CNT == encoders[index].maxCount) ? TRUE : FALSE;
 }
 
@@ -216,14 +231,6 @@ void encoder_set_min_height(uint8_t encoderId) {
     }
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
-
-    // The minimum height of the blind must be lower than the maximum height of
-    // the blind. Because the count increases as the height of the blind lowers,
-    // the timer count must be larger than the zero count when setting the min
-    // height
-    if (encoders[index].timer->CNT <= encoders[index].minCount) {
-        return;
-    }
 
     encoders[index].maxCount    = encoders[index].timer->CNT;
     encoders[index].timer->CCR3 = encoders[index].maxCount;
@@ -278,6 +285,65 @@ void encoder_limit_reached_isr(uint8_t encoderId) {
         default:
             break;
     }
+}
+
+uint32_t encoder_get_lower_bound_interrupt(uint8_t encoderId) {
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+
+    if (index == INVALID_ID) {
+        return __32_BIT_MAX_COUNT;
+    }
+
+    return encoders[index].timer->CCR2;
+}
+
+uint32_t encoder_get_upper_bound_interrupt(uint8_t encoderId) {
+
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+
+    if (index == INVALID_ID) {
+        return __32_BIT_MAX_COUNT;
+    }
+
+    return encoders[index].timer->CCR3;
+}
+
+void encoder_set_lower_bound_interrupt(uint8_t encoderId) {
+
+    ASSERT_VALID_ENCODER_ID(encoderId);
+
+    uint8_t index               = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].timer->CCR2 = encoders[index].timer->CNT;
+}
+
+void encoder_set_upper_bound_interrupt(uint8_t encoderId) {
+
+    ASSERT_VALID_ENCODER_ID(encoderId);
+
+    uint8_t index               = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].timer->CCR3 = ZERO_COUNT;
+    encoders[index].timer->CNT  = ZERO_COUNT;
+}
+
+void encoder_enable_interrupts(uint8_t encoderId) {
+
+    ASSERT_VALID_ENCODER_ID(encoderId);
+
+    // Clear any pending interrupts and then enable the interrupts
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].timer->SR &= ~(TIM_DIER_CC2IE | TIM_DIER_CC3IE);
+    encoders[index].timer->DIER |= (TIM_DIER_CC2IE | TIM_DIER_CC3IE);
+}
+
+void encoder_disable_interrupts(uint8_t encoderId) {
+
+    ASSERT_VALID_ENCODER_ID(encoderId);
+
+    // Clear any pending interrupts and disable interrupts
+    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].timer->SR &= ~(TIM_DIER_CC2IE | TIM_DIER_CC3IE);
+    encoders[index].timer->DIER = 0;
 }
 
 uint8_t encoder_get_state(uint8_t encoderId) {

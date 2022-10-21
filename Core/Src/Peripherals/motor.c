@@ -24,6 +24,16 @@
 
 #define ID_INVALID(id) ((id < MOTOR_ID_OFFSET) || (id > (NUM_MOTORS - 1 + MOTOR_ID_OFFSET)))
 
+#define ASSERT_VALID_MOTOR_ID(id)                                                       \
+    do {                                                                                \
+        if ((id < MOTOR_ID_OFFSET) || (id > (NUM_MOTORS - 1 + MOTOR_ID_OFFSET))) {      \
+            char msg[100];                                                              \
+            sprintf(msg, "Invalid ID: File %s line number %d\r\n", __FILE__, __LINE__); \
+            debug_prints(msg);                                                          \
+            return;                                                                     \
+        }                                                                               \
+    } while (0)
+
 /* Private Structures and Enumerations */
 
 /* Private Variable Declarations */
@@ -36,9 +46,8 @@ void motor_init(void) {}
 
 void motor_forward(uint8_t motorId) {
 
-    if (ID_INVALID(motorId)) {
-        return;
-    }
+    ASSERT_VALID_MOTOR_ID(motorId);
+
     uint8_t index = motorId - MOTOR_ID_OFFSET;
     SET_PIN_HIGH(motors[index].ports[0], motors[index].pins[0]);
     SET_PIN_LOW(motors[index].ports[1], motors[index].pins[1]);
@@ -46,10 +55,9 @@ void motor_forward(uint8_t motorId) {
 
 void motor_reverse(uint8_t motorId) {
 
-    if (ID_INVALID(motorId)) {
-        return;
-    }
+    ASSERT_VALID_MOTOR_ID(motorId);
 
+    debug_prints("reversing motor\r\n");
     uint8_t index = motorId - MOTOR_ID_OFFSET;
     SET_PIN_LOW(motors[index].ports[0], motors[index].pins[0]);
     SET_PIN_HIGH(motors[index].ports[1], motors[index].pins[1]);
@@ -57,9 +65,7 @@ void motor_reverse(uint8_t motorId) {
 
 void motor_brake(uint8_t motorId) {
 
-    if (ID_INVALID(motorId)) {
-        return;
-    }
+    ASSERT_VALID_MOTOR_ID(motorId);
 
     uint8_t index = motorId - MOTOR_ID_OFFSET;
     SET_PIN_HIGH(motors[index].ports[0], motors[index].pins[0]);
@@ -68,9 +74,7 @@ void motor_brake(uint8_t motorId) {
 
 void motor_stop(uint8_t motorId) {
 
-    if (ID_INVALID(motorId)) {
-        return;
-    }
+    ASSERT_VALID_MOTOR_ID(motorId);
 
     uint8_t index = motorId - MOTOR_ID_OFFSET;
     SET_PIN_LOW(motors[index].ports[0], motors[index].pins[0]);

@@ -153,16 +153,13 @@ void TIM1_TRG_COM_IRQHandler(void) {
  * @brief Capture compare interrupt handler for timer 1
  */
 void TIM1_CC_IRQHandler(void) {
-    debug_prints("ISR TIM CC\r\n");
+    // debug_prints("ISR TIM CC\r\n");
     // Check for overflow flag
 
     if ((TIM1->SR & TIM_SR_UIF) == TIM_SR_UIF) {
         // Clear update event flag
         TIM1->SR = ~TIM_SR_UIF;
     }
-    char m[60];
-    sprintf(m, "TIM1 flags: %li\r\n", TIM1->SR);
-    debug_prints(m);
 
     if ((TIM1->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
 

@@ -24,13 +24,6 @@
 //     FUNC_ID_CONFIRM_ENCODER_2_IN_OPERATION,
 // };
 
-// struct Task1 printTimerCount = {
-//     .delay      = 500,
-//     .functionId = FUNC_ID_PRINT_TIMER_COUNT,
-//     .group      = TEMPEST_GROUP,
-//     .nextTask   = &printTimerCount,
-// };
-
 // struct Task1 encoder1InOperation = {
 //     .delay      = 500,
 //     .functionId = FUNC_ID_CONFIRM_ENCODER_1_IN_OPERATION,

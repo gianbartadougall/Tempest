@@ -19,12 +19,6 @@
 #include "stm32l4xx.h"
 
 /* Public #defines */
-typedef struct BlindMotor {
-    uint8_t blindId;
-    uint8_t encoderId;
-    uint8_t motorId;
-    uint32_t lastEncoderCount;
-} BlindMotor;
 
 /* Public Structures and Enumerations */
 
@@ -38,6 +32,13 @@ typedef struct BlindMotor {
 void blind_motor_init(void);
 
 void bm_stop_blind_moving(uint8_t blindId);
-uint8_t bm_attempt_align_encoder(uint8_t encoderId);
+void bm_move_blind_up(uint8_t blindId);
+void bm_move_blind_down(uint8_t blindId);
+void bm_process_internal_flags(void);
+void bm_set_new_min_height(uint8_t blindId);
+void bm_set_new_max_height(uint8_t blindId);
+void bm_set_mode_update_encoder_settings(uint8_t blindId);
+uint8_t bm_min_max_heights_are_valid(uint8_t blindId);
+uint8_t bm_attempt_align_encoder(uint8_t blindId);
 
 #endif // BLIND_MOTOR_H

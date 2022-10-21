@@ -18,9 +18,6 @@ uint32_t encoder_get_count(uint8_t encoderId);
 void encoder_set_direction_up(uint8_t encoderId);
 void encoder_set_direction_down(uint8_t encoderId);
 
-void encoder_set_min_height(uint8_t encoderId);
-void encoder_set_max_height(uint8_t encoderId);
-
 void encoder_limit_reached_isr(uint8_t encoderId);
 void encoder_disable_limits(uint8_t encoderId);
 uint8_t encoder_limits_are_valid(uint8_t encoderId);
@@ -34,4 +31,10 @@ void encoder_disable(uint8_t encoderId);
 uint8_t encoder_probe_connection(uint8_t encoderId);
 uint8_t encoder_get_state(uint8_t encoderId);
 
+void encoder_set_lower_bound_interrupt(uint8_t encoderId);
+void encoder_set_upper_bound_interrupt(uint8_t encoderId);
+uint32_t encoder_get_lower_bound_interrupt(uint8_t encoderId);
+uint32_t encoder_get_upper_bound_interrupt(uint8_t encoderId);
+void encoder_enable_interrupts(uint8_t encoderId);
+void encoder_disable_interrupts(uint8_t encoderId);
 #endif // ENCODER_H
