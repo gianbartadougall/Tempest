@@ -4,8 +4,13 @@
 #include "stm32l4xx_hal.h"
 #include "stm32l4xx.h"
 
-#define SOUND             0
-#define PIEZO_ERROR_SOUND 42
+// The index of these sounds are important as the index
+// defines the type of sound played
+#define SOUND_LENGTH  21
+#define SOUND         (0 * SOUND_LENGTH)
+#define SOUND1        (1 * SOUND_LENGTH)
+#define SUCCESS_SOUND (2 * SOUND_LENGTH)
+#define ERROR_SOUND   (3 * SOUND_LENGTH)
 
 enum PiezoSoundModes { UNLIMITED, ONE_TIME, TWO_TIMES, THREE_TIMES, FOUR_TIMES, FIVE_TIMES };
 

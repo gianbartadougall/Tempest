@@ -19,10 +19,13 @@
 #include "task_scheduler_1.h"
 #include "encoder.h"
 #include "utilities.h"
+#include "piezo_buzzer.h"
 
 /* Private STM Includes */
 
 /* Private #defines */
+#define SET_MIN_HEIGHT_SOUND SOUND1
+#define SET_MAX_HEIGHT_SOUND SOUND1
 
 /* Private Structures and Enumerations */
 
@@ -159,13 +162,22 @@ void bm_move_blind_up(uint8_t blindId) {
         return;
     }
 
-    if (BlindMotors[index].mode == BM_NORMAL && encoder_at_max_height(BlindMotors[index].encoderId)) {
-        debug_prints("Already at max height\r\n");
-        return;
+    if (BlindMotors[index].mode == BM_NORMAL) {
+        if (encoder_at_max_height(BlindMotors[index].encoderId)) {
+            debug_prints("Already at max height\r\n");
+            return;
+        }
     }
 
-    uint8_t encoderId = BlindMotors[index].encoderId;
+    uint8_t encoderId  = BlindMotors[index].encoderId;
+    uint8_t motorState = motor_get_state(BlindMotors[index].motorId);
 
+    if (motorState == MOTOR_FORWARD) {
+        return;
+    } else if (motorState == MOTOR_REVERSE) {
+        bm_stop_blind_moving(blindId);
+        HAL_Delay(100);
+    }
     // Set the blind direction to moving down
     encoder_set_direction_up(encoderId);
 
@@ -185,12 +197,23 @@ void bm_move_blind_down(uint8_t blindId) {
         return;
     }
 
-    if (BlindMotors[index].mode == BM_NORMAL && encoder_at_min_height(BlindMotors[index].encoderId)) {
-        debug_prints("Already at min height\r\n");
-        return;
+    if (BlindMotors[index].mode == BM_NORMAL) {
+        debug_prints("Normal MODE\r\n");
+        if (encoder_at_min_height(BlindMotors[index].encoderId)) {
+            debug_prints("Already at min height\r\n");
+            return;
+        }
     }
 
-    uint8_t encoderId = BlindMotors[index].encoderId;
+    uint8_t encoderId  = BlindMotors[index].encoderId;
+    uint8_t motorState = motor_get_state(BlindMotors[index].motorId);
+
+    if (motorState == MOTOR_REVERSE) {
+        return;
+    } else if (motorState == MOTOR_FORWARD) {
+        bm_stop_blind_moving(blindId);
+        HAL_Delay(100);
+    }
 
     // Set the blind direction to moving down
     encoder_set_direction_down(encoderId);
@@ -266,6 +289,7 @@ void bm_set_new_min_height(uint8_t blindId) {
         return;
     }
 
+    piezo_buzzer_play_sound(SET_MIN_HEIGHT_SOUND);
     encoder_set_upper_bound_interrupt(BlindMotors[index].encoderId);
 }
 
@@ -274,10 +298,13 @@ void bm_set_new_max_height(uint8_t blindId) {
     uint8_t index = bm_search_blind_index(blindId);
 
     if (index == INVALID_ID) {
+        debug_prints("returning\r\n");
         return;
     }
 
+    debug_prints("Set low bound\r\n");
     // The maximum height sets the zero point for the encoder
+    piezo_buzzer_play_sound(SET_MAX_HEIGHT_SOUND);
     encoder_set_lower_bound_interrupt(BlindMotors[index].encoderId);
 }
 

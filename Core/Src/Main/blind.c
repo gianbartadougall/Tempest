@@ -177,14 +177,23 @@ void blind_set_selected_blind_mode(uint8_t mode) {
 
     // Turn off all lights and sounds from current mode
     blind_turn_off_selected_blind_signals();
+
     blindInFocus->mode = mode;
-    blind_turn_on_selected_blind_signals();
+
+    // The task to change to day light mode needs to be cancelled if manual
+    // mode is selected in case the user clicked day light mode and then
+    // clicked manual mode before the daylight mode could take affect
+    if (blindInFocus->mode == MANUAL) {
+        ts_cancel_running_task(&blindInFocus->switchToDayLightModeTask);
+    }
 
     // To set the mode back to normal, the encoder min max
     // settings must be verified
     if (blindInFocus->mode == CONFIGURE_SETINGS) {
         bm_set_mode_update_encoder_settings(blindInFocus->id);
     }
+
+    blind_turn_on_selected_blind_signals();
 }
 
 void blind_revert_selected_blind_mode(void) {
@@ -203,9 +212,9 @@ uint8_t blind_get_mode(uint8_t blindId) {
 
 void blind_play_error_sound(void) {
     ts_cancel_running_task(blindInFocus->configSettingsSoundTask);
-    piezo_buzzer_play_sound(PIEZO_ERROR_SOUND);
+    piezo_buzzer_play_sound(ERROR_SOUND);
     HAL_Delay(100);
-    piezo_buzzer_play_sound(PIEZO_ERROR_SOUND);
+    piezo_buzzer_play_sound(ERROR_SOUND);
     ts_add_task_to_queue(blindInFocus->configSettingsSoundTask);
 }
 
@@ -258,6 +267,7 @@ void blind_turn_on_selected_blind_signals(void) {
     ts_add_task_to_queue(blindInFocus->blinkLedTask);
 
     if (blindInFocus->mode == CONFIGURE_SETINGS) {
+        piezo_buzzer_play_sound(SOUND);
         ts_add_task_to_queue(blindInFocus->configSettingsSoundTask);
     }
 }

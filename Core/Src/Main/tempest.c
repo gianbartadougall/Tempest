@@ -187,24 +187,21 @@ void tempest_process_external_button_flags(void) {
         }
     }
 
-    // if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK)) {
-    //     FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK);
+    if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK)) {
+        FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK);
 
-    //     tempest_stop_blind_moving(selectedBlind);
+        uint8_t blindId = blind_get_selected_blind_id();
+        bm_stop_blind_moving(blindId);
 
-    //     if (selectedBlind->mode == MANUAL) {
-    //         // Cancel switch to day light mode if manual button is pressed again quick enough
-    //         if (ts_cancel_running_task(&selectedBlind->switchToDayLightModeTask) == TS_TASK_NOT_FOUND) {
-    //             debug_prints("Changing to auto mode in 5 seconds\r\n");
-    //             ts_add_task_to_queue(&selectedBlind->switchToDayLightModeTask);
-    //         }
-    //     }
+        if (blind_get_selected_blind_mode() == MANUAL) {
+            blind_set_selected_blind_mode(DAY_LIGHT);
+        }
 
-    //     if (selectedBlind->mode == DAY_LIGHT) {
-    //         debug_prints("Changed to manual mode\r\n");
-    //         tempest_set_new_mode(selectedBlind, MANUAL);
-    //     }
-    // }
+        if (blind_get_selected_blind_mode() == DAY_LIGHT) {
+            debug_prints("Changed to manual mode\r\n");
+            blind_set_selected_blind_mode(MANUAL);
+        }
+    }
 
     // /****** END CODE BLOCK ******/
 

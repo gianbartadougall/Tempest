@@ -190,7 +190,7 @@ uint8_t encoder_at_max_height(uint8_t encoderId) {
     sprintf(m, "CNT: %li\tMax Height: %li\r\n", encoders[index].timer->CNT, encoders[index].minCount);
     debug_prints(m);
 
-    return encoders[index].timer->CNT == encoders[index].minCount ? TRUE : FALSE;
+    return (encoders[index].timer->CNT == encoders[index].timer->CCR2) ? TRUE : FALSE;
 }
 
 uint8_t encoder_at_min_height(uint8_t encoderId) {
@@ -205,74 +205,44 @@ uint8_t encoder_at_min_height(uint8_t encoderId) {
     sprintf(m, "CNT: %li\tMin Height: %li\r\n", encoders[index].timer->CNT, encoders[index].maxCount);
     debug_prints(m);
 
-    return (encoders[index].timer->CNT == encoders[index].maxCount) ? TRUE : FALSE;
+    return (encoders[index].timer->CNT == encoders[index].timer->CCR3) ? TRUE : FALSE;
 }
 
-void encoder_set_max_height(uint8_t encoderId) {
+// void encoder_set_max_height(uint8_t encoderId) {
 
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return;
-    }
+//     if (ENCODER_ID_INVALID(encoderId)) {
+//         return;
+//     }
 
-    // CCR2 is always mapped to 0. Thus only need to set counter to 0 to reset
-    // minimum value
-    uint8_t index              = ENCODER_ID_TO_INDEX(encoderId);
-    encoders[index].minCount   = ZERO_COUNT;
-    encoders[index].timer->CNT = ZERO_COUNT;
-    char m[60];
-    sprintf(m, "max height CNT: %li\r\n", encoders[index].timer->CNT);
-    debug_prints(m);
-}
+//     // CCR2 is always mapped to 0. Thus only need to set counter to 0 to reset
+//     // minimum value
+//     uint8_t index              = ENCODER_ID_TO_INDEX(encoderId);
+//     encoders[index].minCount   = ZERO_COUNT;
+//     encoders[index].timer->CNT = ZERO_COUNT;
+//     char m[60];
+//     sprintf(m, "max height CNT: %li\r\n", encoders[index].timer->CNT);
+//     debug_prints(m);
+// }
 
-void encoder_set_min_height(uint8_t encoderId) {
+// void encoder_set_min_height(uint8_t encoderId) {
+
+//     if (ENCODER_ID_INVALID(encoderId)) {
+//         return;
+//     }
+
+//     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
+
+//     encoders[index].maxCount    = encoders[index].timer->CNT;
+//     encoders[index].timer->CCR3 = encoders[index].maxCount;
+// }
+
+void encoder_isr(uint8_t encoderId) {
 
     if (ENCODER_ID_INVALID(encoderId)) {
         return;
     }
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
-
-    encoders[index].maxCount    = encoders[index].timer->CNT;
-    encoders[index].timer->CCR3 = encoders[index].maxCount;
-}
-
-void encoder_disable_limits(uint8_t encoderId) {
-
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return;
-    }
-
-    uint8_t index            = ENCODER_ID_TO_INDEX(encoderId);
-    encoders[index].minCount = UNSET;
-    encoders[index].maxCount = UNSET;
-}
-
-uint8_t encoder_limits_are_valid(uint8_t encoderId) {
-
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return INVALID_ID;
-    }
-
-    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
-
-    if (encoders[index].minCount == UNSET || encoders[index].maxCount == UNSET) {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-void encoder_limit_reached_isr(uint8_t encoderId) {
-
-    if (ENCODER_ID_INVALID(encoderId)) {
-        return;
-    }
-
-    debug_prints("Limit reached\r\n");
-    uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
-    if ((encoders[index].minCount == UNSET) || (encoders[index].maxCount == UNSET)) {
-        return;
-    }
 
     switch (index) {
         case 0:
@@ -309,20 +279,20 @@ uint32_t encoder_get_upper_bound_interrupt(uint8_t encoderId) {
     return encoders[index].timer->CCR3;
 }
 
-void encoder_set_lower_bound_interrupt(uint8_t encoderId) {
-
-    ASSERT_VALID_ENCODER_ID(encoderId);
-
-    uint8_t index               = ENCODER_ID_TO_INDEX(encoderId);
-    encoders[index].timer->CCR2 = encoders[index].timer->CNT;
-}
-
 void encoder_set_upper_bound_interrupt(uint8_t encoderId) {
 
     ASSERT_VALID_ENCODER_ID(encoderId);
 
     uint8_t index               = ENCODER_ID_TO_INDEX(encoderId);
-    encoders[index].timer->CCR3 = ZERO_COUNT;
+    encoders[index].timer->CCR3 = encoders[index].timer->CNT;
+}
+
+void encoder_set_lower_bound_interrupt(uint8_t encoderId) {
+
+    ASSERT_VALID_ENCODER_ID(encoderId);
+
+    uint8_t index               = ENCODER_ID_TO_INDEX(encoderId);
+    encoders[index].timer->CCR2 = ZERO_COUNT;
     encoders[index].timer->CNT  = ZERO_COUNT;
 }
 
