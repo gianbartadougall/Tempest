@@ -201,10 +201,34 @@ void motor_test(void) {
     }
 }
 
+void uart_test(void) {
+    hardware_config_init();
+    debug_clear();
+    debug_prints("Started 1\r\n");
+    char msg[100];
+    uint8_t i = 0;
+    while (1) {
+
+        char c = debug_getc();
+        // sprintf(msg, "%x\r\n", c);
+        // debug_prints(msg);
+        if (c == 0x0D) {
+            msg[i++] = '\r';
+            msg[i++] = '\n';
+            msg[i++] = '\0';
+            debug_prints(msg);
+            i = 0;
+        } else {
+            msg[i] = c;
+            i++;
+        }
+    }
+}
+
 void testing_init(void) {
 
     // Initialise hardware for tests
-    motor_test();
+    uart_test();
     // Set the GPIO pin to input and read
     while (1) {}
 }

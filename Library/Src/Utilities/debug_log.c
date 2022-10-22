@@ -13,70 +13,63 @@
 #include "debug_log.h"
 
 // Handle for uart
-UART_HandleTypeDef *debugLogHandle;
+UART_HandleTypeDef* debugLogHandle;
 
-void debug_log_init(UART_HandleTypeDef *huart) { debugLogHandle = huart; }
-
-HAL_StatusTypeDef debug_prints(char *str) {
-    uint8_t length = 0;
-
-    // Looping through a maximum of 255 characters to find the null terminator string
-    for (int i = 0; i < 256; i++) {
-        if (str[i] == '\0') {
-            // Storing index of null terminator and breaking
-            length = (uint8_t)i;
-            break;
-        }
-    }
-
-    uint8_t array[256];
-    // Convert char array to int array
-    for (int i = 0; i < length; i++) {
-        array[i] = (uint8_t)str[i];
-    }
-
-    // Transmitting over uart using the length found earlier. Timeout set 1000ms arbitrarily
-    return HAL_UART_Transmit(debugLogHandle, array, length, 1000);
+void debug_log_init(UART_HandleTypeDef* huart) {
+    debugLogHandle = huart;
 }
 
-HAL_StatusTypeDef debug_printa(uint8_t *ptr, uint8_t length) {
-    return HAL_UART_Transmit(debugLogHandle, ptr, length, 1000);
+void debug_prints(char* msg) {
+    uint16_t i = 0;
+
+    // Transmit until end of message reached
+    while (msg[i] != '\0') {
+        while ((USART2->ISR & USART_ISR_TXE) == 0) {};
+
+        USART2->TDR = msg[i];
+        i++;
+    }
 }
 
 char debug_getc(void) {
-    uint8_t recievedChar = '\0';
 
-    // Receiving uart transmission and storing value in the created uint8_t variable.
-    // Returning value immiediatly if receiving data was succesful
-    if (HAL_UART_Receive(debugLogHandle, &recievedChar, 1, 1) == HAL_OK) {
-        return (char)recievedChar;
-    }
-
-    // Error when receiving. Returning null terminator to signify this
-    return '\0';
+    while (!(USART2->ISR & USART_ISR_RXNE)) {};
+    return USART2->RDR;
 }
 
-HAL_StatusTypeDef debug_clear(void) {
+void debug_clear(void) {
     // Prints ANSI escape codes that will clear the terminal screen
-    char str[] = "\033[2J\033[H";
-    char *pstr = &str[0];
-
-    return HAL_UART_Transmit(debugLogHandle, (uint8_t *)pstr, 11, 1000);
+    debug_prints("\033[2J\033[H");
 }
 
-HAL_StatusTypeDef debug_print_uint64(uint64_t number) {
+/**
+ * @brief This is a test function. Code can be used for an actual uart communication
+ * peripheral file where something like a desktop computer can talk to the STM32.
+ *
+ * This function reads serial input from a program like putty
+ * and puts it into a string and then echos the message back to the
+ * terminal after the return key is pressed (0x0D)
+ *
+ */
+void serial_communicate(void) {
 
-    char m[30];
-    uint16_t sec1 = ((number << 0) >> (16 * 3));
-    uint16_t sec2 = ((number << 16) >> (16 * 3));
-    uint16_t sec3 = ((number << 32) >> (16 * 3));
-    uint16_t sec4 = ((number << 48) >> (16 * 3));
+    debug_clear();
+    char msg[100];
+    uint8_t i = 0;
+    while (1) {
 
-    sprintf(m, "Number: %x %x %x %x\r\n", sec1, sec2, sec3, sec4);
-
-    if (debug_prints(m) != HAL_OK) {
-        return HAL_ERROR;
+        char c = debug_getc();
+        // sprintf(msg, "%x\r\n", c);
+        // debug_prints(msg);
+        if (c == 0x0D) {
+            msg[i++] = '\r';
+            msg[i++] = '\n';
+            msg[i++] = '\0';
+            debug_prints(msg);
+            i = 0;
+        } else {
+            msg[i] = c;
+            i++;
+        }
     }
-
-    return HAL_OK;
 }

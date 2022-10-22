@@ -22,7 +22,7 @@
 #include "debug_log.h"
 
 enum { NORMAL, UNIT_TESTS, TESTING };
-#define PROJECT_STATUS NORMAL
+#define PROJECT_STATUS TESTING
 
 /* STM32 Includes */
 

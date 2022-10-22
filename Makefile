@@ -85,11 +85,7 @@ Core/Src/Interrupts/exti_interrupts.c
 
 # Include random files
 RANDOM_SOURCES = \
-Core/Src/stm32l4xx_hal_msp.c \
 Core/Src/board.c
-# Core/Src/timer_ms.c \
-# Core/Src/pushbutton.c \
-Core/Src/comparator.c \
 
 MAIN_SOURCES = \
 Core/Src/Main/main.c \

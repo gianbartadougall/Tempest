@@ -384,23 +384,50 @@ void hardware_config_adc_init(void) {
  */
 void hardware_config_serial_comms_init(void) {
 
-    huart2.Instance                    = USART2;
-    huart2.Init.BaudRate               = 115200;
-    huart2.Init.WordLength             = UART_WORDLENGTH_8B;
-    huart2.Init.StopBits               = UART_STOPBITS_1;
-    huart2.Init.Parity                 = UART_PARITY_NONE;
-    huart2.Init.Mode                   = UART_MODE_TX_RX;
-    huart2.Init.HwFlowCtl              = UART_HWCONTROL_NONE;
-    huart2.Init.OverSampling           = UART_OVERSAMPLING_16;
-    huart2.Init.OneBitSampling         = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+    //     // USART2->CR1 &= ~(USART_CR1_M0 | USART_CR1_M1); // Set bit length to 8 bits
+    //     // USART2->CR1 &= ~(USART_CR1_OVER8);             // Set the oversampling mode to 16
+    //     // USART2->CR1 |= (USART_CR1_PCE);                // Enable parity checking
 
-    if (HAL_UART_Init(&huart2) != HAL_OK) {
-        hardware_error_handler();
-    }
+    //     // USART2->CR2 &= ~(USART_CR2_STOP); // Set mode as 1 stop bit
 
-    // Initialise debugging
-    debug_log_init(&huart2);
+    //     // USART2->BRR |= (115200 << 4);
+
+    // Enable peripheral clocks: GPIOA, USART2.
+    RCC->APB1ENR1 |= (RCC_APB1ENR1_USART2EN);
+    RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN);
+    // Configure pins A2, A15 for USART2 (AF7, AF3).
+    GPIOA->MODER &= ~((0x3 << (2 * 2)) | (0x3 << (15 * 2)));
+    GPIOA->MODER |= ((0x2 << (2 * 2)) | (0x2 << (15 * 2)));
+    GPIOA->OTYPER &= ~((0x1 << 2) | (0x1 << 15));
+    GPIOA->OSPEEDR &= ~((0x3 << (2 * 2)) | (0x3 << (15 * 2)));
+    GPIOA->OSPEEDR |= ((0x2 << (2 * 2)) | (0x2 << (15 * 2)));
+    GPIOA->AFR[0] &= ~((0xF << (2 * 4)));
+    GPIOA->AFR[0] |= ((0x7 << (2 * 4)));
+    GPIOA->AFR[1] &= ~((0xF << ((15 - 8) * 4)));
+    GPIOA->AFR[1] |= ((0x3 << ((15 - 8) * 4)));
+
+    uint16_t uartdiv = SystemCoreClock / 115200;
+    USART2->BRR      = uartdiv;
+
+    // Enable the USART to let comms occur
+    USART2->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE);
+    // huart2.Instance                    = USART2;
+    // huart2.Init.BaudRate               = 115200;
+    // huart2.Init.WordLength             = UART_WORDLENGTH_8B;
+    // huart2.Init.StopBits               = UART_STOPBITS_1;
+    // huart2.Init.Parity                 = UART_PARITY_NONE;
+    // huart2.Init.Mode                   = UART_MODE_TX_RX;
+    // huart2.Init.HwFlowCtl              = UART_HWCONTROL_NONE;
+    // huart2.Init.OverSampling           = UART_OVERSAMPLING_16;
+    // huart2.Init.OneBitSampling         = UART_ONE_BIT_SAMPLE_DISABLE;
+    // huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+
+    // if (HAL_UART_Init(&huart2) != HAL_OK) {
+    //     hardware_error_handler();
+    // }
+
+    // // Initialise debugging
+    // debug_log_init(&huart2);
 }
 
 // /**
