@@ -160,6 +160,14 @@
 #define HC_ENCODER_2_TIMER_ISR_PRIORITY TIM2_ISR_PRIORITY
 /***********************************************************************/
 
+/********** Marcos for hardware related to the USART **********/
+// #define UART_RX_PORT GPIOA
+// #define UART_TX_PORT GPIOA
+// #define UART_RX_PIN  2
+// #define UART_TX_PIN  3
+// #define UART_CLK_ENABLE()
+/**************************************************************/
+
 /* Public Structures and Enumerations */
 
 /* Public Variable Declarations */

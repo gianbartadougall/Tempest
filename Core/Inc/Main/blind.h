@@ -13,6 +13,7 @@
 
 #include "stm32l4xx_hal.h"
 #include "task_scheduler_1.h"
+#include "utilities.h"
 
 enum Mode { MANUAL, DAY_LIGHT, CONFIGURE_SETINGS };
 

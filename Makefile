@@ -61,22 +61,21 @@ Core/Src/system_stm32l4xx.c
 ASM_SOURCES =  \
 startup_stm32l432xx.s
 
+LIBRARY_SOURCES = \
+Library/Src/Sensors/ambient_light_sensor.c \
+Library/Src/Sensors/encoder.c \
+Library/Src/Peripherals/button.c \
+Library/Src/Peripherals/motor.c \
+Library/Src/Peripherals/led.c \
+Library/Src/Peripherals/piezo_buzzer.c \
+Library/Src/Utilities/flag.c \
+Library/Src/Utilities/debug_log.c \
+Library/Src/Utilities/task_scheduler_1.c
+
 # Include Board files
 BOARD_SOURCES = \
 Core/Src/Board/hardware_config.c
 # Core/Src/Board/mcu_clock.c
-
-# Include Sensor files
-SENSOR_SOURCES = \
-Core/Src/Sensors/ambient_light_sensor.c \
-Core/Src/Sensors/encoder.c
-
-# Include Peripheral files
-PERIPHERAL_SOURCES = \
-Core/Src/Peripherals/button.c \
-Core/Src/Peripherals/motor.c \
-Core/Src/Peripherals/led.c \
-Core/Src/Peripherals/piezo_buzzer.c
 
 # Include Interrupt files
 INTERRUPT_SOURCES = \
@@ -84,19 +83,13 @@ Core/Src/Interrupts/stm32l4xx_it.c \
 Core/Src/Interrupts/timer_interrupts.c \
 Core/Src/Interrupts/exti_interrupts.c
 
-# Include Utility files
-UTILITIY_SOURCES = \
-Core/Src/Utilities/flag.c \
-Core/Src/Utilities/debug_log.c \
-Core/Src/Utilities/task_scheduler_1.c
-
 # Include random files
 RANDOM_SOURCES = \
 Core/Src/stm32l4xx_hal_msp.c \
-Core/Src/timer_ms.c \
-Core/Src/pushbutton.c \
+Core/Src/board.c
+# Core/Src/timer_ms.c \
+# Core/Src/pushbutton.c \
 Core/Src/comparator.c \
-Core/Src/board.c \
 
 MAIN_SOURCES = \
 Core/Src/Main/main.c \
@@ -115,10 +108,8 @@ Core/Src/Beta/adc_config.c
 
 # Add driver libraries to C sources
 C_SOURCES += $(BOARD_SOURCES) 
-C_SOURCES += $(SENSOR_SOURCES)
-C_SOURCES += $(PERIPHERAL_SOURCES)
+C_SOURCES += $(LIBRARY_SOURCES)
 C_SOURCES += $(INTERRUPT_SOURCES)
-C_SOURCES += $(UTILITIY_SOURCES)
 C_SOURCES += $(RANDOM_SOURCES)
 C_SOURCES += $(TEST_SOURCES)
 C_SOURCES += $(BETA_SOURCES)
@@ -178,10 +169,11 @@ C_INCLUDES =  \
 -ICore/Inc/Board \
 -ICore/Inc/Beta \
 -ICore/Inc/Interrupts \
--ICore/Inc/Peripherals \
--ICore/Inc/Sensors \
 -ICore/Inc/Main \
--ICore/Inc/Utilities \
+-ILibrary/Inc \
+-ILibrary/Inc/Utilities \
+-ILibrary/Inc/Peripherals \
+-ILibrary/Inc/Sensors \
 -ICore/Inc/Tests \
 -IDrivers/STM32L4xx_HAL_Driver/Inc \
 -IDrivers/STM32L4xx_HAL_Driver/Inc/Legacy \

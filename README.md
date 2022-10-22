@@ -8,8 +8,8 @@ Features to add
 
 
 Things to do
-- Move all the library files to new folder
 - Try change Ids to be structs and see if that works well
 - Do a review of the code and think about how to structure the code better
 - Design new encoder in KiCAD -> use new BJTs, use BJT to amplifier current
     through the IR so it reaches the distance
+- Get the USART code working
