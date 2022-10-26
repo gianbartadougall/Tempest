@@ -160,12 +160,16 @@
 #define HC_ENCODER_2_TIMER_ISR_PRIORITY TIM2_ISR_PRIORITY
 /***********************************************************************/
 
-/********** Marcos for hardware related to the USART **********/
-// #define UART_RX_PORT GPIOA
-// #define UART_TX_PORT GPIOA
-// #define UART_RX_PIN  2
-// #define UART_TX_PIN  3
-// #define UART_CLK_ENABLE()
+/********** Marcos for hardware related to the debug log **********/
+#define DEBUG_LOG_GPIO_RX_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
+#define DEBUG_LOG_GPIO_TX_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
+#define DEBUG_LOG_CLK_ENABLE()         __HAL_RCC_USART2_CLK_ENABLE()
+
+#define DEBUG_LOG_RX_PORT   GPIOA
+#define DEBUG_LOG_TX_PORT   GPIOA
+#define DEBUG_LOG_RX_PIN    3
+#define DEBUG_LOG_TX_PIN    2
+#define DEBUG_LOG_BUAD_RATE 115200
 /**************************************************************/
 
 /* Public Structures and Enumerations */

@@ -12,7 +12,6 @@
 #include "hardware_config.h"
 #include "debug_log.h"
 #include "board.h"
-// #include "stm32l4xx_hal_msp.h"
 #include "utilities.h"
 
 /* Private Includes */
@@ -31,12 +30,11 @@
 /* Private Structures and Enumerations */
 
 /* Private Variable Declarations */
-UART_HandleTypeDef huart2;
 
 /* Private Function Prototypes */
 void hardware_config_gpio_init(void);
 void hardware_config_timer_init(void);
-void hardware_config_serial_comms_init(void);
+void hardware_config_uart_init(void);
 void hardware_error_handler(void);
 void hardware_config_gpio_reset(void);
 void hardware_config_adc_init(void);
@@ -47,7 +45,7 @@ void hardware_config_exti_interrupts(void);
 void hardware_config_init(void) {
 
     // Initialise uart communication and debugging
-    hardware_config_serial_comms_init();
+    hardware_config_uart_init();
 
     // Initialise all GPIO ports and EXTI interrupts
     hardware_config_gpio_init();
@@ -56,7 +54,7 @@ void hardware_config_init(void) {
     // Initialise all timers
     hardware_config_timer_init();
 
-    // Initialise all ADCs
+    // // Initialise all ADCs
     hardware_config_adc_init();
 }
 
@@ -159,9 +157,32 @@ void hardware_config_gpio_init(void) {
     HC_ENCODER_2_PORT->AFR[0] |= (0x01); // Set AF register AF0 to TIM2 CH1
 
 #endif
+
+#ifdef DEBUG_LOG_MODULE_ENABLED
+    SET_PIN_MODE_INPUT(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
+    SET_PIN_MODE_INPUT(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+
+    SET_PIN_MODE_ALTERNATE_FUNCTION(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
+    SET_PIN_MODE_ALTERNATE_FUNCTION(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+
+    SET_PIN_TYPE_PUSH_PULL(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
+    SET_PIN_TYPE_PUSH_PULL(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+
+    SET_PIN_SPEED_HIGH(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
+    SET_PIN_SPEED_HIGH(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+
+    DEBUG_LOG_RX_PORT->AFR[0] &= ~(0x0F << ((8 % DEBUG_LOG_RX_PIN) * 4));
+    DEBUG_LOG_TX_PORT->AFR[0] &= ~(0x0F << ((8 % DEBUG_LOG_TX_PIN) * 4));
+
+    DEBUG_LOG_RX_PORT->AFR[0] |= (7 << (4 * DEBUG_LOG_RX_PIN));
+    DEBUG_LOG_TX_PORT->AFR[0] |= (7 << (4 * DEBUG_LOG_TX_PIN));
+#endif
 }
 
 void hardware_config_exti_interrupts(void) {
+
+    // Enabling the SYSCFG clock is required for EXTI interrupts to work
+    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
 #ifdef BUTTON_MODULE_ENABLED
 
@@ -382,118 +403,18 @@ void hardware_config_adc_init(void) {
  * @param None
  * @retval None
  */
-void hardware_config_serial_comms_init(void) {
+void hardware_config_uart_init(void) {
 
-    //     // USART2->CR1 &= ~(USART_CR1_M0 | USART_CR1_M1); // Set bit length to 8 bits
-    //     // USART2->CR1 &= ~(USART_CR1_OVER8);             // Set the oversampling mode to 16
-    //     // USART2->CR1 |= (USART_CR1_PCE);                // Enable parity checking
+#ifdef DEBUG_LOG_MODULE_ENABLED
+    // Enable UART clock
+    DEBUG_LOG_CLK_ENABLE();
 
-    //     // USART2->CR2 &= ~(USART_CR2_STOP); // Set mode as 1 stop bit
+    __HAL_RCC_PWR_CLK_ENABLE();
 
-    //     // USART2->BRR |= (115200 << 4);
-
-    // Enable peripheral clocks: GPIOA, USART2.
-    RCC->APB1ENR1 |= (RCC_APB1ENR1_USART2EN);
-    RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN);
-    // Configure pins A2, A15 for USART2 (AF7, AF3).
-    GPIOA->MODER &= ~((0x3 << (2 * 2)) | (0x3 << (15 * 2)));
-    GPIOA->MODER |= ((0x2 << (2 * 2)) | (0x2 << (15 * 2)));
-    GPIOA->OTYPER &= ~((0x1 << 2) | (0x1 << 15));
-    GPIOA->OSPEEDR &= ~((0x3 << (2 * 2)) | (0x3 << (15 * 2)));
-    GPIOA->OSPEEDR |= ((0x2 << (2 * 2)) | (0x2 << (15 * 2)));
-    GPIOA->AFR[0] &= ~((0xF << (2 * 4)));
-    GPIOA->AFR[0] |= ((0x7 << (2 * 4)));
-    GPIOA->AFR[1] &= ~((0xF << ((15 - 8) * 4)));
-    GPIOA->AFR[1] |= ((0x3 << ((15 - 8) * 4)));
-
-    uint16_t uartdiv = SystemCoreClock / 115200;
-    USART2->BRR      = uartdiv;
+    // Set baud rate
+    USART2->BRR = SystemCoreClock / DEBUG_LOG_BUAD_RATE;
 
     // Enable the USART to let comms occur
     USART2->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE);
-    // huart2.Instance                    = USART2;
-    // huart2.Init.BaudRate               = 115200;
-    // huart2.Init.WordLength             = UART_WORDLENGTH_8B;
-    // huart2.Init.StopBits               = UART_STOPBITS_1;
-    // huart2.Init.Parity                 = UART_PARITY_NONE;
-    // huart2.Init.Mode                   = UART_MODE_TX_RX;
-    // huart2.Init.HwFlowCtl              = UART_HWCONTROL_NONE;
-    // huart2.Init.OverSampling           = UART_OVERSAMPLING_16;
-    // huart2.Init.OneBitSampling         = UART_ONE_BIT_SAMPLE_DISABLE;
-    // huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-
-    // if (HAL_UART_Init(&huart2) != HAL_OK) {
-    //     hardware_error_handler();
-    // }
-
-    // // Initialise debugging
-    // debug_log_init(&huart2);
-}
-
-// /**
-//  * @brief UART MSP Initialization
-//  * This function configures the hardware resources used in this example
-//  * @param huart: UART handle pointer
-//  * @retval None
-//  */
-// void HAL_UART_MspInit(UART_HandleTypeDef* huart) {
-//     GPIO_InitTypeDef GPIO_InitStruct = {0};
-//     if (huart->Instance == USART2) {
-//         /* USER CODE BEGIN USART2_MspInit 0 */
-
-//         /* USER CODE END USART2_MspInit 0 */
-//         /* Peripheral clock enable */
-//         __HAL_RCC_USART2_CLK_ENABLE();
-
-//         __HAL_RCC_GPIOA_CLK_ENABLE();
-//         /**USART2 GPIO Configuration
-//         PA2     ------> USART2_TX
-//         PA3     ------> USART2_RX
-//         */
-//         GPIO_InitStruct.Pin       = GPIO_PIN_2 | GPIO_PIN_3;
-//         GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-//         GPIO_InitStruct.Pull      = GPIO_NOPULL;
-//         GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
-//         GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
-//         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-//         /* USER CODE BEGIN USART2_MspInit 1 */
-
-//         /* USER CODE END USART2_MspInit 1 */
-//     }
-// }
-
-// /**
-//  * Initializes the Global MSP.
-//  */
-// void HAL_MspInit(void) {
-//     /* USER CODE BEGIN MspInit 0 */
-
-//     /* USER CODE END MspInit 0 */
-
-//     __HAL_RCC_SYSCFG_CLK_ENABLE();
-//     __HAL_RCC_PWR_CLK_ENABLE();
-
-//     /* System interrupt init*/
-
-//     /* USER CODE BEGIN MspInit 1 */
-
-//     /* USER CODE END MspInit 1 */
-// }
-
-void hardware_error_handler(void) {
-
-    // Initialise onboad LED incase it hasn't been initialised
-    board_init();
-
-    // Initialisation error shown by blinking LED (LD3) in pattern
-    while (1) {
-
-        for (int i = 0; i < 5; i++) {
-            brd_led_toggle();
-            HAL_Delay(100);
-        }
-
-        HAL_Delay(500);
-    }
+#endif
 }

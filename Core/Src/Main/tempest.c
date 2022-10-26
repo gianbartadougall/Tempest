@@ -16,6 +16,7 @@
 #include "button.h"
 #include "blind.h"
 #include "blind_motor.h"
+#include "motor.h"
 
 /* Private STM Includes */
 
@@ -44,6 +45,8 @@ void tempest_init(void) {
     ts_init();
     button_init();
     blind_init();
+
+    debug_prints("Initialised 1\r\n");
 }
 
 /* Private Functions */
@@ -66,26 +69,24 @@ void tempest_update(void) {
 
     // If any of the blinds are in automatic mode currently, update the
     // blind position if required
-    // for (uint8_t i = 0; i < NUM_BLINDS; i++) {
+    for (uint8_t i = 0; i < NUM_BLINDS; i++) {
 
-    //     if (blind_get_mode(blindIds[i]) != DAY_LIGHT) {
-    //         continue;
-    //     }
+        if (blind_get_mode(blindIds[i]) != DAY_LIGHT) {
+            continue;
+        }
 
-    //     uint8_t alSensorId = blind_get_al_sensor_id(blindIds[i]);
-    //     uint8_t encoderId  = blind_get_encoder_id(blindIds[i]);
-    //     uint8_t lightFound = al_sensor_light_found(alSensorId);
+        uint8_t alSensorId = blind_get_al_sensor_id(blindIds[i]);
+        uint8_t encoderId  = blind_get_encoder_id(blindIds[i]);
+        uint8_t lightFound = al_sensor_light_found(alSensorId);
 
-    //     if (lightFound == TRUE && encoder_at_min_height(encoderId)) {
-    //         debug_prints("AL Sensor: Moving blind to min height\r\n");
-    //         // bm_move_blind_to_max_height();
-    //     }
+        if (lightFound == TRUE && encoder_at_min_height(encoderId)) {
+            bm_move_blind_up(blindIds[i]);
+        }
 
-    //     if (lightFound == FALSE && encoder_at_max_height(encoderId)) {
-    //         debug_prints("AL Sensor: Moving blind to max height\r\n");
-    //         // bm_move_blind_to_min_height();
-    //     }
-    // }
+        if (lightFound == FALSE && encoder_at_max_height(encoderId)) {
+            bm_move_blind_down(blindIds[i]);
+        }
+    }
 }
 
 void tempest_process_internal_flags(void) {
