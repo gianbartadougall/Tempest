@@ -198,7 +198,6 @@ void bm_move_blind_down(uint8_t blindId) {
     }
 
     if (BlindMotors[index].mode == BM_NORMAL) {
-        debug_prints("Normal MODE\r\n");
         if (encoder_at_min_height(BlindMotors[index].encoderId)) {
             debug_prints("Already at min height\r\n");
             return;

@@ -14,25 +14,16 @@
 /* Public Includes */
 #include "version_config.h"
 #include "interrupts_config.h"
+#include "utilities.h"
 
 /* Public STM Includes */
 #include "stm32l4xx_hal.h"
-
-/* Public #defines */
-
-#define LED_ORANGE_PIN  4
-#define LED_ORANGE_PORT GPIOB
-#define LED_RED_PIN     11
-#define LED_RED_PORT    GPIOA
 
 /* Timer Macros */
 #define TIMER_FREQUENCY_1KHz   1000
 #define TIMER_FREQUENCY_10KHz  10000
 #define TIMER_FREQUENCY_100KHz 100000
 #define TIMER_FREQUENCY_1MHz   1000000
-
-#define __16_BIT_MAX_COUNT 65535
-#define __32_BIT_MAX_COUNT 4294967295
 
 // TEMPORARY MARCO: TODO IS MAKE A WHOE CLOCK CONFIG FILE. This currently
 // just copies value from STM32 file
@@ -97,7 +88,7 @@
 #define HC_TS_TIMER              TIM15
 #define HC_TS_TIMER_CLK_ENABLE() __HAL_RCC_TIM15_CLK_ENABLE()
 #define HC_TS_TIMER_FREQUENCY    TIMER_FREQUENCY_1KHz
-#define HC_TS_TIMER_MAX_COUNT    __16_BIT_MAX_COUNT
+#define HC_TS_TIMER_MAX_COUNT    UINT_16_BIT_MAX_VALUE
 #define HC_TS_TIMER_IRQn         TIM1_BRK_TIM15_IRQn
 #define HC_TS_TIMER_ISR_PRIORITY TIM15_ISR_PRIORITY
 /***********************************************************************/
@@ -126,14 +117,15 @@
 #define HC_PIEZO_BUZZER_TIMER              TIM16
 #define HC_PIEZO_BUZZER_TIMER_CLK_ENABLE() __HAL_RCC_TIM16_CLK_ENABLE()
 #define HC_PIEZO_BUZZER_TIMER_FREQUENCY    TIMER_FREQUENCY_100KHz
-#define HC_PIEZO_BUZZER_TIMER_MAX_COUNT    __16_BIT_MAX_COUNT
+#define HC_PIEZO_BUZZER_TIMER_MAX_COUNT    UINT_16_BIT_MAX_VALUE
 #define HC_PIEZO_BUZZER_TIMER_IRQn         TIM1_UP_TIM16_IRQn
 #define HC_PIEZO_BUZZER_TIMER_ISR_PRIORITY TIM1_UP_TIM16_ISR_PRIORITY
 /***********************************************************************/
 
 /********** Marcos for hardware related to the Encoders **********/
 /**
- *
+ * The timers are used to increment the encoder counts every time the pins
+ * they are connected to go high
  */
 #define HC_ENCODER_1_PORT         GPIOA
 #define HC_ENCODER_1_PIN          8
@@ -143,7 +135,7 @@
 #define HC_ENCODER_1_TIMER              TIM1
 #define HC_ENCODER_1_TIMER_CLK_ENABLE() __HAL_RCC_TIM1_CLK_ENABLE()
 #define HC_ENCODER_1_TIMER_FREQUENCY    TIMER_FREQUENCY_1KHz
-#define HC_ENCODER_1_TIMER_MAX_COUNT    __32_BIT_MAX_COUNT
+#define HC_ENCODER_1_TIMER_MAX_COUNT    UINT_32_BIT_MAX_VALUE
 #define HC_ENCODER_1_TIMER_IRQn         TIM1_CC_IRQn
 #define HC_ENCODER_1_TIMER_ISR_PRIORITY TIM1_ISR_PRIORITY
 
@@ -155,28 +147,26 @@
 #define HC_ENCODER_2_TIMER              TIM2
 #define HC_ENCODER_2_TIMER_CLK_ENABLE() __HAL_RCC_TIM2_CLK_ENABLE()
 #define HC_ENCODER_2_TIMER_FREQUENCY    TIMER_FREQUENCY_1KHz
-#define HC_ENCODER_2_TIMER_MAX_COUNT    __32_BIT_MAX_COUNT
+#define HC_ENCODER_2_TIMER_MAX_COUNT    UINT_32_BIT_MAX_VALUE
 #define HC_ENCODER_2_TIMER_IRQn         TIM2_IRQn
 #define HC_ENCODER_2_TIMER_ISR_PRIORITY TIM2_ISR_PRIORITY
 /***********************************************************************/
 
 /********** Marcos for hardware related to the debug log **********/
-#define DEBUG_LOG_GPIO_RX_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
-#define DEBUG_LOG_GPIO_TX_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
-#define DEBUG_LOG_CLK_ENABLE()         __HAL_RCC_USART2_CLK_ENABLE()
+/**
+ * Configuration for UART which allows debuggiong and general information
+ * transfer
+ */
+#define HC_DEBUG_LOG_GPIO_RX_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
+#define HC_DEBUG_LOG_GPIO_TX_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
+#define HC_DEBUG_LOG_CLK_ENABLE()         __HAL_RCC_USART2_CLK_ENABLE()
 
-#define DEBUG_LOG_RX_PORT   GPIOA
-#define DEBUG_LOG_TX_PORT   GPIOA
-#define DEBUG_LOG_RX_PIN    3
-#define DEBUG_LOG_TX_PIN    2
-#define DEBUG_LOG_BUAD_RATE 115200
+#define HC_DEBUG_LOG_RX_PORT   GPIOA
+#define HC_DEBUG_LOG_TX_PORT   GPIOA
+#define HC_DEBUG_LOG_RX_PIN    3
+#define HC_DEBUG_LOG_TX_PIN    2
+#define HC_DEBUG_LOG_BUAD_RATE 115200
 /**************************************************************/
-
-/* Public Structures and Enumerations */
-
-/* Public Variable Declarations */
-
-/* Public Function Prototypes */
 
 /**
  * @brief Initialise the system library.

@@ -159,23 +159,23 @@ void hardware_config_gpio_init(void) {
 #endif
 
 #ifdef DEBUG_LOG_MODULE_ENABLED
-    SET_PIN_MODE_INPUT(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
-    SET_PIN_MODE_INPUT(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+    SET_PIN_MODE_INPUT(HC_DEBUG_LOG_RX_PORT, HC_DEBUG_LOG_RX_PIN);
+    SET_PIN_MODE_INPUT(HC_DEBUG_LOG_TX_PORT, HC_DEBUG_LOG_TX_PIN);
 
-    SET_PIN_MODE_ALTERNATE_FUNCTION(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
-    SET_PIN_MODE_ALTERNATE_FUNCTION(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+    SET_PIN_MODE_ALTERNATE_FUNCTION(HC_DEBUG_LOG_RX_PORT, HC_DEBUG_LOG_RX_PIN);
+    SET_PIN_MODE_ALTERNATE_FUNCTION(HC_DEBUG_LOG_TX_PORT, HC_DEBUG_LOG_TX_PIN);
 
-    SET_PIN_TYPE_PUSH_PULL(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
-    SET_PIN_TYPE_PUSH_PULL(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+    SET_PIN_TYPE_PUSH_PULL(HC_DEBUG_LOG_RX_PORT, HC_DEBUG_LOG_RX_PIN);
+    SET_PIN_TYPE_PUSH_PULL(HC_DEBUG_LOG_TX_PORT, HC_DEBUG_LOG_TX_PIN);
 
-    SET_PIN_SPEED_HIGH(DEBUG_LOG_RX_PORT, DEBUG_LOG_RX_PIN);
-    SET_PIN_SPEED_HIGH(DEBUG_LOG_TX_PORT, DEBUG_LOG_TX_PIN);
+    SET_PIN_SPEED_HIGH(HC_DEBUG_LOG_RX_PORT, HC_DEBUG_LOG_RX_PIN);
+    SET_PIN_SPEED_HIGH(HC_DEBUG_LOG_TX_PORT, HC_DEBUG_LOG_TX_PIN);
 
-    DEBUG_LOG_RX_PORT->AFR[0] &= ~(0x0F << ((8 % DEBUG_LOG_RX_PIN) * 4));
-    DEBUG_LOG_TX_PORT->AFR[0] &= ~(0x0F << ((8 % DEBUG_LOG_TX_PIN) * 4));
+    HC_DEBUG_LOG_RX_PORT->AFR[0] &= ~(0x0F << ((8 % HC_DEBUG_LOG_RX_PIN) * 4));
+    HC_DEBUG_LOG_TX_PORT->AFR[0] &= ~(0x0F << ((8 % HC_DEBUG_LOG_TX_PIN) * 4));
 
-    DEBUG_LOG_RX_PORT->AFR[0] |= (7 << (4 * DEBUG_LOG_RX_PIN));
-    DEBUG_LOG_TX_PORT->AFR[0] |= (7 << (4 * DEBUG_LOG_TX_PIN));
+    HC_DEBUG_LOG_RX_PORT->AFR[0] |= (7 << (4 * HC_DEBUG_LOG_RX_PIN));
+    HC_DEBUG_LOG_TX_PORT->AFR[0] |= (7 << (4 * HC_DEBUG_LOG_TX_PIN));
 #endif
 }
 
@@ -406,13 +406,22 @@ void hardware_config_adc_init(void) {
 void hardware_config_uart_init(void) {
 
 #ifdef DEBUG_LOG_MODULE_ENABLED
+
+    /**
+     * Note that in the STM32 uart setup, the PWREN bit and the SYSCGEN bit are set
+     * in the APB1ENR register. I'm pretty sure the SYSCGEN is only setup for exti
+     * interrupts so I have that bit set in the exti interrupt function however if
+     * you are setting up uart and there are no interrupts and it doesn't work, it
+     * is most likely because either PWREN is not set or SYSCGEN is not set
+     */
+
     // Enable UART clock
-    DEBUG_LOG_CLK_ENABLE();
+    HC_DEBUG_LOG_CLK_ENABLE();
 
     __HAL_RCC_PWR_CLK_ENABLE();
 
     // Set baud rate
-    USART2->BRR = SystemCoreClock / DEBUG_LOG_BUAD_RATE;
+    USART2->BRR = SystemCoreClock / HC_DEBUG_LOG_BUAD_RATE;
 
     // Enable the USART to let comms occur
     USART2->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE);

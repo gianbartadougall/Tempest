@@ -36,7 +36,24 @@
  *
  * The MAJOR, MINOR, PATH numbers are joined together to create a unique 16-bit version number
  * (xxxxyyyyyyzzzzzz) where x represents a 4-bit MAJOR number, y represents a 6-bit MINOR number
- * and z represents a 6-bit PATCH number.
+ * and z represents a 6-bit PATCH number. There is no reason that a 32-bit version number can't
+ * be used however it was deemed unlikely that many versions would be required for any project
+ * I will do so 16-bit was chosen as it takes up less space and should be suffice
+ */
+
+// Macros for potential versions that may exist
+#define V_0_0_0 0x0000
+#define V_0_0_1 0x0001
+#define V_0_0_2 0x0002
+#define V_0_0_4 0x0003
+
+#define V_1_0_0 0x1000
+#define V_2_0_0 0x2000
+#define V_3_0_0 0X3000
+#define V_4_0_0 0x4000
+
+/**
+ * The only version that Tempest currently supports is version 0.0.0
  */
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
@@ -55,7 +72,7 @@
  *  to disable them for debugging purposes. These modules also may only be included in certain
  *  versions of the system
  */
-#if (VERSION_MAJOR == 0)
+#if (PROJECT_VERSION == V_0_0_0)
     #define TASK_SCHEDULER_MODULE_ENABLED
     #define BUTTON_MODULE_ENABLED
     #define LED_MODULE_ENABLED
@@ -65,7 +82,6 @@
     #define ENCODER_MODULE_ENABLED
     #define DEBUG_LOG_MODULE_ENABLED
     #define AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
-    // #define WINDOW_SENSOR_MODULE_ENABLED
 #endif
 
 #endif // VERSION_CONFIG_H

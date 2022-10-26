@@ -262,7 +262,7 @@ uint32_t encoder_get_lower_bound_interrupt(uint8_t encoderId) {
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
 
     if (index == INVALID_ID) {
-        return __32_BIT_MAX_COUNT;
+        return UINT_32_BIT_MAX_VALUE;
     }
 
     return encoders[index].timer->CCR2;
@@ -273,7 +273,7 @@ uint32_t encoder_get_upper_bound_interrupt(uint8_t encoderId) {
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
 
     if (index == INVALID_ID) {
-        return __32_BIT_MAX_COUNT;
+        return UINT_32_BIT_MAX_VALUE;
     }
 
     return encoders[index].timer->CCR3;

@@ -1,12 +1,12 @@
 /**
  * @file synchronous_interrupts.h
  * @author Gian Barta-Dougall
- * @brief System file for synchronous_interrupts
+ * @brief System file for synchronous_interrupts.c
  * @version 0.1
  * @date --
- * 
- * @copyright Copyright (c) 
- * 
+ *
+ * @copyright Copyright (c)
+ *
  */
 #ifndef SYNCHRONOUS_INTERRUPTS_H
 #define SYNCHRONOUS_INTERRUPTS_H

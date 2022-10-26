@@ -1,3 +1,16 @@
+/**
+ * @file interrupts_config.h
+ * @author Gian Barta-Dougall
+ * @brief Defines for the priorities of interrupts used within the project. I have not needed to seriously
+ * consider priorities for different interrupts so this current implementation may not be suitable for more
+ * complicated projects
+ * @version 0.1
+ * @date 2022-10-26
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #ifndef INTERRUPTS_CONFIG_H
 #define INTERRUPTS_CONFIG_H
 
