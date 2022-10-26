@@ -11,7 +11,6 @@
 /* Public Includes */
 #include "hardware_config.h"
 #include "debug_log.h"
-#include "board.h"
 #include "utilities.h"
 
 /* Private Includes */

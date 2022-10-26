@@ -15,7 +15,6 @@
 
 #include "utilities.h"
 #include "task_scheduler_1.h"
-#include "board.h"
 #include "adc_config.h"
 #include "hardware_config.h"
 #include "ambient_light_sensor.h"

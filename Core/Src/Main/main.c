@@ -13,7 +13,6 @@
 
 /* Private includes */
 #include "main.h"
-#include "board.h"
 #include "utilities.h"
 #include "hardware_config.h"
 #include "unit_tests.h"

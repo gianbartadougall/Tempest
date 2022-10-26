@@ -68,6 +68,7 @@ Library/Src/Peripherals/button.c \
 Library/Src/Peripherals/motor.c \
 Library/Src/Peripherals/led.c \
 Library/Src/Peripherals/piezo_buzzer.c \
+Library/Src/STM32_Peripherals/adc_config.c \
 Library/Src/Utilities/flag.c \
 Library/Src/Utilities/debug_log.c \
 Library/Src/Utilities/task_scheduler_1.c
@@ -83,10 +84,6 @@ Core/Src/Interrupts/stm32l4xx_it.c \
 Core/Src/Interrupts/timer_interrupts.c \
 Core/Src/Interrupts/exti_interrupts.c
 
-# Include random files
-RANDOM_SOURCES = \
-Core/Src/board.c
-
 MAIN_SOURCES = \
 Core/Src/Main/main.c \
 Core/Src/Main/tempest.c \
@@ -97,18 +94,12 @@ TEST_SOURCES = \
 Core/Src/Tests/testing.c \
 Core/Src/Tests/unit_tests.c
 
-# Beta sources are files that are still in development and are not ready for
-# production yet
-BETA_SOURCES = \
-Core/Src/Beta/adc_config.c
-
 # Add driver libraries to C sources
 C_SOURCES += $(BOARD_SOURCES) 
 C_SOURCES += $(LIBRARY_SOURCES)
 C_SOURCES += $(INTERRUPT_SOURCES)
 C_SOURCES += $(RANDOM_SOURCES)
 C_SOURCES += $(TEST_SOURCES)
-C_SOURCES += $(BETA_SOURCES)
 C_SOURCES += $(MAIN_SOURCES)
 
 #######################################
@@ -163,12 +154,12 @@ AS_INCLUDES =
 C_INCLUDES =  \
 -ICore/Inc \
 -ICore/Inc/Board \
--ICore/Inc/Beta \
 -ICore/Inc/Interrupts \
 -ICore/Inc/Main \
 -ILibrary/Inc \
 -ILibrary/Inc/Utilities \
 -ILibrary/Inc/Peripherals \
+-ILibrary/Inc/STM32_Peripherals \
 -ILibrary/Inc/Sensors \
 -ICore/Inc/Tests \
 -IDrivers/STM32L4xx_HAL_Driver/Inc \

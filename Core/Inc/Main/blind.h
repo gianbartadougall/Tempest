@@ -51,14 +51,66 @@ typedef struct Blind {
  */
 void blind_init(void);
 
+/**
+ * @brief Returns the motor ID of the given blind
+ *
+ * @param blindId The ID of the given blind
+ * @return uint8_t The motor ID of the given blind
+ */
 uint8_t blind_get_motor_id(uint8_t blindId);
+
+/**
+ * @brief Returns the encoder ID of the given blind
+ *
+ * @param blindId The ID of the given blind
+ * @return uint8_t The encoder ID of the given blind
+ */
 uint8_t blind_get_encoder_id(uint8_t blindId);
+
+/**
+ * @brief Returns the alSensor ID of the given blind
+ *
+ * @param blindId The ID of the given blind
+ * @return uint8_t The alSensor ID of the given blind
+ */
 uint8_t blind_get_al_sensor_id(uint8_t blindId);
+
+/**
+ * @brief Returns the current mode of the given blind
+ *
+ * @param blindId The ID of the given blind
+ * @return uint8_t The current mode the given blind is in
+ */
 uint8_t blind_get_mode(uint8_t blindId);
+
+/**
+ * @brief Returns the ID of the currently selected blind
+ *
+ * @return uint8_t The ID of the currently selected blind
+ */
 uint8_t blind_get_selected_blind_id(void);
+
+/**
+ * @brief Sets the mode of the currently selected blind
+ *
+ * @param mode The mode to set the currently selected blind to
+ */
 void blind_set_selected_blind_mode(uint8_t mode);
+
+/**
+ * @brief Checks whether the encoder for each blind can be detected
+ * or not. If it can the status of the blind is set to CONNECTED
+ * else the status is set to DISCONNECTED
+ */
 void blind_update_connection_status(void);
+
+/**
+ * @brief Returns a pointer to the current selected blind
+ *
+ * @return Blind* A pointer to the current selected blind
+ */
 Blind* blind_get_blind_in_focus(void);
+
 uint8_t blind_get_selected_blind_mode(void);
 void blind_change_selected_blind(void);
 void blind_play_error_sound(void);
