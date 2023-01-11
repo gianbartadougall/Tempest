@@ -17,7 +17,6 @@
 #include "task_scheduler_1.h"
 #include "piezo_buzzer.h"
 #include "encoder.h"
-#include "blind_motor.h"
 
 /* STM32 Includes */
 #include "stm32l432xx.h"
@@ -29,8 +28,8 @@
 void TIM1_BRK_TIM15_IRQHandler(void) {
     // char m[50];
     // sprintf(m, "TIM 1 15 ---> CNT: %lu\tSR: %lu\r\n", TIM15->CNT, TIM15->SR);
-    // debug_prints(m);
-    // debug_prints("ISR TIM 1 15\r\n");
+    // log_prints(m);
+    // log_prints("ISR TIM 1 15\r\n");
 
     // Check and clear overflow flag for TIM15
     if ((TIM15->SR & TIM_SR_UIF) == TIM_SR_UIF) {
@@ -66,9 +65,6 @@ void TIM1_BRK_TIM15_IRQHandler(void) {
  *
  */
 void TIM1_UP_TIM16_IRQHandler(void) {
-    // char m[40];
-    // sprintf(m, "TIMER 1 16 ISR: %lu\r\n", TIM1->SR);
-    // debug_prints(m);
 
     // Check and clear overflow flag.
     if ((TIM16->SR & TIM_SR_UIF) == TIM_SR_UIF) {
@@ -86,10 +82,6 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         TIM16->SR = ~TIM_SR_CC1IF;
 
         /* Call required functions */
-
-        // Not sure if its a bug or not but the CCIF flag is set at some point
-        // in the piezo buzzer ISR and it needs to be cleared here other wise
-        // the system will enter an infinte loop
     }
 
     if ((TIM16->SR & TIM_SR_CC2IF) == TIM_SR_CC2IF) {
@@ -98,10 +90,6 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         TIM16->SR = ~TIM_SR_CC2IF;
 
         /* Call required functions */
-
-        // Not sure if its a bug or not but the CCIF flag is set at some point
-        // in the piezo buzzer ISR and it needs to be cleared here other wise
-        // the system will enter an infinte loop
     }
 
     if ((TIM1->SR & TIM_SR_TIF) == TIM_SR_TIF) {
@@ -110,14 +98,6 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         TIM1->SR = ~TIM_SR_TIF;
 
         /* Call required functions */
-
-        // Current bug in the system that sets TIF flag so to ensure an infinte ISR loop
-        // doesn't occur, the TIF flag is cleared without doing anything else. To reproduce
-        // this situation, remove the code that clears the TIF flag and then;
-        // 1) Reset the system so it starts in automatic mode
-        // 2) Enter manual override mode
-        // 3) Hold down up button until motor starts moving
-        // 4) Release up button. This ISR should now be calling in an infinite loop
     }
 
     if ((TIM1->SR & TIM_SR_UIF) == TIM_SR_UIF) {
@@ -126,19 +106,7 @@ void TIM1_UP_TIM16_IRQHandler(void) {
         TIM1->SR = ~TIM_SR_UIF;
 
         /* Call required functions */
-
-        // Current bug in the system that sets BIF flag so to ensure an infinte ISR loop
-        // doesn't occur, the BIF flag is cleared without doing anything else. To reproduce
-        // this situation, remove the code that clears the BIF flag and then;
-        // 1) Reset the system so it starts in automatic mode
-        // 2) Enter manual override mode
-        // 3) Hold down up button until motor starts moving
-        // 4) Release up button. This ISR should now be calling in an infinite loop
     }
-
-    // char m[30];
-    // sprintf(m, "TIM1: %lu\tTIM16: %lu\r\n", TIM1->SR, TIM16->SR);
-    // debug_prints(m);
 }
 
 /**
@@ -146,14 +114,14 @@ void TIM1_UP_TIM16_IRQHandler(void) {
  *
  */
 void TIM1_TRG_COM_IRQHandler(void) {
-    debug_prints("ISR TIM COM\r\n");
+    log_prints("ISR TIM COM\r\n");
 }
 
 /**
  * @brief Capture compare interrupt handler for timer 1
  */
 void TIM1_CC_IRQHandler(void) {
-    // debug_prints("ISR TIM CC\r\n");
+    // log_prints("ISR TIM CC\r\n");
     // Check for overflow flag
 
     if ((TIM1->SR & TIM_SR_UIF) == TIM_SR_UIF) {
@@ -169,14 +137,14 @@ void TIM1_CC_IRQHandler(void) {
         /* Call required functions */
 
         // Call encoder isr to turn motor off
-        debug_prints("REACHED MAX HEIGHT\r\n");
+        log_prints("REACHED MAX HEIGHT\r\n");
 
         // Stopping blind from ISR ensures the blind stops whilst the
         // encoder still reads high. This means the system can always
         // assume if it reads the encoder pin whilst the motor is not
         // moving and the encoder is not high then the encoder is not
         // connected
-        bm_stop_blind_moving(BLIND_1_ID);
+        blind_stop_moving(BLIND_1_ID);
     }
 
     // Check if interrupt for CC3 was triggered
@@ -188,14 +156,14 @@ void TIM1_CC_IRQHandler(void) {
         /* Call required functions */
 
         // Call encoder isr to turn motor off
-        debug_prints("REACHED MIN HEIGHT\r\n");
+        log_prints("REACHED MIN HEIGHT\r\n");
 
         // Stopping blind from ISR ensures the blind stops whilst the
         // encoder still reads high. This means the system can always
         // assume if it reads the encoder pin whilst the motor is not
         // moving and the encoder is not high then the encoder is not
         // connected
-        bm_stop_blind_moving(BLIND_1_ID);
+        blind_stop_moving(BLIND_1_ID);
     }
 }
 
@@ -204,7 +172,7 @@ void TIM1_CC_IRQHandler(void) {
  *
  */
 void TIM1_IRQHandler(void) {
-    debug_prints("ISR TIM 1\r\n");
+    log_prints("ISR TIM 1\r\n");
 }
 
 /**
@@ -262,13 +230,9 @@ void TIM2_IRQHandler(void) {
 }
 
 /**
- * @brief Interrupt handler for timer 6
- *
- */
-void TIM6_DAC_IRQHandler(void) {}
-
-/**
  * @brief Interrupt handler for timer 7
  *
  */
-void TIM7_IRQHandler(void) {}
+void TIM7_IRQHandler(void) {
+    log_prints("IRW\r\n");
+}

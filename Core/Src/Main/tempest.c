@@ -13,14 +13,13 @@
 /* Private Includes */
 #include "tempest_config.h"
 #include "hardware_config.h"
+#include "synchronous_timer.h"
 #include "button.h"
 #include "blind.h"
-#include "blind_motor.h"
-#include "motor.h"
 
 /* Private STM Includes */
 
-/* Private #defines */
+/* Private Macros */
 
 /* Private Structures and Enumerations */
 extern uint32_t buttonTasksFlag;
@@ -38,78 +37,40 @@ void tempest_process_internal_flags(void);
 void tempest_init(void) {
 
     hardware_config_init();
-    debug_clear();
+    log_clear();
 
     // Initialise all the required peripherals
-    blind_motor_init(); // This needs to be first!
     ts_init();
     button_init();
     blind_init();
+    synchronous_timer_enable();
 
-    debug_prints("Initialised 1\r\n");
+    log_prints("Initialised\r\n");
 }
 
 /* Private Functions */
 
 void tempest_update(void) {
 
-    /****** START CODE BLOCK ******/
-    // Description: Process all flags required. This ensures automatic
-    // processes like button debouncing functions and that automatic
-    // processes like reading the AL sensor and updating the task
-    // scheduler occur
-
+    /* Ensures button debouncing is processed */
     button_process_internal_flags();
+
+    /* Task scheduler internal flags need to be processed as they
+        handle things like removing tasks that have been completed
+        from the scheduler and running new tasks */
     ts_process_internal_flags();
-    bm_process_internal_flags();
-    al_sensor_process_internal_flags();
+
+    /* Process any buttons clicks/holds by the user */
     tempest_process_external_button_flags();
-    tempest_process_internal_flags();
-    /****** END CODE BLOCK ******/
 
-    // If any of the blinds are in automatic mode currently, update the
-    // blind position if required
-    for (uint8_t i = 0; i < NUM_BLINDS; i++) {
+    /* Updates things like LEDs that turn on/off depending on what mode
+        the blinds are in, process flags for automatic raising/lowering
+        of the blinds */
+    blind_process_internal_flags();
 
-        if (blind_get_mode(blindIds[i]) != DAY_LIGHT) {
-            continue;
-        }
-
-        uint8_t alSensorId = blind_get_al_sensor_id(blindIds[i]);
-        uint8_t encoderId  = blind_get_encoder_id(blindIds[i]);
-        uint8_t lightFound = al_sensor_light_found(alSensorId);
-
-        if (lightFound == TRUE && encoder_at_min_height(encoderId)) {
-            bm_move_blind_up(blindIds[i]);
-        }
-
-        if (lightFound == FALSE && encoder_at_max_height(encoderId)) {
-            bm_move_blind_down(blindIds[i]);
-        }
-    }
-}
-
-void tempest_process_internal_flags(void) {
-
-    if (FLAG_IS_SET(tempestTasksFlag, FUNC_ID_BLINK_RED_LED)) {
-        FLAG_CLEAR(tempestTasksFlag, FUNC_ID_BLINK_RED_LED);
-        led_toggle(LED_RED_ID);
-    }
-
-    if (FLAG_IS_SET(tempestTasksFlag, FUNC_ID_BLINK_ORANGE_LED)) {
-        FLAG_CLEAR(tempestTasksFlag, FUNC_ID_BLINK_ORANGE_LED);
-        led_toggle(LED_ORANGE_ID);
-    }
-
-    if (FLAG_IS_SET(tempestTasksFlag, FUNC_ID_SWITCH_BLIND_MODE_TO_DAYLIGHT)) {
-        FLAG_CLEAR(tempestTasksFlag, FUNC_ID_SWITCH_BLIND_MODE_TO_DAYLIGHT);
-        blind_set_selected_blind_mode(DAY_LIGHT);
-    }
-
-    if (FLAG_IS_SET(tempestTasksFlag, FUNC_ID_PLAY_CONFIG_SETTINGS_SOUND)) {
-        FLAG_CLEAR(tempestTasksFlag, FUNC_ID_PLAY_CONFIG_SETTINGS_SOUND);
-        piezo_buzzer_play_sound(SOUND);
-    }
+    /* The ambient light sensor does not currently work properly
+        so it is not being run */
+    al_sensor_process_internal_flags();
 }
 
 void tempest_process_external_button_flags(void) {
@@ -121,7 +82,7 @@ void tempest_process_external_button_flags(void) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_UP_PRESS_AND_HOLD);
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PRESS_AND_HOLD);
 
-        blind_change_selected_blind();
+        blind_toggle_bif();
     }
 
     /****** START CODE BLOCK ******/
@@ -130,31 +91,32 @@ void tempest_process_external_button_flags(void) {
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_UP_SINGLE_CLICK)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_UP_SINGLE_CLICK);
 
-        uint8_t blindId = blind_get_selected_blind_id();
-        if (blind_get_selected_blind_mode() == MANUAL) {
-            debug_prints("Moving blind up\r\n");
-            bm_move_blind_up(blindId);
+        uint8_t blindId = blind_get_bif_id();
+
+        if (blind_get_bif_mode() == MANUAL) {
+            log_prints("Moving blind up\r\n");
+            blind_move_up(blindId);
         }
 
-        if (blind_get_selected_blind_mode() == CONFIGURE_SETINGS) {
-            debug_prints("Setting max height\r\n");
-            bm_set_new_max_height(blindId);
+        if (blind_get_bif_mode() == CONFIGURE_SETINGS) {
+            log_prints("Setting max height\r\n");
+            blind_set_new_max_height(blindId);
         }
     }
 
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_SINGLE_CLICK)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_SINGLE_CLICK);
 
-        uint8_t blindId = blind_get_selected_blind_id();
+        uint8_t blindId = blind_get_bif_id();
 
-        if (blind_get_selected_blind_mode() == MANUAL) {
-            debug_prints("Moving blind down\r\n");
-            bm_move_blind_down(blindId);
+        if (blind_get_bif_mode() == MANUAL) {
+            log_prints("Moving blind down\r\n");
+            blind_move_down(blindId);
         }
 
-        if (blind_get_selected_blind_mode() == CONFIGURE_SETINGS) {
-            debug_prints("Setting min height\r\n");
-            bm_set_new_min_height(blindId);
+        if (blind_get_bif_mode() == CONFIGURE_SETINGS) {
+            log_prints("Setting min height\r\n");
+            blind_set_new_min_height(blindId);
         }
     }
 
@@ -166,19 +128,21 @@ void tempest_process_external_button_flags(void) {
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_UP_DOUBLE_CLICK)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_UP_DOUBLE_CLICK);
 
-        uint8_t blindId = blind_get_selected_blind_id();
-        bm_stop_blind_moving(blindId);
+        uint8_t blindId = blind_get_bif_id();
+        blind_stop_bif_moving();
 
-        switch (blind_get_selected_blind_mode()) {
+        switch (blind_get_bif_mode()) {
             case MANUAL:
             case DAY_LIGHT:
-                blind_set_selected_blind_mode(CONFIGURE_SETINGS);
+                blind_set_bif_mode(CONFIGURE_SETINGS);
                 break;
             case CONFIGURE_SETINGS:
 
-                if (bm_min_max_heights_are_valid(blindId) == TRUE) {
-                    blind_revert_selected_blind_mode();
+                if (blind_min_max_heights_are_valid(blindId) == TRUE) {
+                    log_prints("Max height valid!!!\r\n");
+                    blind_revert_bif_mode();
                 } else {
+                    log_prints("Max height invalid\r\n");
                     blind_play_error_sound();
                 }
 
@@ -191,16 +155,22 @@ void tempest_process_external_button_flags(void) {
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK);
 
-        uint8_t blindId = blind_get_selected_blind_id();
-        bm_stop_blind_moving(blindId);
+        uint8_t blindId = blind_get_bif_id();
+        blind_stop_moving(blindId);
 
-        if (blind_get_selected_blind_mode() == MANUAL) {
-            blind_set_selected_blind_mode(DAY_LIGHT);
-        }
-
-        if (blind_get_selected_blind_mode() == DAY_LIGHT) {
-            debug_prints("Changed to manual mode\r\n");
-            blind_set_selected_blind_mode(MANUAL);
+        /* Using a switch statement here instead of an if statement because
+            it's easy to forget that you cannot have two seperate if statements
+            and that it must be an if else otherwise once the blind is set to
+            daylight it will reset to manual straight away in the next if statement*/
+        switch (blind_get_bif_mode()) {
+            case MANUAL:
+                blind_set_bif_mode(DAY_LIGHT);
+                break;
+            case DAY_LIGHT:
+                blind_set_bif_mode(MANUAL);
+                break;
+            default:
+                break;
         }
     }
 
@@ -212,18 +182,18 @@ void tempest_process_external_button_flags(void) {
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_UP_PRESS_AND_HOLD)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_UP_PRESS_AND_HOLD);
 
-        if ((blind_get_selected_blind_mode() == MANUAL) || (blind_get_selected_blind_mode() == CONFIGURE_SETINGS)) {
-            bm_move_blind_up(blind_get_selected_blind_id());
-            debug_prints("Move blind up\r\n");
+        if ((blind_get_bif_mode() == MANUAL) || (blind_get_bif_mode() == CONFIGURE_SETINGS)) {
+            blind_move_up(blind_get_bif_id());
+            log_prints("Move blind up\r\n");
         }
     }
 
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PRESS_AND_HOLD)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PRESS_AND_HOLD);
 
-        if ((blind_get_selected_blind_mode() == MANUAL) || (blind_get_selected_blind_mode() == CONFIGURE_SETINGS)) {
-            bm_move_blind_down(blind_get_selected_blind_id());
-            debug_prints("Move blind down\r\n");
+        if ((blind_get_bif_mode() == MANUAL) || (blind_get_bif_mode() == CONFIGURE_SETINGS)) {
+            blind_move_down(blind_get_bif_id());
+            log_prints("Move blind down\r\n");
         }
     }
 
@@ -235,18 +205,20 @@ void tempest_process_external_button_flags(void) {
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_UP_PRESS_AND_HOLD_RELEASED)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_UP_PRESS_AND_HOLD_RELEASED);
 
-        if ((blind_get_selected_blind_mode() == MANUAL) || (blind_get_selected_blind_mode() == CONFIGURE_SETINGS)) {
-            bm_stop_blind_moving(blind_get_selected_blind_id());
-            debug_prints("Stop moving blind\r\n");
+        if ((blind_get_bif_mode() == MANUAL) || (blind_get_bif_mode() == CONFIGURE_SETINGS)) {
+            blind_stop_bif_moving();
+            // bm_stop_blind_moving(blind_get_bif_id());
+            log_prints("Stop moving blind\r\n");
         }
     }
 
     if (FLAG_IS_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PRESS_AND_HOLD_RELEASED)) {
         FLAG_CLEAR(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_PRESS_AND_HOLD_RELEASED);
 
-        if ((blind_get_selected_blind_mode() == MANUAL) || (blind_get_selected_blind_mode() == CONFIGURE_SETINGS)) {
-            bm_stop_blind_moving(blind_get_selected_blind_id());
-            debug_prints("Stop moving blind\r\n");
+        if ((blind_get_bif_mode() == MANUAL) || (blind_get_bif_mode() == CONFIGURE_SETINGS)) {
+            blind_stop_bif_moving();
+            // bm_stop_blind_moving(blind_get_bif_id());
+            log_prints("Stop moving blind\r\n");
         }
     }
 

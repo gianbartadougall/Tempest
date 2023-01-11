@@ -95,7 +95,7 @@ void button_isr(uint8_t button) {
 }
 
 void button_action_on_pressed(uint8_t index) {
-    // debug_prints(("  !!! PRESSED !!!\r\n\r\n");
+    // log_prints(("  !!! PRESSED !!!\r\n\r\n");
 
     // If the previous button press happened < time t before
     // this button press occured then it is actually a 'double
@@ -115,7 +115,7 @@ void button_action_on_pressed(uint8_t index) {
     // If the button is released before the press and hold timer
     // task can finish, it will be cancelled when the button is
     // released
-    // // debug_prints(("Start press and hold\r\n");
+    // // log_prints(("Start press and hold\r\n");
     ts_add_task_to_queue(&bPressAndHoldTasks[index]);
 }
 
@@ -148,10 +148,10 @@ void button_on_action_released(uint8_t index) {
             } else if (index == BUTTON_DOWN_INDEX) {
                 FLAG_SET(buttonTasksFlag, FUNC_ID_BUTTON_DOWN_DOUBLE_CLICK);
             }
-            // debug_prints("Double Click\r\n");
+            // log_prints("Double Click\r\n");
             // char m[60];
             // sprintf(m, "B%i - Double Click\r\n", index);
-            // debug_prints(m);
+            // log_prints(m);
             // (*bDoubleClickFunctions[bi])();
             // Return so only the double click function is called
             return;
@@ -164,12 +164,12 @@ void button_on_action_released(uint8_t index) {
         // enough, this task will be cancelled
         ts_add_task_to_queue(&bSingleClickTasks[index]);
 
-        // debug_prints(("Maybe single click\r\n");
+        // log_prints(("Maybe single click\r\n");
         // Return so only the single click function is called
         return;
     }
 
-    // debug_prints(("Press and hold\r\n");
+    // log_prints(("Press and hold\r\n");
 
     /* If the code reaches here, the button press type was 'press and hold' */
     if (index == BUTTON_UP_INDEX) {

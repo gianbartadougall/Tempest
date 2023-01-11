@@ -70,8 +70,12 @@ Library/Src/Peripherals/led.c \
 Library/Src/Peripherals/piezo_buzzer.c \
 Library/Src/STM32_Peripherals/adc_config.c \
 Library/Src/Utilities/flag.c \
-Library/Src/Utilities/debug_log.c \
-Library/Src/Utilities/task_scheduler_1.c
+Library/Src/Utilities/log.c \
+Library/Src/Utilities/task_scheduler_1.c \
+Library/Src/Utilities/synchronous_timer.c \
+Library/Src/Utilities/utilities.c \
+Library/Src/Utilities/serial_comms.c \
+Library/Src/Utilities/chars.c
 
 # Include Board files
 BOARD_SOURCES = \
@@ -82,13 +86,16 @@ Core/Src/Board/hardware_config.c
 INTERRUPT_SOURCES = \
 Core/Src/Interrupts/stm32l4xx_it.c \
 Core/Src/Interrupts/timer_interrupts.c \
-Core/Src/Interrupts/exti_interrupts.c
+Core/Src/Interrupts/exti_interrupts.c \
+Core/Src/Interrupts/synchronous_interrupts.c \
+Core/Src/Interrupts/uart_interrupts.c
 
 MAIN_SOURCES = \
 Core/Src/Main/main.c \
 Core/Src/Main/tempest.c \
 Core/Src/Main/blind.c \
-Core/Src/Main/blind_motor.c
+Core/Src/Main/blind_motor.c \
+Core/Src/Main/user_interface.c
 
 TEST_SOURCES = \
 Core/Src/Tests/testing.c \

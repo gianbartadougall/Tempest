@@ -16,11 +16,20 @@
 #define BLIND_MOTOR_H
 
 /* Public Includes */
+#include "task_scheduler_1.h"
+#include "motor.h"
 
 /* Public STM Includes */
 #include "stm32l4xx.h"
 
 /* Public #defines */
+#define BLIND_MOTOR_ID_OFFSET 76
+#define BLIND_MOTOR_1_ID      (0 + BLIND_MOTOR_ID_OFFSET)
+#define BLIND_MOTOR_2_ID      (1 + BLIND_MOTOR_ID_OFFSET)
+#define NUM_BLIND_MOTORS      NUM_BLINDS
+
+#define BLIND_UP   MOTOR_FORWARD
+#define BLIND_DOWN MOTOR_REVERSE
 
 /* Public Structures and Enumerations */
 
@@ -45,16 +54,9 @@ void bm_stop_blind_moving(uint8_t blindId);
  * the upwards direction
  *
  * @param blindId The ID of the blind to move upwards
+ * @param motorDirection The direction to move the blind in
  */
-void bm_move_blind_up(uint8_t blindId);
-
-/**
- * @brief Turns the motor connected to the given blind on in
- * the downwards direction
- *
- * @param blindId The ID of the blind to move downwards
- */
-void bm_move_blind_down(uint8_t blindId);
+void bm_move_blind(uint8_t blindId, enum MotorDirection motorDirection);
 
 /**
  * @brief Processes any internal flags that are set through interrupts.
@@ -98,16 +100,15 @@ void bm_set_mode_update_encoder_settings(uint8_t blindId);
 uint8_t bm_min_max_heights_are_valid(uint8_t blindId);
 
 /**
- * @brief Attempts to align the gears of the encoder with the encoder sensor.
- * This is done by moving the motor slowly for a short duration of time and
- * checking whether the encoder detects the gear moving. The motor is stopped
- * either as soon as the gear is detected or as soon as the timeout finishes.
- * The timeout is a short duration that ensures the motor will stop if a gear
- * has not been detected soon enough after the motor has begun turning
+ * @brief Checks whether the blind motor is properly connected. This is done
+ * by checking if the encoder can detect the blind
  *
- * @param blindId The ID of the blind to who's encoder is attempting to be alligned
- * @return uint8_t TRUE if the encoder could be alligned else FALSE
+ * @param blindMotorId
  */
-uint8_t bm_attempt_align_encoder(uint8_t blindId);
+uint8_t bm_probe_connection(uint8_t blindMotorId);
+
+uint8_t bm_blind_at_max_height(uint8_t blindMotorId);
+uint8_t bm_blind_at_min_height(uint8_t blindMotorId);
+uint16_t bm_get_height(uint8_t blindMotorId);
 
 #endif // BLIND_MOTOR_H

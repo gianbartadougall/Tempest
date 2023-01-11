@@ -210,7 +210,7 @@ void ts_update_capture_compare(void) {
         TS_TIMER->CCR1 = headTask->executionTime;
         // char m[60];
         // sprintf(m, "cap compare = %li\tCurrent CNT: %li\r\n", TS_TIMER->CCR1, TS_TIMER->CNT);
-        // debug_prints(m);
+        // log_prints(m);
     }
 }
 
@@ -257,7 +257,7 @@ void ts_update_capture_compare(void) {
 
 //     // char m[50];
 //     // sprintf(m, "Execution time: %li\r\n", queue[qi].executionTime);
-//     // debug_prints(m);
+//     // log_prints(m);
 // }
 
 /**
@@ -284,7 +284,7 @@ uint32_t ts_calculate_task_execution_time(Recipe* recipe, uint8_t index) {
 void ts_reset_task(Task* task) {
     // char m[50];
     // sprintf(m, "%p reset\r\n", task);
-    // debug_prints(m);
+    // log_prints(m);
     task->functionId    = TS_NONE;
     task->recipieId     = TS_NONE;
     task->group         = TS_NONE;
@@ -312,7 +312,7 @@ void ts_link_task_in_queue(uint8_t qi) {
         headTask           = &queue[qi];
         // char m[50];
         // sprintf(m, "qi: %i\tTask %p now front. Next task is %p\r\n", qi, &queue[qi], queue[qi].nextTask);
-        // debug_prints(m);
+        // log_prints(m);
         return;
     }
 
@@ -341,7 +341,7 @@ void ts_link_task_in_queue(uint8_t qi) {
 void ts_isr(void) {
     char m[100];
     // sprintf(m, "ISR Run @t = %li\r\n", TIM15->CNT);
-    // debug_prints(m);
+    // log_prints(m);
     uint32_t executionTime = headTask->executionTime;
 
     // Set flags for all tasks that have the current execution time
@@ -357,7 +357,7 @@ void ts_isr(void) {
             case AMBIENT_LIGHT_SENSOR_GROUP:
                 ambientLightSensorFlag |= (0x01 << headTask->functionId);
                 // sprintf(m, "Id: %i\tTIME: %li\r\n", headTask->functionId, ambientLightSensorFlag);
-                // debug_prints(m);
+                // log_prints(m);
                 break;
             default:
                 break;
@@ -365,7 +365,7 @@ void ts_isr(void) {
 
         sprintf(m, "Task %p with func id %i ISR finished. Next task: %p with func Id %i\r\n", headTask,
                 headTask->functionId, headTask->nextTask, headTask->nextTask->functionId);
-        debug_prints(m);
+        log_prints(m);
 
         uint8_t recipeId   = headTask->recipieId;
         uint8_t functionId = headTask->functionId;
@@ -379,7 +379,7 @@ void ts_isr(void) {
         for (uint8_t i = 0; i < NUM_REPEATED_RECIPES; i++) {
             uint8_t lastTaskFunctionId = repeatedRecipes[i].functionIds[repeatedRecipes[i].numTasks - 1];
             if ((recipeId == repeatedRecipes[i].id) && (functionId == lastTaskFunctionId)) {
-                debug_prints("Adding tasks to queue!\r\n");
+                log_prints("Adding tasks to queue!\r\n");
                 ts_add_recipe_to_queue(&repeatedRecipes[i]);
             }
         }
@@ -388,7 +388,7 @@ void ts_isr(void) {
     // Disable and reset timer (for power consumption) if there are no more tasks
     // in queue
     if (headTask == NULL) {
-        debug_prints("Disabled\r\n");
+        log_prints("Disabled\r\n");
         ts_disable_scheduler();
         return;
     }
@@ -399,7 +399,7 @@ void ts_isr(void) {
 }
 
 uint8_t ts_remove_recipe(uint8_t recipeId) {
-    // debug_prints("REMOVING RECIPE\r\n");
+    // log_prints("REMOVING RECIPE\r\n");
     Task* currentHead;
     currentHead         = headTask;
     uint8_t taskRemoved = FALSE;
@@ -433,7 +433,7 @@ uint8_t ts_remove_recipe(uint8_t recipeId) {
 }
 
 void ts_print_linked_list(void) {
-    debug_prints("---------- LINKED LIST: ----------\r\n");
+    log_prints("---------- LINKED LIST: ----------\r\n");
     Task* currentHead;
     currentHead = headTask;
 
@@ -443,26 +443,26 @@ void ts_print_linked_list(void) {
     }
 
     headTask = currentHead;
-    debug_prints("----------              ----------\r\n");
+    log_prints("----------              ----------\r\n");
 }
 
 void ts_print_task(Task* task) {
     char msg[150];
     sprintf(msg, "Address: %p\tRec ID: %i\tEx time: %li\tfunc ID: %i\tGroup: %i\tnext task: %p\r\n", task,
             task->recipieId, task->executionTime, task->functionId, task->group, task->nextTask);
-    debug_prints(msg);
+    log_prints(msg);
 }
 
 void ts_print_queue(void) {
-    debug_prints("---------- QUEUE: ----------\r\n");
+    log_prints("---------- QUEUE: ----------\r\n");
     for (uint8_t i = 0; i < MAX_NUM_TASKS_IN_QUEUE; i++) {
         char msg[120];
         sprintf(msg, "queue[%i]:\tAddress: %p\tRec ID: %i\tEx time: %li\tfunc ID: %i\tGroup: %i\tnext task: %p\r\n", i,
                 &queue[i], queue[i].recipieId, queue[i].executionTime, queue[i].functionId, queue[i].group,
                 queue[i].nextTask);
-        debug_prints(msg);
+        log_prints(msg);
     }
-    debug_prints("----------        ----------\r\n");
+    log_prints("----------        ----------\r\n");
 }
 
 /************************************ UNIT TESTING ************************************/
@@ -470,14 +470,14 @@ void ts_print_queue(void) {
 #if (PROJECT_STATUS == UNIT_TESTS)
 uint8_t UNIT_TESTS_FAILED = 0;
 
-    #include "assert.h"
+#    include "assert.h"
 
-    #define ASSERT(test)                                                                            \
+#    define ASSERT(test)                                                                            \
         do {                                                                                        \
             if (!(test)) {                                                                          \
                 char msg[100];                                                                      \
                 sprintf(msg, "Unit test failed in File %s line number %d\r\n", __FILE__, __LINE__); \
-                debug_prints(msg);                                                                  \
+                log_prints(msg);                                                                    \
                 UNIT_TESTS_FAILED++;                                                                \
             }                                                                                       \
         } while (0)
@@ -513,7 +513,7 @@ Recipe recipe3 = {
 };
 
 void ts_run_unit_tests(void) {
-    debug_prints("STARTING TESTS\r\n");
+    log_prints("STARTING TESTS\r\n");
     ts_add_recipe_to_queue_test1();
     ts_add_recipe_to_queue_test2();
     ts_remove_recipe_test1();
@@ -521,7 +521,7 @@ void ts_run_unit_tests(void) {
 
     char m[50];
     sprintf(m, "UNIT TESTS FAILED: %i\r\n", UNIT_TESTS_FAILED);
-    debug_prints(m);
+    log_prints(m);
 }
 
 void add_recipe_to_queue_test1(void) {

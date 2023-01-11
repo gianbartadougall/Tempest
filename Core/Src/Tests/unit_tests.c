@@ -29,7 +29,7 @@
 
 void unit_tests_init(void) {
 
-    debug_clear();
+    log_clear();
 
     /* Run unit tests for each module */
     // ts_run_unit_tests(); // Task scheduler

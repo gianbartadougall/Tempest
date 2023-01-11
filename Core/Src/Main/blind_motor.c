@@ -14,7 +14,6 @@
 
 /* Private Includes */
 #include "blind_motor.h"
-#include "motor.h"
 #include "blind.h"
 #include "task_scheduler_1.h"
 #include "encoder.h"
@@ -24,6 +23,28 @@
 /* Private STM Includes */
 
 /* Private #defines */
+#define ASSERT_VALID_BLIND_MOTOR_ID(id)                                                        \
+    do {                                                                                       \
+        if ((id < BLIND_MOTOR_ID_OFFSET) || (id > (NUM_BLINDS - 1 + BLIND_MOTOR_ID_OFFSET))) { \
+            char msg[100];                                                                     \
+            sprintf(msg, "Invalid ID: File %s line number %d\r\n", __FILE__, __LINE__);        \
+            log_prints(msg);                                                                   \
+            return;                                                                            \
+        }                                                                                      \
+    } while (0)
+
+#define ASSERT_VALID_BLIND_MOTOR_ID_RETVAL(id, retval)                                         \
+    do {                                                                                       \
+        if ((id < BLIND_MOTOR_ID_OFFSET) || (id > (NUM_BLINDS - 1 + BLIND_MOTOR_ID_OFFSET))) { \
+            char msg[100];                                                                     \
+            sprintf(msg, "Invalid ID: File %s line number %d\r\n", __FILE__, __LINE__);        \
+            log_prints(msg);                                                                   \
+            return retval;                                                                     \
+        }                                                                                      \
+    } while (0)
+
+#define BLIND_MOTOR_ID_TO_INDEX(id) (id - BLIND_MOTOR_ID_OFFSET)
+
 #define SET_MIN_HEIGHT_SOUND SOUND1
 #define SET_MAX_HEIGHT_SOUND SOUND1
 
@@ -70,7 +91,7 @@ struct Task1 encoder2InOperation = {
 };
 
 typedef struct BlindMotor {
-    uint8_t blindId;
+    uint8_t id;
     uint8_t encoderId;
     uint8_t motorId;
     uint32_t lastEncoderCount;
@@ -78,181 +99,131 @@ typedef struct BlindMotor {
     uint8_t mode;
 } BlindMotor;
 
-BlindMotor BlindMotors[NUM_BLINDS];
+BlindMotor BlindMotor1 = {
+    .id                  = BLIND_MOTOR_1_ID,
+    .encoderId           = ENCODER_1_ID,
+    .motorId             = MOTOR_1_ID,
+    .lastEncoderCount    = 0,
+    .encoderCheckingTask = &encoder1InOperation,
+    .mode                = DISCONNECTED,
+};
+
+BlindMotor BlindMotor2 = {
+    .id                  = BLIND_MOTOR_2_ID,
+    .encoderId           = ENCODER_2_ID,
+    .motorId             = MOTOR_2_ID,
+    .lastEncoderCount    = 0,
+    .encoderCheckingTask = &encoder2InOperation,
+    .mode                = DISCONNECTED,
+};
+
+BlindMotor* BlindMotors[NUM_BLINDS] = {&BlindMotor1, &BlindMotor2};
 
 /* Private Variable Declarations */
 extern uint32_t blindMotorFlag;
 extern uint32_t encoderTaskFlags;
 
 /* Private Function Prototypes */
-uint8_t bm_search_blind_index(uint8_t blindId);
+uint8_t bm_attempt_align_encoder(uint8_t blindId);
+uint8_t emergency_motor_stop(uint8_t blindMotorId);
 
 /* Public Functions */
 
 void blind_motor_init(void) {
 
-#ifdef ENCODER_MODULE_ENABLED
+    // Initialise the encoders
     encoder_init();
-
-    BlindMotors[0].blindId             = BLIND_1_ID;
-    BlindMotors[0].encoderId           = blind_get_encoder_id(BLIND_1_ID);
-    BlindMotors[0].motorId             = blind_get_motor_id(BLIND_1_ID);
-    BlindMotors[0].encoderCheckingTask = &encoder1InOperation;
-    BlindMotors[0].lastEncoderCount    = 0;
-    BlindMotors[0].mode                = BM_NORMAL;
-
-    BlindMotors[1].blindId             = BLIND_2_ID;
-    BlindMotors[1].encoderId           = blind_get_encoder_id(BLIND_2_ID);
-    BlindMotors[1].motorId             = blind_get_motor_id(BLIND_2_ID);
-    BlindMotors[1].encoderCheckingTask = &encoder2InOperation;
-    BlindMotors[1].lastEncoderCount    = 0;
-    BlindMotors[1].mode                = BM_NORMAL;
-
-#endif
 }
 
-uint8_t bm_attempt_align_encoder(uint8_t blindId) {
+uint8_t bm_probe_connection(uint8_t blindMotorId) {
 
-    uint8_t index = bm_search_blind_index(blindId);
+    ASSERT_VALID_BLIND_MOTOR_ID_RETVAL(blindMotorId, DISCONNECTED);
 
-    if (index == INVALID_ID) {
-        return FALSE;
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
+
+    if (encoder_get_state(BlindMotors[index]->encoderId) == PIN_HIGH) {
+        return CONNECTED;
     }
 
-    // Start timeout count down then turn motor on
-    ts_add_task_to_queue(&TimeoutTask);
-
-    for (uint8_t i = 0; i < 20; i++) {
-
-        // Turn the motor on for a short duration then check if encoder
-        // reads high. Do this a maximum of
-        motor_reverse(BlindMotors[index].motorId);
-        HAL_Delay(10);
-        motor_brake(BlindMotors[index].motorId);
-
-        if (encoder_get_state(BlindMotors[index].encoderId) == PIN_HIGH) {
-            debug_prints("CONNECTED\r\n");
-            return CONNECTED;
-        }
+    if (bm_attempt_align_encoder(blindMotorId) == TRUE) {
+        return CONNECTED;
     }
 
-    debug_prints("DISCONNECTED\r\n");
     return DISCONNECTED;
 }
 
-void bm_stop_blind_moving(uint8_t blindId) {
+void bm_stop_blind_moving(uint8_t blindMotorId) {
 
-    uint8_t index = bm_search_blind_index(blindId);
+    ASSERT_VALID_BLIND_MOTOR_ID(blindMotorId);
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
 
-    if (index == INVALID_ID) {
-        return;
-    }
-
-    debug_prints("STOPPING MOTOR\r\n");
-    motor_brake(BlindMotors[index].motorId);
-    ts_cancel_running_task(BlindMotors[index].encoderCheckingTask);
-    ts_cancel_running_task(&printTimerCount);
+    // log_prints("STOPPING MOTOR\r\n");
+    motor_brake(BlindMotors[index]->motorId);
+    ts_cancel_running_task(BlindMotors[index]->encoderCheckingTask);
 }
 
-void bm_move_blind_up(uint8_t blindId) {
+void bm_move_blind(uint8_t blindMotorId, uint8_t motorDirection) {
 
-    uint8_t index = bm_search_blind_index(blindId);
+    ASSERT_VALID_BLIND_MOTOR_ID(blindMotorId);
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
 
-    if (index == INVALID_ID) {
-        return;
-    }
+    uint8_t encoderId = BlindMotors[index]->encoderId;
+    if (BlindMotors[index]->mode == BM_NORMAL) {
 
-    if (BlindMotors[index].mode == BM_NORMAL) {
-        if (encoder_at_max_height(BlindMotors[index].encoderId)) {
-            debug_prints("Already at max height\r\n");
+        if (motorDirection == MOTOR_FORWARD && encoder_at_max_height(encoderId) == TRUE) {
+            return;
+        }
+
+        if (motorDirection == MOTOR_REVERSE && encoder_at_min_height(encoderId) == TRUE) {
             return;
         }
     }
 
-    uint8_t encoderId  = BlindMotors[index].encoderId;
-    uint8_t motorState = motor_get_state(BlindMotors[index].motorId);
+    uint8_t motorState = motor_get_state(BlindMotors[index]->motorId);
 
-    if (motorState == MOTOR_FORWARD) {
-        return;
-    } else if (motorState == MOTOR_REVERSE) {
-        bm_stop_blind_moving(blindId);
-        HAL_Delay(100);
-    }
-    // Set the blind direction to moving down
-    encoder_set_direction_up(encoderId);
-
-    // Set current encoder count and start encoder checking
-    BlindMotors[index].lastEncoderCount = encoder_get_count(encoderId);
-    ts_add_task_to_queue(BlindMotors[index].encoderCheckingTask);
-    ts_add_task_to_queue(&printTimerCount);
-
-    motor_forward(BlindMotors[index].motorId);
-}
-
-void bm_move_blind_down(uint8_t blindId) {
-
-    uint8_t index = bm_search_blind_index(blindId);
-
-    if (index == INVALID_ID) {
+    // Nothing to do if motor already in the desired direction
+    if (motorState == motorDirection) {
         return;
     }
 
-    if (BlindMotors[index].mode == BM_NORMAL) {
-        if (encoder_at_min_height(BlindMotors[index].encoderId)) {
-            debug_prints("Already at min height\r\n");
-            return;
-        }
-    }
-
-    uint8_t encoderId  = BlindMotors[index].encoderId;
-    uint8_t motorState = motor_get_state(BlindMotors[index].motorId);
-
-    if (motorState == MOTOR_REVERSE) {
+    // If the desired motor direction is opposite to the current motor direction
+    // stop the blind
+    if (motorState == MOTOR_FORWARD || motorState == MOTOR_REVERSE) {
+        bm_stop_blind_moving(blindMotorId);
         return;
-    } else if (motorState == MOTOR_FORWARD) {
-        bm_stop_blind_moving(blindId);
-        HAL_Delay(100);
     }
 
-    // Set the blind direction to moving down
-    encoder_set_direction_down(encoderId);
+    // Blind needs to move either up or down. Update the last count and begin
+    // task to ensure encoder is updating correctly
+    BlindMotors[index]->lastEncoderCount = encoder_get_count(encoderId);
+    ts_add_task_to_queue(BlindMotors[index]->encoderCheckingTask);
 
-    // Set current encoder count and start encoder checking
-    BlindMotors[index].lastEncoderCount = encoder_get_count(encoderId);
-    ts_add_task_to_queue(BlindMotors[index].encoderCheckingTask);
-    ts_add_task_to_queue(&printTimerCount);
-
-    motor_reverse(BlindMotors[index].motorId);
-}
-
-uint8_t emergency_motor_stop(uint8_t blindId) {
-
-    uint8_t index = bm_search_blind_index(blindId);
-
-    if (index == INVALID_ID) {
-        return TRUE;
+    // Move the motor in the desired direction
+    if (motorDirection == MOTOR_FORWARD) {
+        encoder_set_direction_up(encoderId);
+        motor_forward(BlindMotors[index]->motorId);
     }
 
-    if (BlindMotors[index].lastEncoderCount == encoder_get_count(BlindMotors[index].encoderId)) {
-        return TRUE;
+    if (motorDirection == MOTOR_REVERSE) {
+        encoder_set_direction_down(encoderId);
+        motor_reverse(BlindMotors[index]->motorId);
     }
-
-    return FALSE;
 }
 
 void bm_process_internal_flags(void) {
 
     if (FLAG_IS_SET(blindMotorFlag, FUNC_ID_CONFIRM_ENCODER_1_IN_OPERATION)) {
         FLAG_CLEAR(blindMotorFlag, FUNC_ID_CONFIRM_ENCODER_1_IN_OPERATION);
-        if (emergency_motor_stop(BLIND_1_ID) != FALSE) {
-            bm_stop_blind_moving(BLIND_1_ID);
+        if (BlindMotor1.lastEncoderCount == encoder_get_count(BlindMotor1.encoderId)) {
+            bm_stop_blind_moving(BlindMotor1.id);
         }
     }
 
     if (FLAG_IS_SET(blindMotorFlag, FUNC_ID_CONFIRM_ENCODER_2_IN_OPERATION)) {
         FLAG_CLEAR(blindMotorFlag, FUNC_ID_CONFIRM_ENCODER_2_IN_OPERATION);
-        if (emergency_motor_stop(BLIND_1_ID) != FALSE) {
-            bm_stop_blind_moving(BLIND_2_ID);
+
+        if (BlindMotor2.lastEncoderCount == encoder_get_count(BlindMotor2.encoderId)) {
+            bm_stop_blind_moving(BlindMotor2.id);
         }
     }
 
@@ -260,7 +231,7 @@ void bm_process_internal_flags(void) {
         FLAG_CLEAR(blindMotorFlag, FUNC_ID_PRINT_TIMER_COUNT);
         char m[60];
         sprintf(m, "TIM: %li\tCCR2: %li\t CCR3: %li\r\n", TIM1->CNT, TIM1->CCR2, TIM1->CCR3);
-        debug_prints(m);
+        log_prints(m);
     }
 
     /****** START CODE BLOCK ******/
@@ -269,55 +240,52 @@ void bm_process_internal_flags(void) {
 
     if (FLAG_IS_SET(encoderTaskFlags, ENCODER_1_LIMIT_REACHED)) {
         FLAG_CLEAR(encoderTaskFlags, ENCODER_1_LIMIT_REACHED);
-        bm_stop_blind_moving(BLIND_1_ID);
+        bm_stop_blind_moving(BlindMotor1.id);
     }
 
     if (FLAG_IS_SET(encoderTaskFlags, ENCODER_2_LIMIT_REACHED)) {
         FLAG_CLEAR(encoderTaskFlags, ENCODER_2_LIMIT_REACHED);
-        bm_stop_blind_moving(BLIND_2_ID);
+        bm_stop_blind_moving(BlindMotor2.id);
     }
 
     /****** END CODE BLOCK ******/
 }
 
-void bm_set_new_min_height(uint8_t blindId) {
+void bm_set_new_min_height(uint8_t blindMotorId) {
 
-    uint8_t index = bm_search_blind_index(blindId);
-
-    if (index == INVALID_ID) {
-        return;
-    }
+    ASSERT_VALID_BLIND_MOTOR_ID(blindMotorId);
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
 
     piezo_buzzer_play_sound(SET_MIN_HEIGHT_SOUND);
-    encoder_set_upper_bound_interrupt(BlindMotors[index].encoderId);
+    encoder_set_upper_bound_interrupt(BlindMotors[index]->encoderId);
+    char m[60];
+    sprintf(m, "Min height set to: %li\r\n", encoder_get_upper_bound_interrupt(BlindMotors[index]->encoderId));
+    log_prints(m);
 }
 
-void bm_set_new_max_height(uint8_t blindId) {
+void bm_set_new_max_height(uint8_t blindMotorId) {
 
-    uint8_t index = bm_search_blind_index(blindId);
+    ASSERT_VALID_BLIND_MOTOR_ID(blindMotorId);
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
 
-    if (index == INVALID_ID) {
-        debug_prints("returning\r\n");
-        return;
-    }
-
-    debug_prints("Set low bound\r\n");
     // The maximum height sets the zero point for the encoder
     piezo_buzzer_play_sound(SET_MAX_HEIGHT_SOUND);
-    encoder_set_lower_bound_interrupt(BlindMotors[index].encoderId);
+    encoder_set_lower_bound_interrupt(BlindMotors[index]->encoderId);
+
+    // char m[60];
+    // sprintf(m, "Max height set to: %li\r\n", encoder_get_lower_bound_interrupt(BlindMotors[index]->encoderId));
+    // log_prints(m);
 }
 
-uint8_t bm_min_max_heights_are_valid(uint8_t blindId) {
+uint8_t bm_min_max_heights_are_valid(uint8_t blindMotorId) {
 
-    uint8_t index = bm_search_blind_index(blindId);
+    ASSERT_VALID_BLIND_MOTOR_ID_RETVAL(blindMotorId, FALSE);
 
-    if (index == INVALID_ID) {
-        return FALSE;
-    }
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
 
     // Heights are only valid if min height < max height and the current
     // encoder count is in between the bounds
-    uint8_t encoderId             = BlindMotors[index].encoderId;
+    uint8_t encoderId             = BlindMotors[index]->encoderId;
     uint32_t lowerBoundInterrupt  = encoder_get_lower_bound_interrupt(encoderId);
     uint32_t uppperBoundInterrupt = encoder_get_upper_bound_interrupt(encoderId);
     uint32_t currentCount         = encoder_get_count(encoderId);
@@ -330,32 +298,77 @@ uint8_t bm_min_max_heights_are_valid(uint8_t blindId) {
         return FALSE;
     }
 
-    BlindMotors[index].mode = BM_NORMAL;
-    encoder_enable_interrupts(BlindMotors[index].encoderId);
+    BlindMotors[index]->mode = BM_NORMAL;
+    encoder_enable_interrupts(BlindMotors[index]->encoderId);
     return TRUE;
 }
 
-void bm_set_mode_update_encoder_settings(uint8_t blindId) {
+void bm_set_mode_update_encoder_settings(uint8_t blindMotorId) {
 
-    uint8_t index = bm_search_blind_index(blindId);
+    ASSERT_VALID_BLIND_MOTOR_ID(blindMotorId);
 
-    if (index == INVALID_ID) {
-        return;
-    }
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
 
-    BlindMotors[index].mode = BM_UPDATING_ENCODER;
-    encoder_disable_interrupts(BlindMotors[index].encoderId);
+    BlindMotors[index]->mode = BM_UPDATING_ENCODER;
+    encoder_disable_interrupts(BlindMotors[index]->encoderId);
+}
+
+uint8_t bm_blind_at_max_height(uint8_t blindMotorId) {
+
+    ASSERT_VALID_BLIND_MOTOR_ID_RETVAL(blindMotorId, TRUE);
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
+
+    return encoder_at_max_height(BlindMotors[index]->encoderId);
+}
+
+uint8_t bm_blind_at_min_height(uint8_t blindMotorId) {
+
+    ASSERT_VALID_BLIND_MOTOR_ID_RETVAL(blindMotorId, TRUE);
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
+
+    return encoder_at_min_height(BlindMotors[index]->encoderId);
+}
+
+uint16_t bm_get_height(uint8_t blindMotorId) {
+    return encoder_get_count(BlindMotors[blindMotorId]->encoderId);
 }
 
 /* Private Functions */
 
-uint8_t bm_search_blind_index(uint8_t blindId) {
+/**
+ * @brief Attempts to align the gears of the encoder with the encoder sensor.
+ * This is done by moving the motor slowly for a short duration of time and
+ * checking whether the encoder detects the gear moving. The motor is stopped
+ * either as soon as the gear is detected or as soon as the timeout finishes.
+ * The timeout is a short duration that ensures the motor will stop if a gear
+ * has not been detected soon enough after the motor has begun turning
+ *
+ * @param blindId The ID of the blind to who's encoder is attempting to be alligned
+ * @return uint8_t TRUE if the encoder could be alligned else FALSE
+ */
+uint8_t bm_attempt_align_encoder(uint8_t blindMotorId) {
 
-    for (uint8_t i = 0; i < NUM_BLINDS; i++) {
-        if (BlindMotors[i].blindId == blindId) {
-            return i;
+    // Don't need to check the ID because this is a private function and all
+    // id's are checked by public functions first
+    uint8_t index = BLIND_MOTOR_ID_TO_INDEX(blindMotorId);
+
+    // Start timeout count down then turn motor on
+    ts_add_task_to_queue(&TimeoutTask);
+
+    for (uint8_t i = 0; i < 20; i++) {
+
+        // Turn the motor on for a short duration then check if encoder
+        // reads high. Do this a maximum of
+        motor_reverse(BlindMotors[index]->motorId);
+        HAL_Delay(10);
+        motor_brake(BlindMotors[index]->motorId);
+
+        if (encoder_get_state(BlindMotors[index]->encoderId) == PIN_HIGH) {
+            log_prints("CONNECTED\r\n");
+            return CONNECTED;
         }
     }
 
-    return INVALID_ID;
+    log_prints("DISCONNECTED\r\n");
+    return DISCONNECTED;
 }

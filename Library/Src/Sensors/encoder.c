@@ -14,6 +14,7 @@
 /* Private Includes */
 #include "encoder_config.h"
 #include "utilities.h"
+#include "log.h"
 
 /* STM32 Includes */
 
@@ -25,7 +26,7 @@
         if ((id < ENCODER_ID_OFFSET) || (id > (NUM_ENCODERS - 1 + ENCODER_ID_OFFSET))) { \
             char msg[100];                                                               \
             sprintf(msg, "Invalid ID: File %s line number %d\r\n", __FILE__, __LINE__);  \
-            debug_prints(msg);                                                           \
+            log_prints(msg);                                                             \
             return;                                                                      \
         }                                                                                \
     } while (0)
@@ -186,9 +187,9 @@ uint8_t encoder_at_max_height(uint8_t encoderId) {
     }
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
-    char m[60];
-    sprintf(m, "CNT: %li\tMax Height: %li\r\n", encoders[index].timer->CNT, encoders[index].minCount);
-    debug_prints(m);
+    // char m[60];
+    // sprintf(m, "CNT: %li\tMax Height: %li\r\n", encoders[index].timer->CNT, encoders[index].minCount);
+    // log_prints(m);
 
     return (encoders[index].timer->CNT == encoders[index].timer->CCR2) ? TRUE : FALSE;
 }
@@ -201,9 +202,9 @@ uint8_t encoder_at_min_height(uint8_t encoderId) {
 
     uint8_t index = ENCODER_ID_TO_INDEX(encoderId);
 
-    char m[60];
-    sprintf(m, "CNT: %li\tMin Height: %li\r\n", encoders[index].timer->CNT, encoders[index].maxCount);
-    debug_prints(m);
+    // char m[60];
+    // sprintf(m, "CNT: %li\tMin Height: %li\r\n", encoders[index].timer->CNT, encoders[index].maxCount);
+    // log_prints(m);
 
     return (encoders[index].timer->CNT == encoders[index].timer->CCR3) ? TRUE : FALSE;
 }
@@ -221,7 +222,7 @@ uint8_t encoder_at_min_height(uint8_t encoderId) {
 //     encoders[index].timer->CNT = ZERO_COUNT;
 //     char m[60];
 //     sprintf(m, "max height CNT: %li\r\n", encoders[index].timer->CNT);
-//     debug_prints(m);
+//     log_prints(m);
 // }
 
 // void encoder_set_min_height(uint8_t encoderId) {

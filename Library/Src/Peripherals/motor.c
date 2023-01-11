@@ -13,6 +13,7 @@
 /* Private Includes */
 #include "motor_config.h"
 #include "utilities.h"
+#include "log.h"
 
 /* Private STM Includes */
 
@@ -29,7 +30,7 @@
         if ((id < MOTOR_ID_OFFSET) || (id > (NUM_MOTORS - 1 + MOTOR_ID_OFFSET))) {      \
             char msg[100];                                                              \
             sprintf(msg, "Invalid ID: File %s line number %d\r\n", __FILE__, __LINE__); \
-            debug_prints(msg);                                                          \
+            log_prints(msg);                                                            \
             return;                                                                     \
         }                                                                               \
     } while (0)
@@ -57,7 +58,6 @@ void motor_reverse(uint8_t motorId) {
 
     ASSERT_VALID_MOTOR_ID(motorId);
 
-    debug_prints("reversing motor\r\n");
     uint8_t index = motorId - MOTOR_ID_OFFSET;
     SET_PIN_LOW(motors[index].ports[0], motors[index].pins[0]);
     SET_PIN_HIGH(motors[index].ports[1], motors[index].pins[1]);

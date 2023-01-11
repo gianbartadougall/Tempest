@@ -12,12 +12,20 @@
 #define UTILITIES_H
 
 /* Public Includes */
-#include "debug_log.h"
+#include "log.h"
 
 /* Public STM Includes */
 #include "stm32l4xx.h"
 
 /* Public Macros */
+
+#define LOG_ERROR(message)                                                                                  \
+    do {                                                                                                    \
+        char msg[100];                                                                                      \
+        sprintf(msg, "System Error File %s, Line number %d.\r\n\t\'%s\'\r\n", __FILE__, __LINE__, message); \
+        debug_prints(msg);                                                                                  \
+        \                                                                                                   \
+    } while (0)
 
 // The definitions for high and low need to be 1 and 0
 // because it they are used in if statement calculations
@@ -70,11 +78,11 @@
 
 #define PIN_IDR_IS_HIGH(port, pin) ((port->IDR & (0x01 << pin)) != 0)
 #define PIN_IDR_IS_LOW(port, pin)  ((port->IDR & (0x01 << pin)) == 0)
-#define PIN_IDR_STATE(port, pin)   ((port->IDR & (0x01 << pin)) == 0 ? PIN_LOW : PIN_HIGH)
+#define PIN_IDR_STATE(port, pin)   (((port->IDR & (0x01 << pin)) == 0) ? PIN_LOW : PIN_HIGH)
 
 #define PIN_ODR_IS_HIGH(port, pin) ((port->ODR & (0x01 << pin)) != 0)
 #define PIN_ODR_IS_LOW(port, pin)  ((port->ODR & (0x01 << pin)) == 0)
-#define PIN_ODR_STATE(port, pin)   ((port->ODR & (0x01 << pin)) == 0 ? PIN_LOW : PIN_HIGH)
+#define PIN_ODR_STATE(port, pin)   (((port->ODR & (0x01 << pin)) == 0) ? PIN_LOW : PIN_HIGH)
 
 #define FLAG_IS_SET(flag, bit) ((flag & (0x01 << bit)) != 0)
 #define FLAG_CLEAR(flag, bit)  (flag &= ~(0x01 << bit))
@@ -94,5 +102,7 @@
  * @brief Initialise the system library.
  */
 void utilities_init(void);
+
+void utils_print_gpio_port(GPIO_TypeDef* gpio);
 
 #endif // UTILITIES_H

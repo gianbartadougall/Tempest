@@ -38,7 +38,7 @@
 #define TIM1_ISR_PRIORITY PRIORITY_5
 #define TIM2_ISR_PRIORITY PRIORITY_5
 #define TIM3_ISR_PRIORITY PRIORITY_5
-#define TIM6_ISR_PRIORITY PRIORITY_5
+#define TIM6_ISR_PRIORITY PRIORITY_2
 #define TIM7_ISR_PRIORITY PRIORITY_5
 
 // Timer 15 runs the task scheduler, important that this priority is higher

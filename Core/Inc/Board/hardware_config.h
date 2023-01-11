@@ -62,10 +62,10 @@
 
 /********** Marcos for hardware related to the ambient light sensor **********/
 #define HC_ALS_PORT_1 GPIOA
-#define HC_ALS_PORT_2 GPIOA
+#define HC_ALS_PORT_2 GPIOB
 
 #define HC_ALS_PIN_1 5
-#define HC_ALS_PIN_2 4
+#define HC_ALS_PIN_2 0
 /*****************************************************************************/
 
 /********** Marcos for hardware related to the LEDs **********/
@@ -98,12 +98,12 @@
  * The synchronous timer generates an interrupt every t time units. In the
  * interrupt, synchronous tasks that need to happen can be run
  */
-#define HC_SYNCH_TIMER              TIM6
-#define HC_SYNCH_TIMER_CLK_ENABLE() __HAL_RCC_TIM6_CLK_ENABLE()
-#define HC_SYNCH_TIMER_FREQUENCY    TIMER_FREQUENCY_1MHz
-#define HC_SYNCH_TIMER_MAX_COUNT    10000 // Frequency of 1Mhz will give a 10ms timer if max count is 10000
-#define HC_SYNCH_TIMER_IRQn         TIM6_IRQn
-#define HC_SYNCH_TIMER_ISR_PRIORITY TIM6_ISR_PRIORITY
+#define HC_SYNC_TIMER              TIM6
+#define HC_SYNC_TIMER_CLK_ENABLE() __HAL_RCC_TIM6_CLK_ENABLE()
+#define HC_SYNC_TIMER_FREQUENCY    TIMER_FREQUENCY_1MHz
+#define HC_SYNC_TIMER_MAX_COUNT    10 // Frequency of 1Mhz will give a 10us timer if max count is 10
+#define HC_SYNC_TIMER_IRQn         TIM6_DAC_IRQn
+#define HC_SYNC_TIMER_ISR_PRIORITY TIM6_ISR_PRIORITY
 /***********************************************************************/
 
 /********** Marcos for hardware related to the Piezo Buzzer **********/
@@ -163,7 +163,7 @@
 
 #define HC_DEBUG_LOG_RX_PORT   GPIOA
 #define HC_DEBUG_LOG_TX_PORT   GPIOA
-#define HC_DEBUG_LOG_RX_PIN    3
+#define HC_DEBUG_LOG_RX_PIN    15
 #define HC_DEBUG_LOG_TX_PIN    2
 #define HC_DEBUG_LOG_BUAD_RATE 115200
 /**************************************************************/

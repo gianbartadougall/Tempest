@@ -1,5 +1,5 @@
 /**
- * @file debug_log.c
+ * @file log.c
  * @author Gian Barta-Dougall
  * @brief Library for debugging
  * @version 0.1
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef DEBUG_LOG_H
-#define DEBUG_LOG_H
+#ifndef LOG_H
+#define LOG_H
 
 /* Public Includes */
 #include <stdint.h>
@@ -29,7 +29,7 @@
  *
  * @param msg Pointer to the data to be transmitted
  */
-void debug_prints(char* msg);
+void log_message(char* msg);
 
 /**
  * @brief Recives a single character from a serial input. For example
@@ -42,7 +42,13 @@ void debug_prints(char* msg);
  * @return The char that was written in serial if transmission was
  * succesful; Null terminator character if transmission failed.
  */
-char debug_getc(void);
-void debug_clear(void);
+char log_getc(void);
+void log_clear(void);
+void log_prints(char* msg);
+void log_error(char* msg);
+void log_success(char* msg);
+void log_warning(char* msg);
+void log_print_const(const char* msg);
+void serial_communicate(void);
 
-#endif // DEBUG_LOG_H
+#endif // LOG_H

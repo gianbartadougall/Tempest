@@ -13,7 +13,7 @@
 /* Private Includes */
 #include "piezo_buzzer.h"
 #include "hardware_config.h"
-#include "debug_log.h"
+#include "log.h"
 
 /* STM32 Includes */
 
@@ -89,7 +89,6 @@ void piezo_buzzer_isr(void) {
     pbIndex++;
 
     if (pbIndex > NUM_SOUNDS || sounds[pbIndex].frequency == 0) {
-        debug_prints("disabling\r\n");
         piezo_buzzer_disable();
         return;
     }

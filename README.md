@@ -36,3 +36,7 @@ Features to add
 
 Things to do
 - Do a review of the code and think about how to structure the code better
+
+
+Bugs
+- If you go to reset mode then click

@@ -18,10 +18,11 @@
 #include "unit_tests.h"
 #include "testing.h"
 #include "tempest.h"
-#include "debug_log.h"
+#include "log.h"
+#include "led.h"
 
 enum { NORMAL, UNIT_TESTS, TESTING };
-#define PROJECT_STATUS NORMAL
+#define PROJECT_STATUS TESTING
 
 /* STM32 Includes */
 
@@ -34,7 +35,6 @@ enum { NORMAL, UNIT_TESTS, TESTING };
 /* Function prototypes */
 void error_handler(void);
 void SystemClock_Config(void);
-void MX_USART2_UART_Init(void);
 
 /**
  * @brief  The application entry point.
@@ -47,7 +47,7 @@ int main(void) {
     SystemClock_Config();
 
     if (PROJECT_STATUS == UNIT_TESTS) {
-        // unit_tests_init();
+        unit_tests_init();
         while (1) {}
     }
 
@@ -61,6 +61,8 @@ int main(void) {
 
     while (1) {
         tempest_update();
+        // HAL_Delay(1000);
+        // led_toggle(LED_GREEN_ID);
     }
 
     return 0;

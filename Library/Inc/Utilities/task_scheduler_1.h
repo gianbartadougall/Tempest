@@ -23,6 +23,7 @@
 #define BUTTON_GROUP               (1 + TASK_SCHEDULER_OFFSET)
 #define AMBIENT_LIGHT_SENSOR_GROUP (2 + TASK_SCHEDULER_OFFSET)
 #define BLIND_MOTOR_GROUP          (3 + TASK_SCHEDULER_OFFSET)
+#define BLIND_GROUP                (4 + TASK_SCHEDULER_OFFSET)
 
 #define MAX_TASKS_PER_RECIPE 10
 
@@ -31,7 +32,6 @@
 
 /* Public Structures and Enumerations */
 typedef struct Task1 {
-    // const uint8_t taskSchedulerId;
     const uint16_t delay;
     const uint8_t functionId;
     const uint8_t group;

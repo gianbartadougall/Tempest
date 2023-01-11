@@ -21,6 +21,10 @@
 #include "button.h"
 #include "encoder.h"
 #include "piezo_buzzer.h"
+#include "synchronous_interrupts.h"
+#include "synchronous_timer.h"
+#include "led.h"
+#include "log.h"
 
 /* Private STM Includes */
 
@@ -47,30 +51,30 @@ extern uint32_t tempestTasksFlag;
 extern uint32_t buttonTasksFlag;
 
 void task0(void) {
-    debug_prints("Pressed\r\n");
+    log_prints("Pressed\r\n");
 }
 
 void task1(void) {
-    debug_prints("Released\r\n");
+    log_prints("Released\r\n");
 }
 
 void task2(void) {
-    debug_prints("Single click\r\n");
+    log_prints("Single click\r\n");
 }
 
 void task3(void) {
-    debug_prints("Double click\r\n");
+    log_prints("Double click\r\n");
 }
 
 void task4(void) {
-    debug_prints("Press and hold\r\n");
+    log_prints("Press and hold\r\n");
 }
 
 void button_test(void) {
 
     hardware_config_init();
     ts_init();
-    debug_clear();
+    log_clear();
     button_init();
 
     // GPIOA->MODER &= ~(0x03 << 12);
@@ -91,16 +95,16 @@ void adc_test(void) {
     while (1) {
 
         sprintf(m, "Voltage = %i\r\n", adc_config_adc1_convert());
-        debug_prints(m);
+        log_prints(m);
         adc_config_adc1_disable();
-        debug_prints("HEre\r\n");
+        log_prints("HEre\r\n");
         HAL_Delay(500);
     }
 }
 
 void als_test(void) {
     hardware_config_init();
-    debug_clear();
+    log_clear();
     ts_init();
 
     uint8_t status1 = 0;
@@ -115,13 +119,13 @@ void als_test(void) {
             status1 = al_sensor_light_found(AL_SENSOR_1_ID);
             switch (al_sensor_light_found(AL_SENSOR_1_ID)) {
                 case 0:
-                    debug_prints("SENSOR 1 = DARK\r\n");
+                    log_prints("SENSOR 1 = DARK\r\n");
                     break;
                 case 1:
-                    debug_prints("SENSOR 1 = LIGHT\r\n");
+                    log_prints("SENSOR 1 = LIGHT\r\n");
                     break;
                 default:
-                    debug_prints("SENSOR 1 DISCONNECTED\r\n");
+                    log_prints("SENSOR 1 DISCONNECTED\r\n");
                     break;
             }
         }
@@ -130,13 +134,13 @@ void als_test(void) {
             status2 = al_sensor_light_found(AL_SENSOR_2_ID);
             switch (al_sensor_light_found(AL_SENSOR_2_ID)) {
                 case 0:
-                    debug_prints("SENSOR 2 = DARK\r\n");
+                    log_prints("SENSOR 2 = DARK\r\n");
                     break;
                 case 1:
-                    debug_prints("SENSOR 2 = LIGHT\r\n");
+                    log_prints("SENSOR 2 = LIGHT\r\n");
                     break;
                 default:
-                    debug_prints("SENSOR 2 DISCONNECTED\r\n");
+                    log_prints("SENSOR 2 DISCONNECTED\r\n");
                     break;
             }
         }
@@ -151,9 +155,30 @@ void piezo_buzzer_test(void) {
         piezo_buzzer_play_sound(SOUND);
         // char m[60];
         // sprintf(m, "CNT: %li\r\n", TIM16->CNT);
-        // debug_prints(m);
+        // log_prints(m);
 
         HAL_Delay(3000);
+    }
+}
+
+void al_sensor_test(void) {
+
+    hardware_config_init();
+    synchronous_timer_enable();
+    log_clear();
+
+    log_prints("Initialised\r\n");
+
+    while (1) {
+        HAL_Delay(1000);
+
+        al_sensor_process_internal_flags();
+
+        if (al_sensor_status(AL_SENSOR_1_ID) == CONNECTED) {
+            led_on(LED_ORANGE_ID);
+        } else {
+            led_off(LED_ORANGE_ID);
+        }
     }
 }
 
@@ -161,8 +186,8 @@ void encoder_test(void) {
 
     hardware_config_init();
     uint32_t currentCount = 0;
-    debug_clear();
-    debug_prints("Ready.\r\n");
+    log_clear();
+    log_prints("Ready.\r\n");
     encoder_init();
 
     while (1) {
@@ -171,7 +196,7 @@ void encoder_test(void) {
         if (currentCount != encoder_get_count(ENCODER_1_ID)) {
             char m[60];
             sprintf(m, "Enocder Count: %li\r\n", encoder_get_count(ENCODER_1_ID));
-            debug_prints(m);
+            log_prints(m);
             currentCount = encoder_get_count(ENCODER_1_ID);
         }
     }
@@ -180,7 +205,7 @@ void encoder_test(void) {
 void motor_test(void) {
 
     hardware_config_init();
-    debug_clear();
+    log_clear();
     encoder_init();
     ts_init();
     ts_add_task_to_queue(&printTimerCount1);
@@ -195,38 +220,37 @@ void motor_test(void) {
         if (FLAG_IS_SET(tempestTasksFlag, 0)) {
             char m[60];
             sprintf(m, "CNT: %li\r\n", TIM1->CNT);
-            debug_prints(m);
+            log_prints(m);
         }
     }
 }
 
 void uart_test(void) {
+
     hardware_config_init();
-    debug_clear();
-    debug_prints("Started 1\r\n");
-    char msg[100];
-    uint8_t i = 0;
+
+    log_clear();
+
     while (1) {
 
-        char c = debug_getc();
-        // sprintf(msg, "%x\r\n", c);
-        // debug_prints(msg);
-        if (c == 0x0D) {
-            msg[i++] = '\r';
-            msg[i++] = '\n';
-            msg[i++] = '\0';
-            debug_prints(msg);
-            i = 0;
-        } else {
-            msg[i] = c;
-            i++;
-        }
+        // char c = log_getc();
+        // // sprintf(msg, "%x\r\n", c);
+        // // log_prints(msg);
+        // if (c == 0x0D) {
+        //     msg[i++] = '\r';
+        //     msg[i++] = '\n';
+        //     msg[i++] = '\0';
+        //     log_prints(msg);
+        //     i = 0;
+        // } else {
+        //     msg[i] = c;
+        //     i++;
+        // }
     }
 }
 
 void testing_init(void) {
 
-    // Initialise hardware for tests
     uart_test();
     // Set the GPIO pin to input and read
     while (1) {}

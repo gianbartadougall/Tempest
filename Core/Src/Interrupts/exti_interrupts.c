@@ -21,7 +21,7 @@
  *
  */
 void EXTI0_IRQHandler(void) {
-    // debug_prints("EXTI 0\r\n");
+    // log_prints("EXTI 0\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
 
@@ -42,7 +42,7 @@ void EXTI0_IRQHandler(void) {
  *
  */
 void EXTI1_IRQHandler(void) {
-    // debug_prints("EXTI 1\r\n");
+    // log_prints("EXTI 1\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI1_IRQn);
 
@@ -64,7 +64,7 @@ void EXTI1_IRQHandler(void) {
  *
  */
 void EXTI2_IRQHandler(void) {
-    // debug_prints("EXTI 2\r\n");
+    // log_prints("EXTI 2\r\n");
     //  // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI2_IRQn);
 
@@ -84,7 +84,7 @@ void EXTI2_IRQHandler(void) {
  *
  */
 void EXTI3_IRQHandler(void) {
-    // debug_prints("EXTI 3\r\n");
+    // log_prints("EXTI 3\r\n");
     // // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI3_IRQn);
 
@@ -103,7 +103,7 @@ void EXTI3_IRQHandler(void) {
  *
  */
 void EXTI4_IRQHandler(void) {
-    debug_prints("EXTI 4\r\n");
+    log_prints("EXTI 4\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI4_IRQn);
 
@@ -124,7 +124,7 @@ void EXTI4_IRQHandler(void) {
  *
  */
 void EXTI9_5_IRQHandler(void) {
-    // debug_prints("EXTI 9_5\r\n");
+    // log_prints("EXTI 9_5\r\n");
 
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
@@ -185,7 +185,7 @@ void EXTI9_5_IRQHandler(void) {
  *
  */
 void EXTI15_10_IRQHandler(void) {
-    debug_prints("EXTI 15 10\r\n");
+    log_prints("EXTI 15 10\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 
@@ -251,7 +251,7 @@ void EXTI15_10_IRQHandler(void) {
 }
 
 void COMP_IRQHandler(void) {
-    debug_prints("EXTI COMP\r\n");
+    log_prints("EXTI COMP\r\n");
     // Clear the pending interrupt call
     NVIC_ClearPendingIRQ(COMP_IRQn);
 

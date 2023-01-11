@@ -41,6 +41,7 @@ typedef struct TsTask {
 /* Private Variable Declarations */
 uint32_t buttonTasksFlag        = 0;
 uint32_t tempestTasksFlag       = 0;
+uint32_t blindTasksFlag         = 0;
 uint32_t ambientLightSensorFlag = 0;
 uint32_t blindMotorFlag         = 0;
 
@@ -70,12 +71,12 @@ void ts_init(void) {
 }
 
 void ts_add_task_to_queue(const Task1* task) {
-    // debug_prints("Adding task\r\n");
+    // log_prints("Adding task\r\n");
 
     // Confirm this task doesn't already exist in the queue
     for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
         if ((queue[i].task == task)) {
-            // debug_prints("SKIPPING ADD\r\n");
+            // log_prints("SKIPPING ADD\r\n");
             return;
         } else {
             break;
@@ -100,7 +101,7 @@ uint8_t ts_cancel_running_task(const Task1* task) {
     for (uint8_t qi = 0; qi < QUEUE_SIZE; qi++) {
         // char m[60];
         // sprintf(m, "Test: %p == %p\r\n", queue[qi].task, task);
-        // debug_prints(m);
+        // log_prints(m);
 
         if (queue[qi].task == task) {
             ts_remove_task(qi);
@@ -112,13 +113,13 @@ uint8_t ts_cancel_running_task(const Task1* task) {
     if (num == 1) {
         return TS_TASK_CANCELLED;
     } else if (num == 0) {
-        // debug_prints("task could not be found\r\n");
+        // log_prints("task could not be found\r\n");
         return TS_TASK_NOT_FOUND;
     }
 
     // char m[60];
     // sprintf(m, "More than one task of id %i found\r\n", task->functionId);
-    // debug_prints(m);
+    // log_prints(m);
 
     return TS_TASK_CANCELLED;
 }
@@ -132,53 +133,43 @@ void ts_process_internal_flags(void) {
     for (uint8_t qi = 0; qi < QUEUE_SIZE; qi++) {
 
         if (queue[qi].finished != TASK_FINISHED) {
-            // // debug_prints("CONTINUING\r\n");
             continue;
         }
 
         if (queue[qi].task->nextTask == NULL) {
             ts_remove_task(qi);
-            // // debug_prints("removing task\r\n");
         } else {
-            // char m[40];
-            // sprintf(m, "Moving to task %i\r\n", queue[qi].task->nextTask->functionId);
-            // // debug_prints(m);
             ts_move_to_next_task(qi);
         }
 
         finishedTasks--;
-        // char m[40];
-        // sprintf(m, "-- Finished tasks now = %i\r\n", finishedTasks);
-        // // debug_prints(m);
+
         if (finishedTasks == 0) {
             break;
         }
     }
 
     if (finishedTasks != 0) {
-        // debug_prints("Error, not all tasks were dealt with!\r\n");
+        // log_prints("Error, not all tasks were dealt with!\r\n");
 
         for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
             if (queue[i].finished == TASK_FINISHED) {
                 char m[60];
                 sprintf(m, "TASK NOT PROCESSED %p\r\n", queue[i].task);
-                debug_prints(m);
+                log_prints(m);
             }
         }
 
         finishedTasks = 0;
     }
 
-    // char m[50];
-    // sprintf(m, "FINISHED TASKS %i\r\n", finishedTasks);
-    // // debug_prints(m);
     ts_update_first_in_queue();
 }
 
 void ts_isr(void) {
     // char m[50];
     // sprintf(m, "ISR called @T=%li\r\n", TIM15->CNT);
-    // // debug_prints(m);
+    // // log_prints(m);
     uint8_t index = 0;
     TsTask* head  = queueHead[0];
 
@@ -186,20 +177,19 @@ void ts_isr(void) {
 
         switch (head->task->group) {
             case TEMPEST_GROUP:
-                tempestTasksFlag |= (0x01 << head->task->functionId);
+                FLAG_SET(tempestTasksFlag, head->task->functionId);
                 break;
             case BUTTON_GROUP:
                 FLAG_SET(buttonTasksFlag, head->task->functionId);
-                // char m[40];
-                // sprintf(m, "ISR @ Flag: %li\tTIME: %li\r\n", buttonTasksFlag, TS_TIMER->CNT);
-                // debug_prints(m);
-                // // debug_prints("A  ");
                 break;
             case AMBIENT_LIGHT_SENSOR_GROUP:
-                ambientLightSensorFlag |= (0x01 << head->task->functionId);
+                FLAG_SET(ambientLightSensorFlag, head->task->functionId);
                 break;
             case BLIND_MOTOR_GROUP:
                 FLAG_SET(blindMotorFlag, head->task->functionId);
+                break;
+            case BLIND_GROUP:
+                FLAG_SET(blindTasksFlag, head->task->functionId);
                 break;
             default:
                 break;
@@ -208,7 +198,7 @@ void ts_isr(void) {
         finishedTasks++;
         // char m[60];
         // sprintf(m, "++ Func Id: %i now finished -> FTs = %i\r\n", head->task->functionId, finishedTasks);
-        // // debug_prints(m);
+        // // log_prints(m);
         head = queueHead[++index];
     }
 }
@@ -220,7 +210,7 @@ uint32_t ts_calculate_execution_time(uint32_t delayUntilExecution) {
 }
 
 void ts_copy_task_into_queue(uint8_t qi, const Task1* task) {
-    // // debug_prints("Copying to queue\r\n");
+    // // log_prints("Copying to queue\r\n");
     queue[qi].task          = task;
     queue[qi].executionTime = ts_calculate_execution_time(task->delay);
     queue[qi].finished      = 0;
@@ -230,7 +220,7 @@ void ts_copy_task_into_queue(uint8_t qi, const Task1* task) {
 void ts_remove_task(uint8_t qi) {
     // char m[60];
     // sprintf(m, "REMOVING TASK %p\r\n", queue[qi].task);
-    // debug_prints(m);
+    // log_prints(m);
 
     queue[qi].executionTime = TS_NONE;
     queue[qi].finished      = TS_NONE;
@@ -238,7 +228,7 @@ void ts_remove_task(uint8_t qi) {
     numTasksInQueue--;
 
     if (numTasksInQueue < 0) {
-        // debug_prints("FATAL ERROR - TASKS IN QUEUE WAS NEGATIVE\r\n");
+        // log_prints("FATAL ERROR - TASKS IN QUEUE WAS NEGATIVE\r\n");
     }
 }
 
@@ -255,7 +245,7 @@ uint8_t ts_task_is_running(const Task1* task) {
 void ts_move_to_next_task(uint8_t qi) {
     // char m[60];
     // sprintf(m, "MOVING ONTO NEXT TASK %p\r\n", queue[qi].task);
-    // debug_prints(m);
+    // log_prints(m);
 
     queue[qi].task          = queue[qi].task->nextTask;
     queue[qi].executionTime = ts_calculate_execution_time(queue[qi].task->delay);
@@ -295,7 +285,7 @@ void ts_update_first_in_queue(void) {
     }
 
     if (queueHeadFound == 0) {
-        // // debug_prints("Disabled\r\n");
+        // // log_prints("Disabled\r\n");
         // ts_disable();
         return;
     }
@@ -318,15 +308,16 @@ void ts_update_first_in_queue(void) {
 
     char m[50];
     sprintf(m, "  Next ISR @T=%li\r\n", TS_TIMER->CCR1);
-    // debug_prints(m);
+    // log_prints(m);
     ts_enable();
 }
 
 void ts_enable(void) {
+    // Only enable timer if its currently disabled
     if ((TS_TIMER->CR1 & TIM_CR1_CEN) == 0) {
         TS_TIMER->EGR |= (TIM_EGR_UG);    // Reset counter to 0 and update all registers
         TS_TIMER->DIER |= TIM_DIER_CC1IE; // Enable interrupts
-        TS_TIMER->CR1 |= TIM_CR1_CEN;
+        TS_TIMER->CR1 |= TIM_CR1_CEN;     // Start the timer
     }
 }
 

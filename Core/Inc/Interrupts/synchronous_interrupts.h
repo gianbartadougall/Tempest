@@ -27,6 +27,8 @@
 /**
  * @brief Initialise the system library.
  */
-void synchronous_interrupts_init(void);
+void sychronous_interrupts_init(void);
+
+void sync_timer_delay10us(uint16_t delay10us);
 
 #endif // SYNCHRONOUS_INTERRUPTS_H

@@ -24,13 +24,15 @@
 #define MOTOR_1_ID      (0 + MOTOR_ID_OFFSET)
 #define MOTOR_2_ID      (1 + MOTOR_ID_OFFSET)
 
-#define MOTOR_STATUS_OFFSET 7
-#define MOTOR_STOP          (0 + MOTOR_STATUS_OFFSET)
-#define MOTOR_FORWARD       (1 + MOTOR_STATUS_OFFSET)
-#define MOTOR_REVERSE       (2 + MOTOR_STATUS_OFFSET)
-#define MOTOR_BRAKE         (3 + MOTOR_STATUS_OFFSET)
-
 /* Public Structures and Enumerations */
+
+#define MOTOR_STATUS_OFFSET 7
+enum MotorDirection {
+    MOTOR_STOP    = (0 + MOTOR_STATUS_OFFSET),
+    MOTOR_FORWARD = (1 + MOTOR_STATUS_OFFSET),
+    MOTOR_REVERSE = (2 + MOTOR_STATUS_OFFSET),
+    MOTOR_BRAKE   = (3 + MOTOR_STATUS_OFFSET),
+};
 
 /* Public Variable Declarations */
 

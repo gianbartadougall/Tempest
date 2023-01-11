@@ -42,7 +42,22 @@
  */
 
 // Macros for potential versions that may exist
+
+/**
+ * @brief Version 0.0.0 contains the following hardware features
+ * Board: Tempest board Revision 2
+ * Software: Support for the following
+ *      - 2 Motor Drivers
+ *      - 2 encoders
+ *      - 2 Ambient light sensors
+ * which are controlled by 2 push buttons
+ *
+ * Additional Notes: The board also has support for being operated by a battery however
+ * no software has been written for this to be supported
+ *
+ */
 #define V_0_0_0 0x0000
+
 #define V_0_0_1 0x0001
 #define V_0_0_2 0x0002
 #define V_0_0_4 0x0003
@@ -59,29 +74,28 @@
 #define VERSION_MINOR 0
 #define VERSION_PATH  0
 
-// Confirm the MAJOR, MINOR, PATCH numbers do not exceed their maximum values. If the MAJOR,
-// MINOR or PATCH numbers exceeed their maximum values, they cannot fit into a 16-bit number
-#if ((VERSION_MAJOR > 15) || (VERSION_MINOR > 127) || (VERSION_PATCH > 127))
-    #error Illegal version number. MAJOR > 15 or MINOR > 127 or PATCH > 127
-#endif
-
 // Define which version of Tempest the project will compile for
-#define PROJECT_VERSION ((VERSION_MAJOR << 12) | (VERSION_MINOR < 7) | (VERSION_PATCH))
+#define PROJECT_VERSION V_0_0_0
+
+// Confirm the version is less than 16-bit
+#if (PROJECT_VERSION > 65535)
+#    error Illegal version number
+#endif
 
 /** List of all the different modules used in the project. These modules can be commented out
  *  to disable them for debugging purposes. These modules also may only be included in certain
  *  versions of the system
  */
 #if (PROJECT_VERSION == V_0_0_0)
-    #define TASK_SCHEDULER_MODULE_ENABLED
-    #define BUTTON_MODULE_ENABLED
-    #define LED_MODULE_ENABLED
-    #define PIEZO_BUZZER_MODULE_ENABLED
-    #define SYNCHRONOUS_TIMER_MODULE_ENABLED
-    #define MOTOR_MODULE_ENABLED
-    #define ENCODER_MODULE_ENABLED
-    #define DEBUG_LOG_MODULE_ENABLED
-    #define AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
+#    define TASK_SCHEDULER_MODULE_ENABLED
+#    define BUTTON_MODULE_ENABLED
+#    define LED_MODULE_ENABLED
+#    define PIEZO_BUZZER_MODULE_ENABLED
+#    define SYNCHRONOUS_TIMER_MODULE_ENABLED
+#    define MOTOR_MODULE_ENABLED
+#    define ENCODER_MODULE_ENABLED
+#    define DEBUG_LOG_MODULE_ENABLED
+#    define AMBIENT_LIGHT_SENSOR_MODULE_ENABLED
 #endif
 
 #endif // VERSION_CONFIG_H

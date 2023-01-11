@@ -4,9 +4,9 @@
  * @brief System file for synchronous_timer
  * @version 0.1
  * @date --
- * 
- * @copyright Copyright (c) 
- * 
+ *
+ * @copyright Copyright (c)
+ *
  */
 #ifndef SYNCHRONOUS_TIMER_H
 #define SYNCHRONOUS_TIMER_H
@@ -25,8 +25,13 @@
 /* Public Function Prototypes */
 
 /**
- * @brief Initialise the system library.
+ * @brief Enable the timer which lets the interrupts run
  */
-void synchronous_timer_init(void);
+void synchronous_timer_enable(void);
+
+/**
+ * @brief Disable the timer which stops the interrupts from running
+ */
+void synchronous_timer_disable(void);
 
 #endif // SYNCHRONOUS_TIMER_H
